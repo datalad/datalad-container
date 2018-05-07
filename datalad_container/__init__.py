@@ -16,7 +16,7 @@ command_suite = (
             # importable module that contains the command implementation
             'datalad_container.containers',
             # name of the command class implementation in above module
-            'containers',
+            'Containers',
             'containers',
         ),
     ]
