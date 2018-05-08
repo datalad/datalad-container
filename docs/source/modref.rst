@@ -15,4 +15,6 @@ summary of its purpose and the list of classes and functions it provides.
   .. currentmodule:: datalad_container
   .. autosummary::
      :toctree: generated
-     bids2scidata
+
+     containers-list
+     containers-add

@@ -1,3 +1,6 @@
+
+__docformat__ = 'restructuredtext'
+
 import logging
 from os import listdir
 import os.path as op
