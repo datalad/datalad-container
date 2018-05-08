@@ -84,7 +84,7 @@ class ContainersAdd(Interface):
     @staticmethod
     @datasetmethod(name='containers_add')
     @eval_results
-    def __call__(name=None, url=None, dataset=None, execute=None, image=None):
+    def __call__(name, url=None, dataset=None, execute=None, image=None):
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
