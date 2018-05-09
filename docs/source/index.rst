@@ -13,6 +13,8 @@ API
 .. toctree::
    :maxdepth: 1
 
+   generated/man/datalad-containers-add
+   generated/man/datalad-containers-list
    modref
 
 

@@ -11,10 +11,10 @@ This module reference extends the manual with a comprehensive overview of the
 available functionality.  Each module in the package is documented by a general
 summary of its purpose and the list of classes and functions it provides.
 
-..
-  .. currentmodule:: datalad_container
-  .. autosummary::
-     :toctree: generated
+.. currentmodule:: datalad_container
+.. autosummary::
+   :toctree: generated
 
-     containers-list
-     containers-add
+   containers_list
+   containers_add
+
