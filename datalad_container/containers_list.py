@@ -62,8 +62,18 @@ class ContainersList(Interface):
                              **definitions[loc_cfg_var]['ui'][1]
                              )
 
-        for r in [n for n in listdir(op.join(ds.path, container_loc)) if
-                  not n.startswith(".")]:
+        from six import PY3
+
+        try:
+            location_content = listdir(op.join(ds.path, container_loc))
+        except FileNotFoundError if PY3 else (OSError, IOError) as e:
+            # TODO: Right now, just retunr nothing, since there is nothing
+            # But may also be an "impossible" result, since the configured
+            # common mountpoint isn't existing (needs "e.errno == errno.ENOENT"
+            # in addition in PY2)
+            return
+
+        for r in [n for n in location_content if not n.startswith(".")]:
             yield {'status': 'ok',
                    'action': 'containers_list',
                    'path': op.join(ds.path, container_loc, r),

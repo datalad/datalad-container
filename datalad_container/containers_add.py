@@ -121,6 +121,8 @@ class ContainersAdd(Interface):
 
         try:
             ds.repo.add_url_to_file(op.join(container_loc, name), url)
+            ds.save(op.join(container_loc, name),
+                    message="[DATALAD] Added container {name}".format(name=name))
             result["status"] = "ok"
         except Exception as e:
             result["status"] = "error"
@@ -134,3 +136,6 @@ class ContainersAdd(Interface):
             ds.config.add("datalad.containers.{}.exec".format(name), execute)
         if image:
             ds.config.add("datalad.containers.{}.image".format(name), image)
+        ds.save(op.join(".datalad", "config"),
+                message="[DATALAD] Store config for container '{name}'"
+                        "".format(name=name))
