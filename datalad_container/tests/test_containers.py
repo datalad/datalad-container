@@ -7,6 +7,7 @@ from datalad.api import install
 from datalad.api import containers_add
 from datalad.utils import chpwd
 
+from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import ok_
@@ -26,7 +27,7 @@ from six.moves.urllib.parse import urljoin
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 @serve_path_via_http
-def test_containers(ds_path, local_file, url):
+def test_container_files(ds_path, local_file, url):
 
     # setup things to add
     #
@@ -49,10 +50,13 @@ def test_containers(ds_path, local_file, url):
     assert_result_count(res, 0)
 
     # add first "image":
-    ds.containers_add(name="first", url=local_file)
-
+    res = ds.containers_add(name="first", url=local_file)
     ok_clean_git(ds.repo)
-    ok_(op.lexists(op.join(ds.path, ".datalad", "test-environments", "first")))
+
+    target_path = op.join(ds.path, ".datalad", "test-environments", "first")
+    assert_result_count(res, 1, status="ok", type="file", path=target_path,
+                        action="containers_add")
+    ok_(op.lexists(target_path))
     eq_(local_file, ds.config.get("datalad.containers.first.url"))
 
     # add a "remote" one:
@@ -61,13 +65,39 @@ def test_containers(ds_path, local_file, url):
                   value=remote_file,
                   where='dataset')
     ds.save(message="Configure URL for container 'second'")
-    ds.containers_add(name="second")
 
+    res = ds.containers_add(name="second")
     ok_clean_git(ds.repo)
-    ok_(op.lexists(op.join(ds.path, ".datalad", "test-environments", "second")))
+    target_path = op.join(ds.path, ".datalad", "test-environments", "second")
+    assert_result_count(res, 1, status="ok", type="file", path=target_path,
+                        action="containers_add")
+    ok_(op.lexists(target_path))
     # config wasn't changed:
     eq_(remote_file, ds.config.get("datalad.containers.second.url"))
 
     res = ds.containers_list()
     assert_result_count(res, 2,
                         status='ok', type='file', action='containers_list')
+
+
+@with_tree(tree={'some_container.img': "doesn't matter",
+                 'some_recipe.txt': "nobody cares"})
+@with_tempfile(mkdir=True)
+def test_container_dataset(container_ds, target_ds):
+
+    raise SkipTest("TODO")
+
+    # build a container dataset:
+    # import pdb; pdb.set_trace()
+    # c_ds = Dataset(container_ds).create(force=True)
+    # c_ds.add(['some_container.img', 'some_recipe.txt'])
+    # c_ds.config.add("datalad.containers."....)
+
+    # save()
+
+    # serve_via_http
+    #
+
+
+def test_container_from_subdataset():
+    raise SkipTest("TODO")
