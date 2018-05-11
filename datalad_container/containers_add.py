@@ -136,6 +136,8 @@ class ContainersAdd(Interface):
             ds.config.add("datalad.containers.{}.exec".format(name), execute)
         if image:
             ds.config.add("datalad.containers.{}.image".format(name), image)
-        ds.save(op.join(".datalad", "config"),
+
+        # TODO: Just save won't work in direct mode, since save fails to detect changes
+        ds.add(op.join(".datalad", "config"),
                 message="[DATALAD] Store config for container '{name}'"
                         "".format(name=name))
