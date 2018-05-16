@@ -77,7 +77,8 @@ script:
       --logging-level=INFO
       $TESTS_TO_PERFORM
   # Run doc examples
-  - $NOSE_WRAPPER tools/testing/run_doc_examples
+  # NOTE: We don't have a run_doc_examples ATM
+  # - $NOSE_WRAPPER tools/testing/run_doc_examples
   - if [ ! "${DATALAD_LOG_LEVEL:-}" = 2 ]; then
         PYTHONPATH=$PWD $NOSE_WRAPPER make -C docs html doctest;
     fi

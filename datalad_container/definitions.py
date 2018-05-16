@@ -6,8 +6,8 @@ definitions = {
         'ui': ('question', {
             'title': 'Container location',
             'text': 'path within the dataset where to store containers'}),
-            'default': op.join(".datalad", "environments"),
-            'type': EnsureStr(),
-            'destination': 'dataset'
+        'default': op.join(".datalad", "environments"),
+        'type': EnsureStr(),
+        'destination': 'dataset'
     },
 }
