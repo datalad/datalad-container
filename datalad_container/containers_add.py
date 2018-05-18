@@ -40,7 +40,7 @@ class ContainersAdd(Interface):
             constraints=EnsureDataset() | EnsureNone()
         ),
         name=Parameter(
-            args=("-n", "--name"),
+            args=("name",),
             doc="""The name to register the container with. This simultanously
                 determines the location within DATASET where to put that
                 container""",
