@@ -21,6 +21,14 @@ command_suite = (
             'containers_list',
         ),
         (
+            'datalad_container.containers_remove',
+            # name of the command class implementation in above module
+            'ContainersRemove',
+            'containers-remove',
+            'containers_remove',
+
+        ),
+        (
             'datalad_container.containers_add',
             # name of the command class implementation in above module
             'ContainersAdd',
