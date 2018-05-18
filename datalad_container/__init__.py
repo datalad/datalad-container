@@ -27,6 +27,13 @@ command_suite = (
             'containers-add',
             'containers_add',
 
+        ),
+        (
+            'datalad_container.containers_run',
+            'ContainersRun',
+            'containers-run',
+            'containers_run',
+
         )
     ]
 )
