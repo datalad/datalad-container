@@ -96,8 +96,9 @@ class ContainersAdd(Interface):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
 
+        # TODO inspecting a base location config is only needed when
+        # no --image option is given
         loc_cfg_var = "datalad.containers.location"
-
         # TODO: We should provide an entry point (or sth similar) for extensions
         # to get config definitions into the ConfigManager. In other words an
         # easy way to extend definitions in datalad's common_cfgs.py.
@@ -127,17 +128,20 @@ class ContainersAdd(Interface):
                 "'url' or config key 'datalad.containers.{}.url'"
                 "".format(name))
 
+        # collect bits for a final and single save() call
+        to_save = []
         image_loc = op.join(container_loc, name)
         try:
             ds.repo.add_url_to_file(image_loc, url)
-            ds.save(image_loc,
-                    message="[DATALAD] Added container {name}".format(name=name))
+            to_save.append(image_loc)
             result["status"] = "ok"
         except Exception as e:
             result["status"] = "error"
             result["message"] = str(e)
-
         yield result
+        # continue despite a remote access failure, the following config
+        # setting will enable running the command again with just the name
+        # given to ease a re-run
 
         # store configs
         ds.config.set("datalad.containers.{}.url".format(name), url)
@@ -145,8 +149,10 @@ class ContainersAdd(Interface):
             ds.config.add("datalad.containers.{}.exec".format(name), execute)
         if image:
             ds.config.add("datalad.containers.{}.image".format(name), image)
-
-        # TODO: Just save won't work in direct mode, since save fails to detect changes
-        ds.add(op.join(".datalad", "config"),
-                message="[DATALAD] Store config for container '{name}'"
-                        "".format(name=name))
+        # store changes
+        to_save.append(op.join(".datalad", "config"))
+        for r in ds.save(
+                path=to_save,
+                message="[DATALAD] Add containerized environment '{name}'".format(
+                    name=name)):
+            yield r
