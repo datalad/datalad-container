@@ -34,15 +34,15 @@ class ContainersAdd(Interface):
     _params_ = dict(
         dataset=Parameter(
             args=("-d", "--dataset"),
-            doc="""specify the dataset to add the container to. If no dataset is 
-            given, an attempt is made to identify the dataset based on the 
+            doc="""specify the dataset to add the container to. If no dataset is
+            given, an attempt is made to identify the dataset based on the
             current working directory""",
             constraints=EnsureDataset() | EnsureNone()
         ),
         name=Parameter(
             args=("-n", "--name"),
-            doc="""The name to register the container with. This simultanously 
-                determines the location within DATASET where to put that 
+            doc="""The name to register the container with. This simultanously
+                determines the location within DATASET where to put that
                 container""",
             metavar="NAME",
             constraints=EnsureStr(),
@@ -50,7 +50,7 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""An URL to get the container from. This alternatively can be
-                read from config (datalad.containers.NAME.url). If both are 
+                read from config (datalad.containers.NAME.url). If both are
                 available this parameter will take precedence""",
             metavar="URL",
             nargs="?",
@@ -62,9 +62,9 @@ class ContainersAdd(Interface):
         # container datasets
         execute=Parameter(
             args=("-e", "--execute"),
-            doc="""How to execute the container in case of a prepared command. 
-                For example this could read "singularity exec" or "docker run". If 
-                not set, a prepared command referencing this container will assume 
+            doc="""How to execute the container in case of a prepared command.
+                For example this could read "singularity exec" or "docker run". If
+                not set, a prepared command referencing this container will assume
                 the container image itself to be the relevant executable""",
             metavar="EXEC",
             nargs="?",
@@ -72,9 +72,9 @@ class ContainersAdd(Interface):
         ),
         image=Parameter(
             args=("-i", "--image"),
-            doc="""Path to the actual container image. This is relevant only in 
-                case the added container really is a dataset containing the 
-                image and is used to configure prepare commands in combination 
+            doc="""Path to the actual container image. This is relevant only in
+                case the added container really is a dataset containing the
+                image and is used to configure prepare commands in combination
                 with EXEC""",
             metavar="IMAGE",
             nargs="?",
@@ -115,9 +115,9 @@ class ContainersAdd(Interface):
             url = ds.config.get("datalad.containers.{}.url".format(name))
         if not url:
             raise InsufficientArgumentsError(
-                    "URL is required and can be provided either via parameter "
-                    "'url' or config key 'datalad.containers.{}.url'"
-                    "".format(name))
+                "URL is required and can be provided either via parameter "
+                "'url' or config key 'datalad.containers.{}.url'"
+                "".format(name))
 
         try:
             ds.repo.add_url_to_file(op.join(container_loc, name), url)
