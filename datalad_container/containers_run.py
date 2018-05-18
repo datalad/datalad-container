@@ -25,14 +25,6 @@ _run_params = dict(
         metavar="NAME",
         doc="""Specify the name of a known container to use for execution,
         in case multiple containers are configured."""),
-    # have to override the cmd parameter, because in `run` it says
-    # SHELL COMMAND but with a container it could be something totally
-    # different
-    cmd=Parameter(
-        args=("cmd",),
-        nargs=REMAINDER,
-        metavar='COMMAND',
-        doc="command for execution"),
 )
 
 
