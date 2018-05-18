@@ -1,6 +1,7 @@
 
 __docformat__ = 'restructuredtext'
 
+import re
 import logging
 import os.path as op
 from simplejson import dumps
@@ -91,6 +92,12 @@ class ContainersAdd(Interface):
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
+
+        # prevent madness in the config file
+        if not re.match(r'^[1-9a-zA-Z-]+$', name):
+            raise ValueError(
+                "Container names can only contain alphanumeric characters "
+                "and '-', got: '{}'".format(name))
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
