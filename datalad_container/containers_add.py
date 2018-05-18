@@ -16,6 +16,7 @@ from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
+from datalad.support.network import get_local_file_url
 
 # required bound commands
 from datalad.coreapi import save
@@ -52,9 +53,7 @@ class ContainersAdd(Interface):
         ),
         url=Parameter(
             args=("-u", "--url"),
-            doc="""An URL to get the container from. This alternatively can be
-                read from config (datalad.containers.NAME.url). If both are
-                available this parameter will take precedence""",
+            doc="""A URL (or local path) to get the container image from""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -127,34 +126,32 @@ class ContainersAdd(Interface):
             logger=lgr,
         )
 
-        if not url:
-            url = ds.config.get("datalad.containers.{}.url".format(name))
-        if not url:
-            raise InsufficientArgumentsError(
-                "URL is required and can be provided either via parameter "
-                "'url' or config key 'datalad.containers.{}.url'"
-                "".format(name))
-
         # collect bits for a final and single save() call
         to_save = []
-        try:
-            ds.repo.add_url_to_file(image, url)
+        if url:
+            if op.exists(url):
+                # annex wants a real url
+                url = get_local_file_url(url)
+            try:
+                ds.repo.add_url_to_file(image, url)
+            except Exception as e:
+                result["status"] = "error"
+                result["message"] = str(e)
+                yield result
             # TODO do we have to take care of making the image executable
             # if --call_fmt is not provided?
             to_save.append(image)
-            result["status"] = "ok"
-        except Exception as e:
-            result["status"] = "error"
-            result["message"] = str(e)
-        yield result
         # continue despite a remote access failure, the following config
         # setting will enable running the command again with just the name
         # given to ease a re-run
+        if not op.lexists(image):
+            result["status"] = "error"
+            result["message"] = ('no image at %s', image)
+            yield result
+            return
 
         # store configs
         cfgbasevar = "datalad.containers.{}".format(name)
-        # TODO XXX why does it need to store the URL? annex does that already
-        ds.config.set("{}.url".format(cfgbasevar), url)
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
@@ -169,6 +166,8 @@ class ContainersAdd(Interface):
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
                 path=to_save,
-                message="[DATALAD] Add containerized environment '{name}'".format(
+                message="[DATALAD] Configure containerized environment '{name}'".format(
                     name=name)):
             yield r
+        result["status"] = "ok"
+        yield result
