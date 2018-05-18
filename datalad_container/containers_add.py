@@ -130,6 +130,8 @@ class ContainersAdd(Interface):
         to_save = []
         try:
             ds.repo.add_url_to_file(image, url)
+            # TODO do we have to take care of making the image executable
+            # if --execute is not provided?
             to_save.append(image)
             result["status"] = "ok"
         except Exception as e:
