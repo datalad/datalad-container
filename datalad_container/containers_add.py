@@ -54,7 +54,6 @@ class ContainersAdd(Interface):
                 read from config (datalad.containers.NAME.url). If both are
                 available this parameter will take precedence""",
             metavar="URL",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
         ),
 
@@ -68,17 +67,14 @@ class ContainersAdd(Interface):
                 not set, a prepared command referencing this container will assume
                 the container image itself to be the relevant executable""",
             metavar="EXEC",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
         ),
         image=Parameter(
             args=("-i", "--image"),
-            doc="""Path to the actual container image. This is relevant only in
-                case the added container really is a dataset containing the
-                image and is used to configure prepare commands in combination
-                with EXEC""",
+            doc="""Relative path of the container image within the dataset. If not
+                given, a default location will be determined using the
+                `name` argument.""",
             metavar="IMAGE",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
 
         )
@@ -94,28 +90,30 @@ class ContainersAdd(Interface):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
 
-        # TODO inspecting a base location config is only needed when
-        # no --image option is given
-        loc_cfg_var = "datalad.containers.location"
-        # TODO: We should provide an entry point (or sth similar) for extensions
-        # to get config definitions into the ConfigManager. In other words an
-        # easy way to extend definitions in datalad's common_cfgs.py.
-        container_loc = \
-            ds.config.obtain(
-                loc_cfg_var,
-                where=definitions[loc_cfg_var]['destination'],
-                # if not False it would actually modify the
-                # dataset config file -- undesirable
-                store=False,
-                default=definitions[loc_cfg_var]['default'],
-                dialog_type=definitions[loc_cfg_var]['ui'][0],
-                valtype=definitions[loc_cfg_var]['type'],
-                **definitions[loc_cfg_var]['ui'][1]
-            )
+        if not image:
+            loc_cfg_var = "datalad.containers.location"
+            # TODO: We should provide an entry point (or sth similar) for extensions
+            # to get config definitions into the ConfigManager. In other words an
+            # easy way to extend definitions in datalad's common_cfgs.py.
+            container_loc = \
+                ds.config.obtain(
+                    loc_cfg_var,
+                    where=definitions[loc_cfg_var]['destination'],
+                    # if not False it would actually modify the
+                    # dataset config file -- undesirable
+                    store=False,
+                    default=definitions[loc_cfg_var]['default'],
+                    dialog_type=definitions[loc_cfg_var]['ui'][0],
+                    valtype=definitions[loc_cfg_var]['type'],
+                    **definitions[loc_cfg_var]['ui'][1]
+                )
+            image = op.join(ds.path, container_loc, name, 'image')
+        else:
+            image = op.join(ds.path, image)
 
         result = get_status_dict(
             action="containers_add",
-            path=op.join(ds.path, container_loc, name),
+            path=image,
             type="file",
             logger=lgr,
         )
@@ -130,10 +128,9 @@ class ContainersAdd(Interface):
 
         # collect bits for a final and single save() call
         to_save = []
-        image_loc = op.join(container_loc, name)
         try:
-            ds.repo.add_url_to_file(image_loc, url)
-            to_save.append(image_loc)
+            ds.repo.add_url_to_file(image, url)
+            to_save.append(image)
             result["status"] = "ok"
         except Exception as e:
             result["status"] = "error"
@@ -144,11 +141,19 @@ class ContainersAdd(Interface):
         # given to ease a re-run
 
         # store configs
-        ds.config.set("datalad.containers.{}.url".format(name), url)
+        cfgbasevar = "datalad.containers.{}".format(name)
+        # TODO XXX why does it need to store the URL? annex does that already
+        ds.config.set("{}.url".format(cfgbasevar), url)
+        # force store the image, and prevent multiple entries
+        ds.config.set(
+            "{}.image".format(cfgbasevar),
+            op.relpath(image, start=ds.path),
+            force=True)
         if execute:
-            ds.config.add("datalad.containers.{}.exec".format(name), execute)
-        if image:
-            ds.config.add("datalad.containers.{}.image".format(name), image)
+            ds.config.set(
+                "{}.exec".format(cfgbasevar),
+                execute,
+                force=True)
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
