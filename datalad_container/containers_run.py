@@ -45,7 +45,7 @@ class ContainersRun(Interface):
 
     Container(s) need to be configured beforehand (see containers-add).
     If only one container is known, it will be selected automatically,
-    otherwise a specific container has to be selected.
+    otherwise a specific container has to be specified.
 
     A command is generated based on the input arguments such that the
     container image itself will be recorded as an input dependency of
