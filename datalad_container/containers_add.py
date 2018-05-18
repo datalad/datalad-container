@@ -3,6 +3,7 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
+from simplejson import dumps
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -60,13 +61,14 @@ class ContainersAdd(Interface):
         # TODO: The "prepared command stuff should ultimately go somewhere else
         # (probably datalad-run). But first figure out, how exactly to address
         # container datasets
-        execute=Parameter(
-            args=("-e", "--execute"),
-            doc="""How to execute the container in case of a prepared command.
-                For example this could read "singularity exec" or "docker run". If
-                not set, a prepared command referencing this container will assume
-                the container image itself to be the relevant executable""",
-            metavar="EXEC",
+        call_fmt=Parameter(
+            args=("--call-fmt",),
+            doc="""Command format string indicating how to execute a command in
+            this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
+            is a placeholder for the path to the container image and '{cmd}'
+            is replaced with the desired command.""",
+            metavar="FORMAT",
+            nargs='+',
             constraints=EnsureStr() | EnsureNone(),
         ),
         image=Parameter(
@@ -83,7 +85,7 @@ class ContainersAdd(Interface):
     @staticmethod
     @datasetmethod(name='containers_add')
     @eval_results
-    def __call__(name, url=None, dataset=None, execute=None, image=None):
+    def __call__(name, url=None, dataset=None, call_fmt=None, image=None):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -131,7 +133,7 @@ class ContainersAdd(Interface):
         try:
             ds.repo.add_url_to_file(image, url)
             # TODO do we have to take care of making the image executable
-            # if --execute is not provided?
+            # if --call_fmt is not provided?
             to_save.append(image)
             result["status"] = "ok"
         except Exception as e:
@@ -151,10 +153,10 @@ class ContainersAdd(Interface):
             "{}.image".format(cfgbasevar),
             op.relpath(image, start=ds.path),
             force=True)
-        if execute:
+        if call_fmt:
             ds.config.set(
-                "{}.exec".format(cfgbasevar),
-                execute,
+                "{}.cmdexec".format(cfgbasevar),
+                dumps(call_fmt),
                 force=True)
         # store changes
         to_save.append(op.join(".datalad", "config"))
