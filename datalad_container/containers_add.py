@@ -2,7 +2,6 @@
 __docformat__ = 'restructuredtext'
 
 import logging
-from os import listdir
 import os.path as op
 
 from datalad.interface.base import Interface
@@ -11,14 +10,13 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
-from datalad.support.constraints import EnsureChoice, EnsureNone, EnsureStr
+from datalad.support.constraints import EnsureStr
+from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
-from datalad.interface.annotate_paths import AnnotatePaths
-from datalad.interface.annotate_paths import annotated2content_by_ds
 
 # required bound commands
-from datalad.coreapi import add
+from datalad.coreapi import save
 
 from .definitions import definitions
 
@@ -115,10 +113,12 @@ class ContainersAdd(Interface):
                 **definitions[loc_cfg_var]['ui'][1]
             )
 
-        result = {"action": "containers_add",
-                  "path": op.join(ds.path, container_loc, name),
-                  "type": "file"
-                  }
+        result = get_status_dict(
+            action="containers_add",
+            path=op.join(ds.path, container_loc, name),
+            type="file",
+            logger=lgr,
+        )
 
         if not url:
             url = ds.config.get("datalad.containers.{}.url".format(name))
