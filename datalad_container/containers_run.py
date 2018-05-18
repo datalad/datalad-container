@@ -68,7 +68,7 @@ class ContainersRun(Interface):
 
         if container_name is None and len(containers) == 1:
             # no questions asked, take container and run
-            container = containers.pop()
+            container = containers.popitem()[1]
         elif container_name and container_name in containers:
             container = containers[container_name]
         else:
