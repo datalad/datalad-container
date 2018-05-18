@@ -17,6 +17,9 @@ from datalad.interface.results import get_status_dict
 from datalad.interface.annotate_paths import AnnotatePaths
 from datalad.interface.annotate_paths import annotated2content_by_ds
 
+# required bound commands
+from datalad.coreapi import add
+
 from .definitions import definitions
 
 lgr = logging.getLogger("datalad.containers.containers_add")
@@ -99,14 +102,17 @@ class ContainersAdd(Interface):
         # to get config definitions into the ConfigManager. In other words an
         # easy way to extend definitions in datalad's common_cfgs.py.
         container_loc = \
-            ds.config.obtain(loc_cfg_var,
-                             where=definitions[loc_cfg_var]['destination'],
-                             store=False,
-                             default=definitions[loc_cfg_var]['default'],
-                             dialog_type=definitions[loc_cfg_var]['ui'][0],
-                             valtype=definitions[loc_cfg_var]['type'],
-                             **definitions[loc_cfg_var]['ui'][1]
-                             )
+            ds.config.obtain(
+                loc_cfg_var,
+                where=definitions[loc_cfg_var]['destination'],
+                # if not False it would actually modify the
+                # dataset config file -- undesirable
+                store=False,
+                default=definitions[loc_cfg_var]['default'],
+                dialog_type=definitions[loc_cfg_var]['ui'][0],
+                valtype=definitions[loc_cfg_var]['type'],
+                **definitions[loc_cfg_var]['ui'][1]
+            )
 
         result = {"action": "containers_add",
                   "path": op.join(ds.path, container_loc, name),
@@ -121,9 +127,10 @@ class ContainersAdd(Interface):
                 "'url' or config key 'datalad.containers.{}.url'"
                 "".format(name))
 
+        image_loc = op.join(container_loc, name)
         try:
-            ds.repo.add_url_to_file(op.join(container_loc, name), url)
-            ds.save(op.join(container_loc, name),
+            ds.repo.add_url_to_file(image_loc, url)
+            ds.save(image_loc,
                     message="[DATALAD] Added container {name}".format(name=name))
             result["status"] = "ok"
         except Exception as e:
