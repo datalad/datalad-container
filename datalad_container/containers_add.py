@@ -2,7 +2,6 @@
 __docformat__ = 'restructuredtext'
 
 import logging
-from os import listdir
 import os.path as op
 
 from datalad.interface.base import Interface
@@ -11,11 +10,13 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
-from datalad.support.constraints import EnsureChoice, EnsureNone, EnsureStr
+from datalad.support.constraints import EnsureStr
+from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
-from datalad.interface.annotate_paths import AnnotatePaths
-from datalad.interface.annotate_paths import annotated2content_by_ds
+
+# required bound commands
+from datalad.coreapi import save
 
 from .definitions import definitions
 
@@ -34,15 +35,15 @@ class ContainersAdd(Interface):
     _params_ = dict(
         dataset=Parameter(
             args=("-d", "--dataset"),
-            doc="""specify the dataset to add the container to. If no dataset is 
-            given, an attempt is made to identify the dataset based on the 
+            doc="""specify the dataset to add the container to. If no dataset is
+            given, an attempt is made to identify the dataset based on the
             current working directory""",
             constraints=EnsureDataset() | EnsureNone()
         ),
         name=Parameter(
-            args=("-n", "--name"),
-            doc="""The name to register the container with. This simultanously 
-                determines the location within DATASET where to put that 
+            args=("name",),
+            doc="""The name to register the container with. This simultanously
+                determines the location within DATASET where to put that
                 container""",
             metavar="NAME",
             constraints=EnsureStr(),
@@ -50,10 +51,9 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""An URL to get the container from. This alternatively can be
-                read from config (datalad.containers.NAME.url). If both are 
+                read from config (datalad.containers.NAME.url). If both are
                 available this parameter will take precedence""",
             metavar="URL",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
         ),
 
@@ -62,22 +62,19 @@ class ContainersAdd(Interface):
         # container datasets
         execute=Parameter(
             args=("-e", "--execute"),
-            doc="""How to execute the container in case of a prepared command. 
-                For example this could read "singularity exec" or "docker run". If 
-                not set, a prepared command referencing this container will assume 
+            doc="""How to execute the container in case of a prepared command.
+                For example this could read "singularity exec" or "docker run". If
+                not set, a prepared command referencing this container will assume
                 the container image itself to be the relevant executable""",
             metavar="EXEC",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
         ),
         image=Parameter(
             args=("-i", "--image"),
-            doc="""Path to the actual container image. This is relevant only in 
-                case the added container really is a dataset containing the 
-                image and is used to configure prepare commands in combination 
-                with EXEC""",
+            doc="""Relative path of the container image within the dataset. If not
+                given, a default location will be determined using the
+                `name` argument.""",
             metavar="IMAGE",
-            nargs="?",
             constraints=EnsureStr() | EnsureNone(),
 
         )
@@ -87,57 +84,82 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, execute=None, image=None):
+        if not name:
+            raise InsufficientArgumentsError("`name` argument is required")
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
 
-        loc_cfg_var = "datalad.containers.location"
+        if not image:
+            loc_cfg_var = "datalad.containers.location"
+            # TODO: We should provide an entry point (or sth similar) for extensions
+            # to get config definitions into the ConfigManager. In other words an
+            # easy way to extend definitions in datalad's common_cfgs.py.
+            container_loc = \
+                ds.config.obtain(
+                    loc_cfg_var,
+                    where=definitions[loc_cfg_var]['destination'],
+                    # if not False it would actually modify the
+                    # dataset config file -- undesirable
+                    store=False,
+                    default=definitions[loc_cfg_var]['default'],
+                    dialog_type=definitions[loc_cfg_var]['ui'][0],
+                    valtype=definitions[loc_cfg_var]['type'],
+                    **definitions[loc_cfg_var]['ui'][1]
+                )
+            image = op.join(ds.path, container_loc, name, 'image')
+        else:
+            image = op.join(ds.path, image)
 
-        # TODO: We should provide an entry point (or sth similar) for extensions
-        # to get config definitions into the ConfigManager. In other words an
-        # easy way to extend definitions in datalad's common_cfgs.py.
-        container_loc = \
-            ds.config.obtain(loc_cfg_var,
-                             where=definitions[loc_cfg_var]['destination'],
-                             store=True,
-                             default=definitions[loc_cfg_var]['default'],
-                             dialog_type=definitions[loc_cfg_var]['ui'][0],
-                             valtype=definitions[loc_cfg_var]['type'],
-                             **definitions[loc_cfg_var]['ui'][1]
-                             )
-
-        result = {"action": "containers_add",
-                  "path": op.join(ds.path, container_loc, name),
-                  "type": "file"
-                  }
+        result = get_status_dict(
+            action="containers_add",
+            path=image,
+            type="file",
+            logger=lgr,
+        )
 
         if not url:
             url = ds.config.get("datalad.containers.{}.url".format(name))
         if not url:
             raise InsufficientArgumentsError(
-                    "URL is required and can be provided either via parameter "
-                    "'url' or config key 'datalad.containers.{}.url'"
-                    "".format(name))
+                "URL is required and can be provided either via parameter "
+                "'url' or config key 'datalad.containers.{}.url'"
+                "".format(name))
 
+        # collect bits for a final and single save() call
+        to_save = []
         try:
-            ds.repo.add_url_to_file(op.join(container_loc, name), url)
-            ds.save(op.join(container_loc, name),
-                    message="[DATALAD] Added container {name}".format(name=name))
+            ds.repo.add_url_to_file(image, url)
+            # TODO do we have to take care of making the image executable
+            # if --execute is not provided?
+            to_save.append(image)
             result["status"] = "ok"
         except Exception as e:
             result["status"] = "error"
             result["message"] = str(e)
-
         yield result
+        # continue despite a remote access failure, the following config
+        # setting will enable running the command again with just the name
+        # given to ease a re-run
 
         # store configs
-        ds.config.set("datalad.containers.{}.url".format(name), url)
+        cfgbasevar = "datalad.containers.{}".format(name)
+        # TODO XXX why does it need to store the URL? annex does that already
+        ds.config.set("{}.url".format(cfgbasevar), url)
+        # force store the image, and prevent multiple entries
+        ds.config.set(
+            "{}.image".format(cfgbasevar),
+            op.relpath(image, start=ds.path),
+            force=True)
         if execute:
-            ds.config.add("datalad.containers.{}.exec".format(name), execute)
-        if image:
-            ds.config.add("datalad.containers.{}.image".format(name), image)
-
-        # TODO: Just save won't work in direct mode, since save fails to detect changes
-        ds.add(op.join(".datalad", "config"),
-                message="[DATALAD] Store config for container '{name}'"
-                        "".format(name=name))
+            ds.config.set(
+                "{}.exec".format(cfgbasevar),
+                execute,
+                force=True)
+        # store changes
+        to_save.append(op.join(".datalad", "config"))
+        for r in ds.save(
+                path=to_save,
+                message="[DATALAD] Add containerized environment '{name}'".format(
+                    name=name)):
+            yield r

@@ -50,10 +50,10 @@ def test_container_files(ds_path, local_file, url):
     assert_result_count(res, 0)
 
     # add first "image":
-    res = ds.containers_add(name="first", url=local_file)
+    target_path = op.join(ds.path, ".datalad", "test-environments", "first")
+    res = ds.containers_add(name="first", url=local_file, image=target_path)
     ok_clean_git(ds.repo)
 
-    target_path = op.join(ds.path, ".datalad", "test-environments", "first")
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
                         action="containers_add")
     ok_(op.lexists(target_path))
@@ -66,9 +66,9 @@ def test_container_files(ds_path, local_file, url):
                   where='dataset')
     ds.save(message="Configure URL for container 'second'")
 
-    res = ds.containers_add(name="second")
-    ok_clean_git(ds.repo)
     target_path = op.join(ds.path, ".datalad", "test-environments", "second")
+    res = ds.containers_add(name="second", image=target_path)
+    ok_clean_git(ds.repo)
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
                         action="containers_add")
     ok_(op.lexists(target_path))
