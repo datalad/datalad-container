@@ -57,27 +57,6 @@ def test_container_files(ds_path, local_file, url):
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
                         action="containers_add")
     ok_(op.lexists(target_path))
-    eq_(local_file, ds.config.get("datalad.containers.first.url"))
-
-    # add a "remote" one:
-    # don't provide url in the call, but in a config:
-    ds.config.add("datalad.containers.second.url",
-                  value=remote_file,
-                  where='dataset')
-    ds.save(message="Configure URL for container 'second'")
-
-    target_path = op.join(ds.path, ".datalad", "test-environments", "second")
-    res = ds.containers_add(name="second", image=target_path)
-    ok_clean_git(ds.repo)
-    assert_result_count(res, 1, status="ok", type="file", path=target_path,
-                        action="containers_add")
-    ok_(op.lexists(target_path))
-    # config wasn't changed:
-    eq_(remote_file, ds.config.get("datalad.containers.second.url"))
-
-    res = ds.containers_list()
-    assert_result_count(res, 2,
-                        status='ok', type='file', action='containers')
 
 
 @with_tree(tree={'some_container.img': "doesn't matter",
