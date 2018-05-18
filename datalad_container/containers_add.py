@@ -87,6 +87,8 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, execute=None, image=None):
+        if not name:
+            raise InsufficientArgumentsError("`name` argument is required")
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
@@ -99,7 +101,7 @@ class ContainersAdd(Interface):
         container_loc = \
             ds.config.obtain(loc_cfg_var,
                              where=definitions[loc_cfg_var]['destination'],
-                             store=True,
+                             store=False,
                              default=definitions[loc_cfg_var]['default'],
                              dialog_type=definitions[loc_cfg_var]['ui'][0],
                              valtype=definitions[loc_cfg_var]['type'],
