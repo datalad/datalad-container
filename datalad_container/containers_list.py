@@ -67,6 +67,7 @@ class ContainersList(Interface):
                 status='ok',
                 action='containers',
                 name=k,
+                type='file',
                 path=op.join(ds.path, v.pop('image')),
                 # TODO
                 #state='absent' if ... else 'present'

@@ -77,7 +77,7 @@ def test_container_files(ds_path, local_file, url):
 
     res = ds.containers_list()
     assert_result_count(res, 2,
-                        status='ok', type='file', action='containers_list')
+                        status='ok', type='file', action='containers')
 
 
 @with_tree(tree={'some_container.img': "doesn't matter",
