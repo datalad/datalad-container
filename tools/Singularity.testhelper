@@ -1,0 +1,7 @@
+#
+# This produces a minimal image that can be used for testing the
+# extension itself.
+#
+
+Bootstrap:docker
+From:debian:stable-slim
