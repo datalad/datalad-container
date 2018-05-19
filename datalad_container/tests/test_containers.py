@@ -18,7 +18,6 @@ from datalad.support.network import get_local_file_url
 @with_tree(tree={'some_container.img': "doesn't matter"})
 @serve_path_via_http
 def test_container_files(ds_path, local_file, url):
-
     # setup things to add
     #
     # Note: Since "adding" as a container doesn't actually call anything or use
@@ -38,9 +37,10 @@ def test_container_files(ds_path, local_file, url):
     res = ds.containers_list()
     assert_result_count(res, 0)
 
-    # add first "image":
-    target_path = op.join(ds.path, ".datalad", "test-environments", "first")
-    res = ds.containers_add(label="first", url=local_file, image=target_path)
+    # add first "image": must end up at the configured default location
+    target_path = op.join(
+        ds.path, ".datalad", "test-environments", "first", "image")
+    res = ds.containers_add(label="first", url=local_file)
     ok_clean_git(ds.repo)
 
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
