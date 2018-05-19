@@ -7,6 +7,7 @@ import logging
 import os.path as op
 from simplejson import dumps
 from argparse import REMAINDER
+from simplejson import loads
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -134,8 +135,19 @@ class ContainersAdd(Interface):
         to_save = []
         if url:
             if op.exists(url):
+                lgr.debug(
+                    'Convert local path specification into a file:// URL')
                 # annex wants a real url
                 url = get_local_file_url(url)
+            elif url.startswith('shub://'):
+                lgr.debug('Query singularity-hub for image download URL')
+                import requests
+                req = requests.get(
+                    'https://www.singularity-hub.org/api/container/{}'.format(
+                        url[7:]))
+                shub_info = loads(req.text)
+                url = shub_info['image']
+            lgr.debug('Attempt to obtain container image from: %s', url)
             try:
                 ds.repo.add_url_to_file(image, url)
             except Exception as e:
