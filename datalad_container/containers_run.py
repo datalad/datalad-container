@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext'
 
 import logging
+import os.path as op
 from simplejson import loads
 
 from datalad.interface.base import Interface
@@ -13,6 +14,7 @@ from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
 
 from datalad.interface.run import Run
+from datalad.interface.run import get_command_pwds
 from datalad_container.containers_list import ContainersList
 
 lgr = logging.getLogger("datalad.containers.containers_run")
@@ -51,6 +53,7 @@ class ContainersRun(Interface):
     @eval_results
     def __call__(cmd, container_label=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None):
+        pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
@@ -69,6 +72,8 @@ class ContainersRun(Interface):
                 'Container selection impossible: not specified or unknown '
                 '(known containers are: {})'.format(list(containers.keys())))
 
+        image_path = op.relpath(container["path"], pwd)
+
         # sure we could check whether the container image is present,
         # but it might live in a subdataset that isn't even installed yet
         # let's leave all this business to `get` that is called by `run`
@@ -81,7 +86,7 @@ class ContainersRun(Interface):
                 if c == '{cmd}':
                     fullcmd.extend(cmd)
                 elif c == '{img}':
-                    fullcmd.append(container['path'])
+                    fullcmd.append(image_path)
                 else:
                     fullcmd.append(c)
             cmd = fullcmd
@@ -90,8 +95,7 @@ class ContainersRun(Interface):
             cmd = [container['path']] + cmd
 
         # with amend inputs to also include the container image
-        inputs = [container['path']] if inputs is None \
-            else inputs + [container['path']]
+        inputs = (inputs or []) + [image_path]
 
         # fire!
         for r in Run.__call__(
