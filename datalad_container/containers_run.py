@@ -3,7 +3,6 @@ __docformat__ = 'restructuredtext'
 
 import logging
 from simplejson import loads
-from argparse import REMAINDER
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
