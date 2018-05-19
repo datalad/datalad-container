@@ -49,15 +49,15 @@ class ContainersList(Interface):
                 # not an interesting variable
                 continue
             var_comps = var[len(var_prefix):].split('.')
-            cname = var_comps[0]
+            clabel = var_comps[0]
             ccfgname = '.'.join(var_comps[1:])
             if not ccfgname:
                 continue
 
-            cinfo = containers.get(cname, {})
+            cinfo = containers.get(clabel, {})
             cinfo[ccfgname] = value
 
-            containers[cname] = cinfo
+            containers[clabel] = cinfo
 
         for k, v in containers.items():
             if 'image' not in v:
@@ -66,7 +66,7 @@ class ContainersList(Interface):
             res = get_status_dict(
                 status='ok',
                 action='containers',
-                name=k,
+                label=k,
                 type='file',
                 path=op.join(ds.path, v.pop('image')),
                 # TODO
