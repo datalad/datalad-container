@@ -9,10 +9,8 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
-## 0.1 (??? ??, ????) -- The Release
+## 0.1 (May 19, 2018) -- The Release
 
-### Major refactoring and deprecations
-
-### Enhancements and new features
-
-### Fixes
+- Initial release with basic functionality to add, remove, and list
+  containers in a dataset, plus a `run` command wrapper that injects
+  the container image as an input dependency of a command call.
