@@ -55,7 +55,7 @@ class ContainersRun(Interface):
                              purpose='run a containerized command execution')
 
         # get the container list
-        containers = {c['name']: c
+        containers = {c['label']: c
                       for c in ContainersList.__call__(dataset=ds)}
 
         if container_name is None and len(containers) == 1:
