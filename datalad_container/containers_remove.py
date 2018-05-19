@@ -69,7 +69,7 @@ class ContainersRemove(Interface):
         to_save = []
         if remove_image and imagecfg in ds.config:
             imagepath = ds.config.get(imagecfg)
-            if op.lexists(imagepath):
+            if op.lexists(op.join(ds.path, imagepath)):
                 for r in ds.remove(
                         path=imagepath,
                         # XXX shortcomming: this is the only way to say:

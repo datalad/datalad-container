@@ -3,6 +3,8 @@ import os.path as op
 from datalad.api import Dataset
 from datalad.api import install
 from datalad.api import containers_add
+from datalad.api import containers_remove
+from datalad.api import containers_list
 
 from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
@@ -38,7 +40,6 @@ def test_add_noop(path):
     assert_result_count(res, 1, action='save', status='ok')
 
 
-
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 @serve_path_via_http
@@ -71,6 +72,22 @@ def test_container_files(ds_path, local_file, url):
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
                         action="containers_add")
     ok_(op.lexists(target_path))
+
+    res = ds.containers_list()
+    assert_result_count(res, 1)
+    assert_result_count(
+        res, 1,
+        label='first', type='file', action='containers', status='ok',
+        path=target_path)
+
+    # and kill it again
+    # but needs label
+    assert_raises(TypeError, ds.containers_remove)
+    res = ds.containers_remove('first', remove_image=True)
+    assert_status('ok', res)
+    assert_result_count(ds.containers_list(), 0)
+    # image removed
+    assert(not op.lexists(target_path))
 
 
 @with_tree(tree={'some_container.img': "doesn't matter",
