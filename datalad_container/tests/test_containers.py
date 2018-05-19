@@ -8,10 +8,35 @@ from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import ok_
+from datalad.tests.utils import assert_status
+from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
+
+
+@with_tempfile
+def test_add_noop(path):
+    ds = Dataset(path).create()
+    ok_clean_git(ds.path)
+    assert_raises(TypeError, ds.containers_add)
+    # fails when there is no image
+    assert_status('error', ds.containers_add('label', on_failure='ignore'))
+    # no config change
+    ok_clean_git(ds.path)
+    # place a dummy "image" file
+    with open(op.join(ds.path, 'dummy'), 'w') as f:
+        f.write('some')
+    ds.add('dummy')
+    ok_clean_git(ds.path)
+    # config will be added, as long as there is a file, even when URL access
+    # fails
+    res = ds.containers_add('broken', url='bogus', image='dummy',
+                            on_failure='ignore')
+    assert_status('ok', res)
+    assert_result_count(res, 1, action='save', status='ok')
+
 
 
 @with_tempfile
