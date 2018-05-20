@@ -4,8 +4,7 @@ from datalad.api import Dataset
 from datalad.api import create
 from datalad.api import containers_add
 from datalad.api import containers_run
-
-from datalad_container.tests.utils import get_singularity_image
+from datalad.api import containers_list
 
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import assert_result_count
@@ -19,10 +18,14 @@ def test_container_files(path):
     # plug in a proper singularity image
     ds.containers_add(
         'mycontainer',
-        url=get_singularity_image(),
+        url='shub://datalad/datalad-container:testhelper',
         image='righthere',
         # this should eventually be replaced with a dedicated singularity mode
         call_fmt=['singularity', 'exec', '{img}', '{cmd}'])
+    assert_result_count(
+        ds.containers_list(), 1,
+        path=op.join(ds.path, 'righthere'),
+        label='mycontainer')
     ok_clean_git(path)
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
