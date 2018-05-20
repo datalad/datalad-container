@@ -29,6 +29,25 @@ from .definitions import definitions
 lgr = logging.getLogger("datalad.containers.containers_add")
 
 
+def _resolve_img_url(url):
+    """Takes a URL and tries to resolve it to an actual download
+    URL that `annex addurl` can handle"""
+    if op.exists(url):
+        lgr.debug(
+            'Convert local path specification into a file:// URL')
+        # annex wants a real url
+        url = get_local_file_url(url)
+    elif url.startswith('shub://'):
+        lgr.debug('Query singularity-hub for image download URL')
+        import requests
+        req = requests.get(
+            'https://www.singularity-hub.org/api/container/{}'.format(
+                url[7:]))
+        shub_info = loads(req.text)
+        url = shub_info['image']
+    return url
+
+
 @build_doc
 # all commands must be derived from Interface
 class ContainersAdd(Interface):
@@ -133,23 +152,12 @@ class ContainersAdd(Interface):
 
         # collect bits for a final and single save() call
         to_save = []
+        imgurl = url
         if url:
-            if op.exists(url):
-                lgr.debug(
-                    'Convert local path specification into a file:// URL')
-                # annex wants a real url
-                url = get_local_file_url(url)
-            elif url.startswith('shub://'):
-                lgr.debug('Query singularity-hub for image download URL')
-                import requests
-                req = requests.get(
-                    'https://www.singularity-hub.org/api/container/{}'.format(
-                        url[7:]))
-                shub_info = loads(req.text)
-                url = shub_info['image']
-            lgr.debug('Attempt to obtain container image from: %s', url)
+            imgurl = _resolve_img_url(url)
+            lgr.debug('Attempt to obtain container image from: %s', imgurl)
             try:
-                ds.repo.add_url_to_file(image, url)
+                ds.repo.add_url_to_file(image, imgurl)
             except Exception as e:
                 result["status"] = "error"
                 result["message"] = str(e)
@@ -168,6 +176,11 @@ class ContainersAdd(Interface):
 
         # store configs
         cfgbasevar = "datalad.containers.{}".format(name)
+        if imgurl != url:
+            # store originally given URL, as it resolves to something
+            # different and maybe can be used to update the container
+            # at a later point in time
+            ds.config.set("{}.updateurl".format(cfgbasevar), url)
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
