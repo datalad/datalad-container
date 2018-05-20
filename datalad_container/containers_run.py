@@ -1,3 +1,4 @@
+"""Drop-in replacement for `datalad run` for command execution in a container"""
 
 __docformat__ = 'restructuredtext'
 

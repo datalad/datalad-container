@@ -1,3 +1,4 @@
+"""Add a container environment to a dataset"""
 
 __docformat__ = 'restructuredtext'
 

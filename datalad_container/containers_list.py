@@ -1,3 +1,4 @@
+"""List known container environments of a dataset"""
 
 __docformat__ = 'restructuredtext'
 
