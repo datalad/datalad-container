@@ -1,3 +1,4 @@
+"""Remove a container environment from a dataset"""
 
 __docformat__ = 'restructuredtext'
 

@@ -14,6 +14,12 @@ from distutils.errors import DistutilsOptionError
 import datetime
 import formatters as fmt
 
+cmdline_command_names = (
+    'containers-list',
+    'containers-add',
+    'containers-remove',
+    'containers-run',
+)
 
 def _path_rel2file(p):
     return opj(dirname(__file__), p)
@@ -91,7 +97,7 @@ class BuildManPage(Command):
                                 (fmt.RSTManPageFormatter, self.rstpath, 'rst')):
             if not os.path.exists(opath):
                 os.makedirs(opath)
-            for cmdname in ('containers-list', 'containers-add'):
+            for cmdname in cmdline_command_names:
                 p = self._parser[cmdname]
                 cmdname = "{0}{1}".format(
                     'datalad-' if cmdname != 'datalad' else '',
