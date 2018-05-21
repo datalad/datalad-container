@@ -23,8 +23,9 @@ def test_container_files(path):
         'mycontainer',
         url=testimg_url,
         image='righthere',
-        # this should eventually be replaced with a dedicated singularity mode
-        call_fmt=['singularity', 'exec', '{img}', '{cmd}'])
+        # the next one is auto-guessed
+        #call_fmt=['singularity', 'exec', '{img}', '{cmd}']
+    )
     assert_result_count(
         ds.containers_list(), 1,
         path=op.join(ds.path, 'righthere'),

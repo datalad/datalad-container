@@ -48,6 +48,19 @@ def _resolve_img_url(url):
     return url
 
 
+def _guess_call_fmt(ds, name, url):
+    """Helper to guess a container exec setup based on
+    - a name (to be able to look up more config
+    - a plain url to make inference based on the source location
+
+    Should return `None` is no guess can be made.
+    """
+    if url is None:
+        return None
+    elif url.startswith('shub://'):
+        return ['singularity', 'exec', '{img}', '{cmd}']
+
+
 @build_doc
 # all commands must be derived from Interface
 class ContainersAdd(Interface):
@@ -150,6 +163,10 @@ class ContainersAdd(Interface):
             logger=lgr,
         )
 
+        if call_fmt is None:
+            # maybe built in knowledge can help
+            call_fmt = _guess_call_fmt(ds, name, url)
+
         # collect bits for a final and single save() call
         to_save = []
         imgurl = url
@@ -157,6 +174,7 @@ class ContainersAdd(Interface):
             imgurl = _resolve_img_url(url)
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
             try:
+                # ATM gives no progress indication
                 ds.repo.add_url_to_file(image, imgurl)
             except Exception as e:
                 result["status"] = "error"
