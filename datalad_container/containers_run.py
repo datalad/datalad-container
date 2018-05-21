@@ -100,5 +100,6 @@ class ContainersRun(Interface):
                 inputs=inputs,
                 outputs=outputs,
                 message=message,
-                expand=expand):
+                expand=expand,
+                on_failure="ignore"):
             yield r
