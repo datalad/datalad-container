@@ -94,7 +94,7 @@ class ContainersAdd(Interface):
                              purpose='add container')
 
         # prevent madness in the config file
-        if not re.match(r'^[1-9a-zA-Z-]+$', label):
+        if not re.match(r'^[0-9a-zA-Z-]+$', label):
             raise ValueError(
                 "Container labels can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(label))
