@@ -60,6 +60,7 @@ setup(
     # datalad command suite specs from here
     install_requires=[
         'datalad>=0.10.0.rc4',
+        'requests>=1.2',  # to talk to Singularity-hub
     ],
     extras_require={
         'devel-docs': [
