@@ -29,7 +29,7 @@ def test_container_files(path):
     assert_result_count(
         ds.containers_list(), 1,
         path=op.join(ds.path, 'righthere'),
-        label='mycontainer',
+        name='mycontainer',
         updateurl=testimg_url)
     ok_clean_git(path)
     # now we can run stuff in the container
