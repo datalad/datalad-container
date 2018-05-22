@@ -6,6 +6,7 @@ import re
 import logging
 import os.path as op
 from simplejson import dumps
+from argparse import REMAINDER
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -66,10 +67,12 @@ class ContainersAdd(Interface):
             args=("--call-fmt",),
             doc="""Command format string indicating how to execute a command in
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
-            is a placeholder for the path to the container image and '{cmd}'
-            is replaced with the desired command.""",
+            is a placeholder for the path to the container image and '{cmd}' is
+            replaced with the desired command. [CMD: Note: This option should
+            be given at the end because all remaining arguments are consumed as
+            its value. CMD]""",
             metavar="FORMAT",
-            nargs='+',
+            nargs=REMAINDER,
             constraints=EnsureStr() | EnsureNone(),
         ),
         image=Parameter(
