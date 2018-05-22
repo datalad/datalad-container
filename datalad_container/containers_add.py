@@ -44,12 +44,12 @@ class ContainersAdd(Interface):
             current working directory""",
             constraints=EnsureDataset() | EnsureNone()
         ),
-        label=Parameter(
-            args=("label",),
-            doc="""The label to register the container under. This also
+        name=Parameter(
+            args=("name",),
+            doc="""The name to register the container under. This also
                 determines the default location of the container image
                 within the dataset.""",
-            metavar="LABEL",
+            metavar="NAME",
             constraints=EnsureStr(),
         ),
         url=Parameter(
@@ -76,7 +76,7 @@ class ContainersAdd(Interface):
             args=("-i", "--image"),
             doc="""Relative path of the container image within the dataset. If not
                 given, a default location will be determined using the
-                `label` argument.""",
+                `name` argument.""",
             metavar="IMAGE",
             constraints=EnsureStr() | EnsureNone(),
 
@@ -86,18 +86,18 @@ class ContainersAdd(Interface):
     @staticmethod
     @datasetmethod(name='containers_add')
     @eval_results
-    def __call__(label, url=None, dataset=None, call_fmt=None, image=None):
-        if not label:
-            raise InsufficientArgumentsError("`label` argument is required")
+    def __call__(name, url=None, dataset=None, call_fmt=None, image=None):
+        if not name:
+            raise InsufficientArgumentsError("`name` argument is required")
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
 
         # prevent madness in the config file
-        if not re.match(r'^[0-9a-zA-Z-]+$', label):
+        if not re.match(r'^[0-9a-zA-Z-]+$', name):
             raise ValueError(
-                "Container labels can only contain alphanumeric characters "
-                "and '-', got: '{}'".format(label))
+                "Container names can only contain alphanumeric characters "
+                "and '-', got: '{}'".format(name))
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
@@ -116,7 +116,7 @@ class ContainersAdd(Interface):
                     valtype=definitions[loc_cfg_var]['type'],
                     **definitions[loc_cfg_var]['ui'][1]
                 )
-            image = op.join(ds.path, container_loc, label, 'image')
+            image = op.join(ds.path, container_loc, name, 'image')
         else:
             image = op.join(ds.path, image)
 
@@ -143,7 +143,7 @@ class ContainersAdd(Interface):
             # if --call_fmt is not provided?
             to_save.append(image)
         # continue despite a remote access failure, the following config
-        # setting will enable running the command again with just the label
+        # setting will enable running the command again with just the name
         # given to ease a re-run
         if not op.lexists(image):
             result["status"] = "error"
@@ -152,7 +152,7 @@ class ContainersAdd(Interface):
             return
 
         # store configs
-        cfgbasevar = "datalad.containers.{}".format(label)
+        cfgbasevar = "datalad.containers.{}".format(name)
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
@@ -167,8 +167,8 @@ class ContainersAdd(Interface):
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
                 path=to_save,
-                message="[DATALAD] Configure containerized environment '{label}'".format(
-                    label=label)):
+                message="[DATALAD] Configure containerized environment '{name}'".format(
+                    name=name)):
             yield r
         result["status"] = "ok"
         yield result

@@ -39,10 +39,10 @@ class ContainersRemove(Interface):
             attempt is made to identify the dataset based on the current
             working directory""",
             constraints=EnsureDataset() | EnsureNone()),
-        label=Parameter(
-            args=("label",),
-            doc="""label of the container to remove""",
-            metavar="LABEL",
+        name=Parameter(
+            args=("name",),
+            doc="""name of the container to remove""",
+            metavar="NAME",
             constraints=EnsureStr(),
         ),
         remove_image=Parameter(
@@ -55,7 +55,7 @@ class ContainersRemove(Interface):
     @staticmethod
     @datasetmethod(name='containers_remove')
     @eval_results
-    def __call__(label, dataset=None, remove_image=False):
+    def __call__(name, dataset=None, remove_image=False):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='remove a container')
 
@@ -64,7 +64,7 @@ class ContainersRemove(Interface):
             action='containers_remove',
             logger=lgr)
 
-        section = 'datalad.containers.{}'.format(label)
+        section = 'datalad.containers.{}'.format(name)
         imagecfg = '{}.image'.format(section)
 
         to_save = []
@@ -95,6 +95,6 @@ class ContainersRemove(Interface):
         if to_save:
             for r in ds.save(
                     path=to_save,
-                    message='[DATALAD] Remove container {}'.format(label)):
+                    message='[DATALAD] Remove container {}'.format(name)):
                 yield r
         yield res

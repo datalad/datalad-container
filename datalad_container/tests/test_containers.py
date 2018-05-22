@@ -24,7 +24,7 @@ def test_add_noop(path):
     ok_clean_git(ds.path)
     assert_raises(TypeError, ds.containers_add)
     # fails when there is no image
-    assert_status('error', ds.containers_add('label', on_failure='ignore'))
+    assert_status('error', ds.containers_add('name', on_failure='ignore'))
     # no config change
     ok_clean_git(ds.path)
     # place a dummy "image" file
@@ -66,7 +66,7 @@ def test_container_files(ds_path, local_file, url):
     # add first "image": must end up at the configured default location
     target_path = op.join(
         ds.path, ".datalad", "test-environments", "first", "image")
-    res = ds.containers_add(label="first", url=local_file)
+    res = ds.containers_add(name="first", url=local_file)
     ok_clean_git(ds.repo)
 
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
@@ -77,11 +77,11 @@ def test_container_files(ds_path, local_file, url):
     assert_result_count(res, 1)
     assert_result_count(
         res, 1,
-        label='first', type='file', action='containers', status='ok',
+        name='first', type='file', action='containers', status='ok',
         path=target_path)
 
     # and kill it again
-    # but needs label
+    # but needs name
     assert_raises(TypeError, ds.containers_remove)
     res = ds.containers_remove('first', remove_image=True)
     assert_status('ok', res)

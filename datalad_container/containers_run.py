@@ -22,10 +22,10 @@ lgr = logging.getLogger("datalad.containers.containers_run")
 
 _run_params = dict(
     Run._params_,
-    container_label=Parameter(
-        args=('-l', '--container-label',),
+    container_name=Parameter(
+        args=('-n', '--container-name',),
         metavar="NAME",
-        doc="""Specify the label of a known container to use for execution,
+        doc="""Specify the name of a known container to use for execution,
         in case multiple containers are configured."""),
 )
 
@@ -51,21 +51,21 @@ class ContainersRun(Interface):
     @staticmethod
     @datasetmethod(name='containers_run')
     @eval_results
-    def __call__(cmd, container_label=None, dataset=None,
+    def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None):
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
         # get the container list
-        containers = {c['label']: c
+        containers = {c['name']: c
                       for c in ContainersList.__call__(dataset=ds)}
 
-        if container_label is None and len(containers) == 1:
+        if container_name is None and len(containers) == 1:
             # no questions asked, take container and run
             container = containers.popitem()[1]
-        elif container_label and container_label in containers:
-            container = containers[container_label]
+        elif container_name and container_name in containers:
+            container = containers[container_name]
         else:
             # anything else is an error
             raise ValueError(
