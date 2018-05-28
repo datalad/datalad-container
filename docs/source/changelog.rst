@@ -16,7 +16,12 @@ We would recommend to consult log of the `DataLad git
 repository <http://github.com/datalad/datalad-container>`__ for more
 details.
 
-0.1.1 (May ??, 2018) -- The fixes
+0.1.2 (May 28, 2018) -- The docs
+--------------------------------
+
+-  Basic beginner documentation
+
+0.1.1 (May 22, 2018) -- The fixes
 ---------------------------------
 
 New features
