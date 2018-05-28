@@ -58,7 +58,11 @@ def _guess_call_fmt(ds, name, url):
     if url is None:
         return None
     elif url.startswith('shub://'):
-        return ['singularity', 'exec', '{img}', '{cmd}']
+        # use bind to always have the command pwd mounted
+        # this will typically be the dataset root
+        # if the dataset is not in the home drive, execution would
+        # fail otherwise
+        return ['singularity', 'exec', '--bind', '{pwd}', '{img}', '{cmd}']
 
 
 @build_doc

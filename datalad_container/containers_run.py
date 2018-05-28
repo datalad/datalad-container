@@ -87,6 +87,8 @@ class ContainersRun(Interface):
                     fullcmd.extend(cmd)
                 elif c == '{img}':
                     fullcmd.append(image_path)
+                elif c == '{pwd}':
+                    fullcmd.append(pwd)
                 else:
                     fullcmd.append(c)
             cmd = fullcmd
