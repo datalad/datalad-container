@@ -24,7 +24,7 @@ def test_container_files(path):
         url=testimg_url,
         image='righthere',
         # the next one is auto-guessed
-        #call_fmt=['singularity', 'exec', '{img}', '{cmd}']
+        #call_fmt='singularity exec {img} {cmd}'
     )
     assert_result_count(
         ds.containers_list(), 1,

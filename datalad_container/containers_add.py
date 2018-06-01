@@ -5,8 +5,6 @@ __docformat__ = 'restructuredtext'
 import re
 import logging
 import os.path as op
-from simplejson import dumps
-from argparse import REMAINDER
 from simplejson import loads
 
 from datalad.interface.base import Interface
@@ -58,7 +56,7 @@ def _guess_call_fmt(ds, name, url):
     if url is None:
         return None
     elif url.startswith('shub://'):
-        return ['singularity', 'exec', '{img}', '{cmd}']
+        return 'singularity exec {img} {cmd}'
 
 
 @build_doc
@@ -101,11 +99,8 @@ class ContainersAdd(Interface):
             doc="""Command format string indicating how to execute a command in
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
-            replaced with the desired command. [CMD: Note: This option should
-            be given at the end because all remaining arguments are consumed as
-            its value. CMD]""",
+            replaced with the desired command.""",
             metavar="FORMAT",
-            nargs=REMAINDER,
             constraints=EnsureStr() | EnsureNone(),
         ),
         image=Parameter(
@@ -207,7 +202,7 @@ class ContainersAdd(Interface):
         if call_fmt:
             ds.config.set(
                 "{}.cmdexec".format(cfgbasevar),
-                dumps(call_fmt),
+                call_fmt,
                 force=True)
         # store changes
         to_save.append(op.join(".datalad", "config"))

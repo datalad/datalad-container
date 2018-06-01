@@ -4,7 +4,6 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
-from simplejson import loads
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -18,6 +17,23 @@ from datalad.interface.run import get_command_pwds
 from datalad_container.containers_list import ContainersList
 
 lgr = logging.getLogger("datalad.containers.containers_run")
+
+
+# TODO: Remove this command once it's been added to datalad run and the datalad
+# dependency is bumped. See https://github.com/datalad/datalad/pull/2597
+def normalize_command(command):
+    """Convert `command` to the string representation.
+    """
+    from six.moves import shlex_quote
+
+    if isinstance(command, list):
+        if len(command) == 1:
+            # This is either a quoted compound shell command or a simple
+            # one-item command. Pass it as is.
+            command = command[0]
+        else:
+            command = " ".join(shlex_quote(c) for c in command)
+    return command
 
 
 _run_params = dict(
@@ -78,21 +94,27 @@ class ContainersRun(Interface):
         # but it might live in a subdataset that isn't even installed yet
         # let's leave all this business to `get` that is called by `run`
 
+        cmd = normalize_command(cmd)
         # expand the command with container execution
         if 'cmdexec' in container:
-            callspec = loads(container['cmdexec'])
-            fullcmd = []
-            for c in callspec:
-                if c == '{cmd}':
-                    fullcmd.extend(cmd)
-                elif c == '{img}':
-                    fullcmd.append(image_path)
+            callspec = container['cmdexec']
+
+            # Temporary kludge to give a more helpful message
+            if callspec.startswith("["):
+                import simplejson
+                try:
+                    simplejson.loads(callspec)
+                except simplejson.errors.JSONDecodeError:
+                    pass  # Never mind, false positive.
                 else:
-                    fullcmd.append(c)
-            cmd = fullcmd
+                    raise ValueError(
+                        'cmdexe {!r} is in an old, unsupported format. '
+                        'Convert it to a plain string.'.format(callspec))
+
+            cmd = callspec.format(img=image_path, cmd=cmd)
         else:
             # just prepend and pray
-            cmd = [container['path']] + cmd
+            cmd = container['path'] + ' ' + cmd
 
         # with amend inputs to also include the container image
         inputs = (inputs or []) + [image_path]
