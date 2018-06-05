@@ -1,5 +1,6 @@
-datalad-container (0.1.2-1) unstable; urgency=low
+datalad-container (0.1.2+git4-g60cc288-1) unstable; urgency=low
 
-  * source package automatically created by stdeb 0.8.5
+  * Initial packaging:
+    - source package initiated by stdeb 0.8.5
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Mon, 04 Jun 2018 21:43:37 -0400
+ -- Yaroslav Halchenko <debian@onerussian.com>  Mon, 04 Jun 2018 21:57:48 -0400
