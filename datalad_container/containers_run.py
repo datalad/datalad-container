@@ -14,26 +14,10 @@ from datalad.interface.utils import eval_results
 
 from datalad.interface.run import Run
 from datalad.interface.run import get_command_pwds
+from datalad.interface.run import normalize_command
 from datalad_container.containers_list import ContainersList
 
 lgr = logging.getLogger("datalad.containers.containers_run")
-
-
-# TODO: Remove this command once it's been added to datalad run and the datalad
-# dependency is bumped. See https://github.com/datalad/datalad/pull/2597
-def normalize_command(command):
-    """Convert `command` to the string representation.
-    """
-    from six.moves import shlex_quote
-
-    if isinstance(command, list):
-        if len(command) == 1:
-            # This is either a quoted compound shell command or a simple
-            # one-item command. Pass it as is.
-            command = command[0]
-        else:
-            command = " ".join(shlex_quote(c) for c in command)
-    return command
 
 
 _run_params = dict(
