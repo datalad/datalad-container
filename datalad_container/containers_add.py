@@ -86,7 +86,10 @@ class ContainersAdd(Interface):
         ),
         url=Parameter(
             args=("-u", "--url"),
-            doc="""A URL (or local path) to get the container image from""",
+            doc="""A URL (or local path) to get the container image from. If
+            the URL scheme is 'shub://', the command format string will be
+            auto-guessed when [CMD: --call-fmt CMD][PY: call_fmt PY] is not
+            specified.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
