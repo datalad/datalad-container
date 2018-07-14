@@ -53,7 +53,7 @@ class ContainersRun(Interface):
     @eval_results
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
-                 sidecar=None):
+                 explicit=False, sidecar=None):
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
@@ -112,6 +112,7 @@ class ContainersRun(Interface):
                 outputs=outputs,
                 message=message,
                 expand=expand,
+                explicit=explicit,
                 sidecar=sidecar,
                 on_failure="ignore"):
             yield r
