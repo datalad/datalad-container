@@ -56,7 +56,7 @@ def _guess_call_fmt(ds, name, url):
     if url is None:
         return None
     elif url.startswith('shub://'):
-        return 'singularity exec {img} {cmd}'
+        return 'singularity exec -e -c {img} {cmd}'
     elif url.startswith('dhub://'):
         return 'python -m datalad_container.adapters.docker run {img} {cmd}'
 
