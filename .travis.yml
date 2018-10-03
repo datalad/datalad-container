@@ -29,6 +29,7 @@ env:
   matrix:
     - DATALAD_REPO_DIRECT=yes
     - DATALAD_REPO_VERSION=5
+    - DATALAD_REPO_VERSION=6
 
 
 before_install:
