@@ -90,24 +90,28 @@ def test_container_files(ds_path, local_file, url):
     assert(not op.lexists(target_path))
 
 
-@with_tree(tree={'some_container.img': "doesn't matter",
-                 'some_recipe.txt': "nobody cares"})
-@with_tempfile(mkdir=True)
-def test_container_dataset(container_ds, target_ds):
+@with_tempfile
+@with_tempfile
+@with_tree(tree={'some_container.img': "doesn't matter"})
+def test_container_from_subdataset(ds_path, subds_path, local_file):
 
-    raise SkipTest("TODO")
+    # prepare a to-be subdataset with a registered container
+    subds = Dataset(subds_path).create()
+    subds.containers_add(name="first",
+                         url=get_local_file_url(op.join(local_file,
+                                                        'some_container.img'))
+                         )
+    # add it as subdataset to a super ds:
+    ds = Dataset(ds_path).create()
+    ds.install("sub", source=subds_path)
 
-    # build a container dataset:
-    # import pdb; pdb.set_trace()
-    # c_ds = Dataset(container_ds).create(force=True)
-    # c_ds.add(['some_container.img', 'some_recipe.txt'])
-    # c_ds.config.add("datalad.containers."....)
-
-    # save()
-
-    # serve_via_http
-    #
-
-
-def test_container_from_subdataset():
-    raise SkipTest("TODO")
+    # query available containers from within super:
+    res = ds.containers_list()
+    assert_result_count(res, 1)
+    # default location within the subdataset:
+    target_path = op.join(ds_path, 'sub',
+                          '.datalad', 'environments', 'first', 'image')
+    assert_result_count(
+        res, 1,
+        name='sub/first', type='file', action='containers', status='ok',
+        path=target_path)
