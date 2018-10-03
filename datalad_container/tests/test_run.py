@@ -16,7 +16,8 @@ testimg_url = 'shub://datalad/datalad-container:testhelper'
 
 
 @with_tempfile
-def test_container_files(path):
+@with_tempfile
+def test_container_files(path, super_path):
     ds = Dataset(path).create()
     # plug in a proper singularity image
     ds.containers_add(
@@ -42,3 +43,19 @@ def test_container_files(path):
     # this command changed nothing
     assert_result_count(
         res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+
+    # Now, test the same thing, but with this dataset being a subdataset of
+    # another one:
+
+    super_ds = Dataset(super_path).create()
+    super_ds.install("sub", source=path)
+
+    res = super_ds.containers_run(['dir'] if on_windows else ['ls'])
+    # container becomes an 'input' for `run` -> get request (needed this time)
+    assert_result_count(
+        res, 1, action='get', status='ok',
+        path=op.join(super_ds.path, 'sub', 'righthere'), type='file')
+    # this command changed nothing
+    assert_result_count(
+        res, 1, action='add', status='notneeded', path=super_ds.path, type='dataset')
+
