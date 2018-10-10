@@ -8,11 +8,12 @@ import os.path as op
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod, EnsureDataset
+from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
 from datalad.support.constraints import EnsureNone
 from datalad.interface.results import get_status_dict
+from datalad.coreapi import subdatasets
 
 lgr = logging.getLogger("datalad.containers.containers_list")
 
@@ -41,6 +42,11 @@ class ContainersList(Interface):
     def __call__(dataset=None):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='list containers')
+
+        for sub in ds.subdatasets(return_type='generator'):
+            for c in Dataset(sub['path']).containers_list():
+                c['name'] = sub['gitmodule_name'] + '/' + c['name']
+                yield c
 
         # all info is in the dataset config!
         var_prefix = 'datalad.containers.'
