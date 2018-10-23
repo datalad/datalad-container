@@ -25,8 +25,8 @@ _run_params = dict(
     container_name=Parameter(
         args=('-n', '--container-name',),
         metavar="NAME",
-        doc="""Specify the name of a known container to use for execution,
-        in case multiple containers are configured."""),
+        doc="""Specify the name of or a path to a known container to use 
+        for execution, in case multiple containers are configured."""),
 )
 
 
@@ -68,10 +68,19 @@ class ContainersRun(Interface):
         elif container_name and container_name in containers:
             container = containers[container_name]
         else:
-            # anything else is an error
-            raise ValueError(
-                'Container selection impossible: not specified or unknown '
-                '(known containers are: {})'.format(list(containers.keys())))
+            from datalad.distribution.dataset import resolve_path
+            container_path = resolve_path(container_name, ds)
+            container = [c for c in containers.values()
+                         if c['path'] == container_path]
+            if len(container) == 1:
+                container = container[0]
+            else:
+                # anything else is an error
+                raise ValueError(
+                    'Container selection impossible: not specified, ambiguous '
+                    'or unknown (known containers are: {})'
+                    ''.format(list(containers.keys()))
+                )
 
         image_path = op.relpath(container["path"], pwd)
 

@@ -33,9 +33,32 @@ def test_container_files(path, super_path):
         name='mycontainer',
         updateurl=testimg_url)
     ok_clean_git(path)
+
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
     res = ds.containers_run(['dir'] if on_windows else ['ls'])
+    # container becomes an 'input' for `run` -> get request, but "notneeded"
+    assert_result_count(
+        res, 1, action='get', status='notneeded',
+        path=op.join(ds.path, 'righthere'), type='file')
+    # this command changed nothing
+    assert_result_count(
+        res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+
+    # same thing as we specify the container by its name:
+    res = ds.containers_run(['dir'] if on_windows else ['ls'],
+                            container_name='mycontainer')
+    # container becomes an 'input' for `run` -> get request, but "notneeded"
+    assert_result_count(
+        res, 1, action='get', status='notneeded',
+        path=op.join(ds.path, 'righthere'), type='file')
+    # this command changed nothing
+    assert_result_count(
+        res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+
+    # we can also specify the container by its path:
+    res = ds.containers_run(['dir'] if on_windows else ['ls'],
+                            container_name=op.join(ds.path, 'righthere'))
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
         res, 1, action='get', status='notneeded',
