@@ -123,5 +123,6 @@ class ContainersRun(Interface):
                 expand=expand,
                 explicit=explicit,
                 sidecar=sidecar,
-                on_failure="ignore"):
+                on_failure="ignore",
+                return_type='generator'):
             yield r
