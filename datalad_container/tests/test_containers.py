@@ -13,6 +13,8 @@ from datalad.tests.utils import ok_
 from datalad.tests.utils import assert_status
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
+from datalad.tests.utils import assert_in
+from datalad.tests.utils import assert_not_in
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
@@ -38,6 +40,27 @@ def test_add_noop(path):
                             on_failure='ignore')
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
+
+
+@with_tempfile
+@with_tree(tree={"foo.img": "doesn't matter 0",
+                 "bar.img": "doesn't matter 1"})
+def test_add_local_path(path, local_file):
+    ds = Dataset(path).create()
+    res = ds.containers_add(name="foobert",
+                            url=op.join(local_file, "foo.img"))
+    foo_target = op.join(path, ".datalad", "environments", "foobert", "image")
+    assert_result_count(res, 1, status="ok", type="file", path=foo_target,
+                        action="containers_add")
+    # We've just copied and added the file.
+    assert_not_in(ds.repo.WEB_UUID, ds.repo.whereis(foo_target))
+
+    # We can force the URL to be added. (Note: This works because datalad
+    # overrides 'annex.security.allowed-url-schemes' in its tests.)
+    ds.containers_add(name="barry",
+                      url=get_local_file_url(op.join(local_file, "bar.img")))
+    bar_target = op.join(path, ".datalad", "environments", "barry", "image")
+    assert_in(ds.repo.WEB_UUID, ds.repo.whereis(bar_target))
 
 
 @with_tempfile

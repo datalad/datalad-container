@@ -4,7 +4,9 @@ __docformat__ = 'restructuredtext'
 
 import re
 import logging
+import os
 import os.path as op
+from shutil import copyfile
 from simplejson import loads
 
 from datalad.interface.base import Interface
@@ -17,7 +19,6 @@ from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
-from datalad.support.network import get_local_file_url
 
 # required bound commands
 from datalad.coreapi import save
@@ -30,12 +31,7 @@ lgr = logging.getLogger("datalad.containers.containers_add")
 def _resolve_img_url(url):
     """Takes a URL and tries to resolve it to an actual download
     URL that `annex addurl` can handle"""
-    if op.exists(url):
-        lgr.debug(
-            'Convert local path specification into a file:// URL')
-        # annex wants a real url
-        url = get_local_file_url(url)
-    elif url.startswith('shub://'):
+    if url.startswith('shub://'):
         lgr.debug('Query singularity-hub for image download URL')
         import requests
         req = requests.get(
@@ -187,6 +183,12 @@ class ContainersAdd(Interface):
                     docker_image, image)
                 check_call(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif op.exists(url):
+                lgr.info("Copying local file %s to %s", url, image)
+                image_dir = op.dirname(image)
+                if image_dir and not op.exists(image_dir):
+                    os.makedirs(image_dir)
+                copyfile(url, image)
             else:
                 try:
                     # ATM gives no progress indication
