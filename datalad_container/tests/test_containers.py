@@ -138,3 +138,22 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
         path=target_path)
+
+    # not installed subdataset doesn't pose an issue:
+    sub2 = ds.create("sub2")
+    assert_result_count(ds.subdatasets(), 2, type="dataset")
+    ds.uninstall("sub2")
+    from datalad.tests.utils import assert_false
+    assert_false(sub2.is_installed())
+
+    # same results as before, not crashing or somehow confused by a not present
+    # subds:
+    res = ds.containers_list()
+    assert_result_count(res, 1)
+    # default location within the subdataset:
+    target_path = op.join(ds_path, 'sub',
+                          '.datalad', 'environments', 'first', 'image')
+    assert_result_count(
+        res, 1,
+        name='sub/first', type='file', action='containers', status='ok',
+        path=target_path)

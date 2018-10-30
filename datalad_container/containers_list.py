@@ -44,9 +44,11 @@ class ContainersList(Interface):
                              purpose='list containers')
 
         for sub in ds.subdatasets(return_type='generator'):
-            for c in Dataset(sub['path']).containers_list():
-                c['name'] = sub['gitmodule_name'] + '/' + c['name']
-                yield c
+            subds = Dataset(sub['path'])
+            if subds.is_installed():
+                for c in subds.containers_list():
+                    c['name'] = sub['gitmodule_name'] + '/' + c['name']
+                    yield c
 
         # all info is in the dataset config!
         var_prefix = 'datalad.containers.'
