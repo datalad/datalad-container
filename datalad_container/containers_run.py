@@ -15,6 +15,7 @@ from datalad.interface.utils import eval_results
 
 from datalad.interface.results import get_status_dict
 from datalad.interface.run import Run
+from datalad.interface.run import run_command
 from datalad.interface.run import get_command_pwds
 from datalad.interface.run import normalize_command
 from datalad_container.find_container import find_container
@@ -128,7 +129,7 @@ class ContainersRun(Interface):
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
             # fire!
-            for r in Run.__call__(
+            for r in run_command(
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
@@ -136,7 +137,5 @@ class ContainersRun(Interface):
                     message=message,
                     expand=expand,
                     explicit=explicit,
-                    sidecar=sidecar,
-                    on_failure="ignore",
-                    return_type='generator'):
+                    sidecar=sidecar):
                 yield r
