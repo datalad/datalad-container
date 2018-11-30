@@ -123,9 +123,6 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
-        # with amend inputs to also include the container image
-        inputs = (inputs or []) + [image_path]
-
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
             # fire!
@@ -133,6 +130,7 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
+                    extra_inputs=[image_path],
                     outputs=outputs,
                     message=message,
                     expand=expand,
