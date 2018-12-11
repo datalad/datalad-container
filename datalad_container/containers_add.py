@@ -9,6 +9,7 @@ import os.path as op
 from shutil import copyfile
 from simplejson import loads
 
+from datalad.cmd import Runner
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
@@ -136,6 +137,7 @@ class ContainersAdd(Interface):
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
+        runner = Runner()
 
         # prevent madness in the config file
         if not re.match(r'^[0-9a-zA-Z-]+$', name):
@@ -216,14 +218,13 @@ class ContainersAdd(Interface):
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
             if url.startswith("dhub://"):
                 from .adapters import docker
-                from subprocess import check_call
 
                 docker_image = url[len("dhub://"):]
 
                 lgr.debug(
                     "Running 'docker pull %s and saving image to %s",
                     docker_image, image)
-                check_call(["docker", "pull", docker_image])
+                runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
             elif op.exists(url):
                 lgr.info("Copying local file %s to %s", url, image)
