@@ -1,6 +1,6 @@
 datalad-container (0.2.2-1) unstable; urgency=low
 
-  * Initial packaging:
+  * Initial packaging (Closes: #918924)
     - source package initiated by stdeb 0.8.5
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 10 Jan 2019 11:18:42 -0500
