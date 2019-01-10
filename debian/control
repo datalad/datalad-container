@@ -4,8 +4,9 @@ Section: science
 Priority: optional
 Build-Depends:
  debhelper (>= 9),
- datalad (>= 0.10~),
  dh-python,
+ datalad (>= 0.11.1~),
+ python-requests (>= 1.2),
  python3-setuptools,
  python3-all,
  python3-nose,
@@ -15,9 +16,14 @@ Homepage: http://datalad-container.rtfd.org
 Package: datalad-container
 Architecture: all
 Depends:
- datalad (>= 0.10~),
+ datalad (>= 0.11.1~),
+ python-requests (>= 1.2),
  ${misc:Depends},
  ${python:Depends}
+Recommends:
+ singularity-container,
+Suggests:
+ docker.io,
 Description: DataLad extension for working with containerized environments
  This extension enhances DataLad (http://datalad.org) for working with
  computational containers.
