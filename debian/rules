@@ -13,5 +13,8 @@ override_dh_auto_install:
 	dh_auto_install
 	(set -e; \
      for v in $(PY3VERSIONS); do \
-        python$v -m nose -s -v debian/datalad-container/usr/lib/python$$v/dist-packages/datalad_container; \
-     done;)
+        moddir=debian/datalad-container/usr/lib/python$$v/dist-packages/datalad_container; \
+        python$$v -m nose -s -v $$moddir && \
+		find "$$moddir" -iname *pyc -delete && \
+		find "$$moddir" -iname __pycache__ | xargs rm -rf ; \
+	 done;)
