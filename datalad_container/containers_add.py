@@ -191,7 +191,6 @@ class ContainersAdd(Interface):
                 copyfile(url, image)
             else:
                 try:
-                    # ATM gives no progress indication
                     ds.repo.add_url_to_file(image, imgurl)
                 except Exception as e:
                     result["status"] = "error"
