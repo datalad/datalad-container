@@ -3,7 +3,7 @@ Upstream-Name: datalad
 Source: https://github.com/datalad/datalad-container
 
 Files: *
-Copyright: 2018, DataLad Team
+Copyright: 2018, DataLad Team <team@datalad.org>
 License: Expat
 
 License: Expat
