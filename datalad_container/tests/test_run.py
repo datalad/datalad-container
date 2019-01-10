@@ -9,12 +9,14 @@ from datalad.api import containers_list
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import with_tempfile
+from datalad.tests.utils import skip_if_no_network
 from datalad.utils import on_windows
 
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
 
 
+@skip_if_no_network
 @with_tempfile
 @with_tempfile
 def test_container_files(path, super_path):
