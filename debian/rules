@@ -4,6 +4,8 @@ export PYBUILD_NAME=datalad-container
 # cannot do testing with just build'ed version since that one does not register entry points
 export PYBUILD_DISABLE=test
 
+export DATALAD_TESTS_NONETWORK = 1
+
 PY3VERSIONS=$(shell py3versions -vr)
 
 %:
