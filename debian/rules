@@ -1,6 +1,17 @@
 #!/usr/bin/make -f
 
 export PYBUILD_NAME=datalad-container
+# cannot do testing with just build'ed version since that one does not register entry points
+export PYBUILD_DISABLE=test
+
+PY3VERSIONS=$(shell py3versions -vr)
+
 %:
 	dh $@ --with python3 --buildsystem=pybuild
 
+override_dh_auto_install:
+	dh_auto_install
+	(set -e; \
+     for v in $(PY3VERSIONS); do \
+        python$v -m nose -s -v debian/datalad-container/usr/lib/python$$v/dist-packages/datalad_container; \
+     done;)
