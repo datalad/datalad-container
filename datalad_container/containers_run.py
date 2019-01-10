@@ -14,26 +14,10 @@ from datalad.interface.utils import eval_results
 
 from datalad.interface.run import Run
 from datalad.interface.run import get_command_pwds
+from datalad.interface.run import normalize_command
 from datalad_container.containers_list import ContainersList
 
 lgr = logging.getLogger("datalad.containers.containers_run")
-
-
-# TODO: Remove this command once it's been added to datalad run and the datalad
-# dependency is bumped. See https://github.com/datalad/datalad/pull/2597
-def normalize_command(command):
-    """Convert `command` to the string representation.
-    """
-    from six.moves import shlex_quote
-
-    if isinstance(command, list):
-        if len(command) == 1:
-            # This is either a quoted compound shell command or a simple
-            # one-item command. Pass it as is.
-            command = command[0]
-        else:
-            command = " ".join(shlex_quote(c) for c in command)
-    return command
 
 
 _run_params = dict(
@@ -41,8 +25,8 @@ _run_params = dict(
     container_name=Parameter(
         args=('-n', '--container-name',),
         metavar="NAME",
-        doc="""Specify the name of a known container to use for execution,
-        in case multiple containers are configured."""),
+        doc="""Specify the name of or a path to a known container to use 
+        for execution, in case multiple containers are configured."""),
 )
 
 
@@ -69,7 +53,7 @@ class ContainersRun(Interface):
     @eval_results
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
-                 sidecar=None):
+                 explicit=False, sidecar=None):
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
@@ -84,10 +68,19 @@ class ContainersRun(Interface):
         elif container_name and container_name in containers:
             container = containers[container_name]
         else:
-            # anything else is an error
-            raise ValueError(
-                'Container selection impossible: not specified or unknown '
-                '(known containers are: {})'.format(list(containers.keys())))
+            from datalad.distribution.dataset import resolve_path
+            container_path = resolve_path(container_name, ds)
+            container = [c for c in containers.values()
+                         if c['path'] == container_path]
+            if len(container) == 1:
+                container = container[0]
+            else:
+                # anything else is an error
+                raise ValueError(
+                    'Container selection impossible: not specified, ambiguous '
+                    'or unknown (known containers are: {})'
+                    ''.format(list(containers.keys()))
+                )
 
         image_path = op.relpath(container["path"], pwd)
 
@@ -128,6 +121,8 @@ class ContainersRun(Interface):
                 outputs=outputs,
                 message=message,
                 expand=expand,
+                explicit=explicit,
                 sidecar=sidecar,
-                on_failure="ignore"):
+                on_failure="ignore",
+                return_type='generator'):
             yield r

@@ -13,6 +13,8 @@ from datalad.tests.utils import ok_
 from datalad.tests.utils import assert_status
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
+from datalad.tests.utils import assert_in
+from datalad.tests.utils import assert_not_in
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
@@ -38,6 +40,27 @@ def test_add_noop(path):
                             on_failure='ignore')
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
+
+
+@with_tempfile
+@with_tree(tree={"foo.img": "doesn't matter 0",
+                 "bar.img": "doesn't matter 1"})
+def test_add_local_path(path, local_file):
+    ds = Dataset(path).create()
+    res = ds.containers_add(name="foobert",
+                            url=op.join(local_file, "foo.img"))
+    foo_target = op.join(path, ".datalad", "environments", "foobert", "image")
+    assert_result_count(res, 1, status="ok", type="file", path=foo_target,
+                        action="containers_add")
+    # We've just copied and added the file.
+    assert_not_in(ds.repo.WEB_UUID, ds.repo.whereis(foo_target))
+
+    # We can force the URL to be added. (Note: This works because datalad
+    # overrides 'annex.security.allowed-url-schemes' in its tests.)
+    ds.containers_add(name="barry",
+                      url=get_local_file_url(op.join(local_file, "bar.img")))
+    bar_target = op.join(path, ".datalad", "environments", "barry", "image")
+    assert_in(ds.repo.WEB_UUID, ds.repo.whereis(bar_target))
 
 
 @with_tempfile
@@ -90,24 +113,47 @@ def test_container_files(ds_path, local_file, url):
     assert(not op.lexists(target_path))
 
 
-@with_tree(tree={'some_container.img': "doesn't matter",
-                 'some_recipe.txt': "nobody cares"})
-@with_tempfile(mkdir=True)
-def test_container_dataset(container_ds, target_ds):
+@with_tempfile
+@with_tempfile
+@with_tree(tree={'some_container.img': "doesn't matter"})
+def test_container_from_subdataset(ds_path, subds_path, local_file):
 
-    raise SkipTest("TODO")
+    # prepare a to-be subdataset with a registered container
+    subds = Dataset(subds_path).create()
+    subds.containers_add(name="first",
+                         url=get_local_file_url(op.join(local_file,
+                                                        'some_container.img'))
+                         )
+    # add it as subdataset to a super ds:
+    ds = Dataset(ds_path).create()
+    ds.install("sub", source=subds_path)
 
-    # build a container dataset:
-    # import pdb; pdb.set_trace()
-    # c_ds = Dataset(container_ds).create(force=True)
-    # c_ds.add(['some_container.img', 'some_recipe.txt'])
-    # c_ds.config.add("datalad.containers."....)
+    # query available containers from within super:
+    res = ds.containers_list()
+    assert_result_count(res, 1)
+    # default location within the subdataset:
+    target_path = op.join(ds_path, 'sub',
+                          '.datalad', 'environments', 'first', 'image')
+    assert_result_count(
+        res, 1,
+        name='sub/first', type='file', action='containers', status='ok',
+        path=target_path)
 
-    # save()
+    # not installed subdataset doesn't pose an issue:
+    sub2 = ds.create("sub2")
+    assert_result_count(ds.subdatasets(), 2, type="dataset")
+    ds.uninstall("sub2")
+    from datalad.tests.utils import assert_false
+    assert_false(sub2.is_installed())
 
-    # serve_via_http
-    #
-
-
-def test_container_from_subdataset():
-    raise SkipTest("TODO")
+    # same results as before, not crashing or somehow confused by a not present
+    # subds:
+    res = ds.containers_list()
+    assert_result_count(res, 1)
+    # default location within the subdataset:
+    target_path = op.join(ds_path, 'sub',
+                          '.datalad', 'environments', 'first', 'image')
+    assert_result_count(
+        res, 1,
+        name='sub/first', type='file', action='containers', status='ok',
+        path=target_path)

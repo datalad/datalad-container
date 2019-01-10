@@ -4,7 +4,9 @@ __docformat__ = 'restructuredtext'
 
 import re
 import logging
+import os
 import os.path as op
+from shutil import copyfile
 from simplejson import loads
 
 from datalad.interface.base import Interface
@@ -17,7 +19,6 @@ from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
-from datalad.support.network import get_local_file_url
 
 # required bound commands
 from datalad.coreapi import save
@@ -30,12 +31,7 @@ lgr = logging.getLogger("datalad.containers.containers_add")
 def _resolve_img_url(url):
     """Takes a URL and tries to resolve it to an actual download
     URL that `annex addurl` can handle"""
-    if op.exists(url):
-        lgr.debug(
-            'Convert local path specification into a file:// URL')
-        # annex wants a real url
-        url = get_local_file_url(url)
-    elif url.startswith('shub://'):
+    if url.startswith('shub://'):
         lgr.debug('Query singularity-hub for image download URL')
         import requests
         req = requests.get(
@@ -57,6 +53,8 @@ def _guess_call_fmt(ds, name, url):
         return None
     elif url.startswith('shub://'):
         return 'singularity exec {img} {cmd}'
+    elif url.startswith('dhub://'):
+        return 'python -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 @build_doc
@@ -86,7 +84,13 @@ class ContainersAdd(Interface):
         ),
         url=Parameter(
             args=("-u", "--url"),
-            doc="""A URL (or local path) to get the container image from""",
+            doc="""A URL (or local path) to get the container image from. If
+            the URL scheme is 'shub://', the command format string will be
+            auto-guessed when [CMD: --call-fmt CMD][PY: call_fmt PY] is not
+            specified. For the scheme 'dhub://', the rest of the URL will be
+            interpreted as the argument to 'docker pull', the image will be
+            saved to the location specified by `name`, and the call format will
+            be auto-guessed if not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -168,13 +172,31 @@ class ContainersAdd(Interface):
         if url:
             imgurl = _resolve_img_url(url)
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
-            try:
-                # ATM gives no progress indication
-                ds.repo.add_url_to_file(image, imgurl)
-            except Exception as e:
-                result["status"] = "error"
-                result["message"] = str(e)
-                yield result
+            if url.startswith("dhub://"):
+                from .adapters import docker
+                from subprocess import check_call
+
+                docker_image = url[len("dhub://"):]
+
+                lgr.debug(
+                    "Running 'docker pull %s and saving image to %s",
+                    docker_image, image)
+                check_call(["docker", "pull", docker_image])
+                docker.save(docker_image, image)
+            elif op.exists(url):
+                lgr.info("Copying local file %s to %s", url, image)
+                image_dir = op.dirname(image)
+                if image_dir and not op.exists(image_dir):
+                    os.makedirs(image_dir)
+                copyfile(url, image)
+            else:
+                try:
+                    # ATM gives no progress indication
+                    ds.repo.add_url_to_file(image, imgurl)
+                except Exception as e:
+                    result["status"] = "error"
+                    result["message"] = str(e)
+                    yield result
             # TODO do we have to take care of making the image executable
             # if --call_fmt is not provided?
             to_save.append(image)

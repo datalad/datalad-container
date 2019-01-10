@@ -59,7 +59,7 @@ setup(
     packages=[pkg for pkg in find_packages('.') if pkg.startswith('datalad')],
     # datalad command suite specs from here
     install_requires=[
-        'datalad>=0.10.0.rc4',
+        'datalad>=0.10.0.rc5',
         'requests>=1.2',  # to talk to Singularity-hub
     ],
     extras_require={

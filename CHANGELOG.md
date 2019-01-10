@@ -9,6 +9,23 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 0.2.2 (Dec 19, 2018) -- The more the merrier
+
+- list/use containers recursively from installed subdatasets
+- Allow to specify container by path rather than just by name
+- Adding a container from local filesystem will copy it now
+
+## 0.2.1 (Jul 14, 2018) -- Explicit lyrics
+
+- Add support `datalad run --explicit`.
+
+## 0.2 (Jun 08, 2018) -- Docker
+
+- Initial support for adding and running Docker containers.
+- Add support `datalad run --sidecar`.
+- Simplify storage of `call_fmt` arguments in the Git config, by benefitting
+  from `datalad run` being able to work with single-string compound commmands.
+
 ## 0.1.2 (May 28, 2018) -- The docs
 
 - Basic beginner documentation
