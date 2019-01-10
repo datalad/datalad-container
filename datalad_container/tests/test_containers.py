@@ -114,6 +114,21 @@ def test_container_files(ds_path, local_file, url):
 
 
 @with_tempfile
+@with_tree(tree={'foo.img': "foo",
+                 'bar.img': "bar"})
+@serve_path_via_http
+def test_container_update(ds_path, local_file, url):
+    url_foo = get_local_file_url(op.join(local_file, 'foo.img'))
+
+    ds = Dataset(ds_path).create()
+
+    ds.containers_add(name="foo", call_fmt="call-fmt1", url=url_foo)
+
+    res = ds.containers_add(name="foo", on_failure="ignore")
+    assert_result_count(res, 1, action="containers_add", status="impossible")
+
+
+@with_tempfile
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 def test_container_from_subdataset(ds_path, subds_path, local_file):

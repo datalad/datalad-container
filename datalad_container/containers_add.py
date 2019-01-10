@@ -134,6 +134,15 @@ class ContainersAdd(Interface):
                 "Container names can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(name))
 
+        cfgbasevar = "datalad.containers.{}".format(name)
+        if cfgbasevar + ".image" in ds.config:
+            yield get_status_dict(
+                action="containers_add", ds=ds, logger=lgr,
+                status="impossible",
+                message=("Container named %r already exists",
+                         name))
+            return
+
         if not image:
             loc_cfg_var = "datalad.containers.location"
             # TODO: We should provide an entry point (or sth similar) for extensions
@@ -209,7 +218,6 @@ class ContainersAdd(Interface):
             return
 
         # store configs
-        cfgbasevar = "datalad.containers.{}".format(name)
         if imgurl != url:
             # store originally given URL, as it resolves to something
             # different and maybe can be used to update the container
