@@ -115,13 +115,22 @@ class ContainersAdd(Interface):
             metavar="IMAGE",
             constraints=EnsureStr() | EnsureNone(),
 
+        ),
+        update=Parameter(
+            args=("--update",),
+            action="store_true",
+            doc="""Update the existing container for `name`. If no other
+            options are specified, URL will be set to 'updateurl', if
+            configured. If a container with `name` does not already exist, this
+            option is ignored."""
         )
     )
 
     @staticmethod
     @datasetmethod(name='containers_add')
     @eval_results
-    def __call__(name, url=None, dataset=None, call_fmt=None, image=None):
+    def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
+                 update=False):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -136,12 +145,28 @@ class ContainersAdd(Interface):
 
         cfgbasevar = "datalad.containers.{}".format(name)
         if cfgbasevar + ".image" in ds.config:
-            yield get_status_dict(
-                action="containers_add", ds=ds, logger=lgr,
-                status="impossible",
-                message=("Container named %r already exists",
-                         name))
-            return
+            if not update:
+                yield get_status_dict(
+                    action="containers_add", ds=ds, logger=lgr,
+                    status="impossible",
+                    message=("Container named %r already exists. "
+                             "Use --update to reconfigure.",
+                             name))
+                return
+
+            if not (url or image or call_fmt):
+                # No updated values were provided. See if an update url is
+                # configured (currently relevant only for Singularity Hub).
+                url = ds.config.get(cfgbasevar + ".updateurl")
+                if not url:
+                    yield get_status_dict(
+                        action="containers_add", ds=ds, logger=lgr,
+                        status="impossible",
+                        message="No values to update specified")
+                    return
+
+            call_fmt = call_fmt or ds.config.get(cfgbasevar + ".cmdexec")
+            image = image or ds.config.get(cfgbasevar + ".image")
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
@@ -179,6 +204,14 @@ class ContainersAdd(Interface):
         to_save = []
         imgurl = url
         if url:
+            if update and op.lexists(image):
+                # XXX: check=False is used to avoid dropping the image. It
+                # should use drop=False if remove() gets such an option (see
+                # DataLad's gh-2673).
+                for r in ds.remove(image, save=False, check=False,
+                                   return_type="generator"):
+                    yield r
+
             imgurl = _resolve_img_url(url)
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
             if url.startswith("dhub://"):
@@ -237,7 +270,8 @@ class ContainersAdd(Interface):
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
                 path=to_save,
-                message="[DATALAD] Configure containerized environment '{name}'".format(
+                message="[DATALAD] {do} containerized environment '{name}'".format(
+                    do="Update" if update else "Configure",
                     name=name)):
             yield r
         result["status"] = "ok"
