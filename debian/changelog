@@ -1,6 +1,15 @@
-datalad-container (0.2.2-1) unstable; urgency=low
+datalad-container (0.2.2-2) unstable; urgency=medium
 
-  * Initial packaging (Closes: #918924)
+  * Re-upload to Debian proper (Closes: #918924)
+  * debian/copyright
+    - adjusted to reference copyright/license of borrowed code under Python2
+      license
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Mon, 14 Jan 2019 11:52:19 -0500
+
+datalad-container (0.2.2-1) neurodebian; urgency=low
+
+  * Initial packaging
     - source package initiated by stdeb 0.8.5
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 10 Jan 2019 11:18:42 -0500
