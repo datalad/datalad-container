@@ -15,7 +15,7 @@ from datalad.interface.utils import eval_results
 from datalad.interface.run import Run
 from datalad.interface.run import get_command_pwds
 from datalad.interface.run import normalize_command
-from datalad_container.containers_list import ContainersList
+from datalad_container.find_container import find_container
 
 lgr = logging.getLogger("datalad.containers.containers_run")
 
@@ -60,39 +60,7 @@ class ContainersRun(Interface):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
-        # get the container list
-        recurse = container_name and "/" in container_name
-        containers = {c['name']: c
-                      for c in ContainersList.__call__(dataset=ds,
-                                                       recursive=recurse)}
-
-        if not containers:
-            raise ValueError("No known containers. Use containers-add")
-        elif container_name is None:
-            if len(containers) == 1:
-                # no questions asked, take container and run
-                container = containers.popitem()[1]
-            else:
-                raise ValueError("Must explicitly specify container"
-                                 " (known containers are: {})"
-                                 .format(', '.join(containers)))
-        elif container_name in containers:
-            container = containers[container_name]
-        else:
-            from datalad.distribution.dataset import resolve_path
-            container_path = resolve_path(container_name, ds)
-            container = [c for c in containers.values()
-                         if c['path'] == container_path]
-            if len(container) == 1:
-                container = container[0]
-            else:
-                # anything else is an error
-                raise ValueError(
-                    'Container selection impossible: not specified, ambiguous '
-                    'or unknown (known containers are: {})'
-                    .format(', '.join(containers))
-                )
-
+        container = find_container(ds, container_name)
         image_path = op.relpath(container["path"], pwd)
 
         # sure we could check whether the container image is present,
