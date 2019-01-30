@@ -60,7 +60,8 @@ class ContainersRun(Interface):
 
         # get the container list
         containers = {c['name']: c
-                      for c in ContainersList.__call__(dataset=ds)}
+                      for c in ContainersList.__call__(dataset=ds,
+                                                       recursive=True)}
 
         if not containers:
             raise ValueError("No known containers. Use containers-add")
