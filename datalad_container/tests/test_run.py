@@ -53,6 +53,8 @@ def test_run_mispecified(path):
 @with_tempfile
 def test_container_files(path, super_path):
     ds = Dataset(path).create()
+    cmd = ['dir'] if on_windows else ['ls']
+
     # plug in a proper singularity image
     ds.containers_add(
         'mycontainer',
@@ -70,7 +72,7 @@ def test_container_files(path, super_path):
 
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
-    res = ds.containers_run(['dir'] if on_windows else ['ls'])
+    res = ds.containers_run(cmd)
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
         res, 1, action='get', status='notneeded',
@@ -80,7 +82,7 @@ def test_container_files(path, super_path):
         res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
 
     # same thing as we specify the container by its name:
-    res = ds.containers_run(['dir'] if on_windows else ['ls'],
+    res = ds.containers_run(cmd,
                             container_name='mycontainer')
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
@@ -91,7 +93,7 @@ def test_container_files(path, super_path):
         res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
 
     # we can also specify the container by its path:
-    res = ds.containers_run(['dir'] if on_windows else ['ls'],
+    res = ds.containers_run(cmd,
                             container_name=op.join(ds.path, 'righthere'))
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
@@ -107,7 +109,7 @@ def test_container_files(path, super_path):
     super_ds = Dataset(super_path).create()
     super_ds.install("sub", source=path)
 
-    res = super_ds.containers_run(['dir'] if on_windows else ['ls'])
+    res = super_ds.containers_run(cmd)
     # container becomes an 'input' for `run` -> get request (needed this time)
     assert_result_count(
         res, 1, action='get', status='ok',
