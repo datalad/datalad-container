@@ -64,10 +64,15 @@ class ContainersRun(Interface):
 
         if not containers:
             raise ValueError("No known containers. Use containers-add")
-        elif container_name is None and len(containers) == 1:
-            # no questions asked, take container and run
-            container = containers.popitem()[1]
-        elif container_name and container_name in containers:
+        elif container_name is None:
+            if len(containers) == 1:
+                # no questions asked, take container and run
+                container = containers.popitem()[1]
+            else:
+                raise ValueError("Must explicitly specify container"
+                                 " (known containers are: {})"
+                                 .format(', '.join(containers)))
+        elif container_name in containers:
             container = containers[container_name]
         else:
             from datalad.distribution.dataset import resolve_path

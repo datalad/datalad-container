@@ -13,6 +13,7 @@ from datalad.tests.utils import assert_in
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import with_tempfile
+from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
 from datalad.utils import on_windows
 
@@ -20,14 +21,26 @@ from datalad.utils import on_windows
 testimg_url = 'shub://datalad/datalad-container:testhelper'
 
 
-@with_tempfile
+@with_tree(tree={"dummy0.img": "doesn't matter 0",
+                 "dummy1.img": "doesn't matter 1"})
 def test_run_mispecified(path):
-    ds = Dataset(path).create()
+    ds = Dataset(path).create(force=True)
+    ds.save(path=["dummy0.img", "dummy1.img"])
+    ok_clean_git(path)
 
     # Abort if no containers exist.
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter")
     assert_in("No known containers", text_type(cm.exception))
+
+    # Abort if more than one container exists but no container name is
+    # specified.
+    ds.containers_add("d0", image="dummy0.img")
+    ds.containers_add("d1", image="dummy0.img")
+
+    with assert_raises(ValueError) as cm:
+        ds.containers_run("doesn't matter")
+    assert_in("explicitly specify container", text_type(cm.exception))
 
 
 @skip_if_no_network
