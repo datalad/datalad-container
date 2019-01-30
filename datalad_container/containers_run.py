@@ -37,9 +37,11 @@ class ContainersRun(Interface):
     # the rest is put in the verbose help and manpage
     """Drop-in replacement of 'run' to perform containerized command execution
 
-    Container(s) need to be configured beforehand (see containers-add).
-    If only one container is known, it will be selected automatically;
-    otherwise a specific container has to be specified.
+    Container(s) need to be configured beforehand (see containers-add). If no
+    container is specified and only one container is configured in the current
+    dataset, it will be selected automatically. If more than one container is
+    registered in the current dataset or to access containers from subdatasets,
+    the container has to be specified.
 
     A command is generated based on the input arguments such that the
     container image itself will be recorded as an input dependency of
@@ -59,9 +61,10 @@ class ContainersRun(Interface):
                              purpose='run a containerized command execution')
 
         # get the container list
+        recurse = container_name and "/" in container_name
         containers = {c['name']: c
                       for c in ContainersList.__call__(dataset=ds,
-                                                       recursive=True)}
+                                                       recursive=recurse)}
 
         if not containers:
             raise ValueError("No known containers. Use containers-add")

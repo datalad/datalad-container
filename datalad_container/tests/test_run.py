@@ -109,7 +109,12 @@ def test_container_files(path, super_path):
     super_ds = Dataset(super_path).create()
     super_ds.install("sub", source=path)
 
-    res = super_ds.containers_run(cmd)
+    # When running, we don't discover containers in subdatasets
+    with assert_raises(ValueError) as cm:
+        super_ds.containers_run(cmd)
+    assert_in("No known containers", text_type(cm.exception))
+    # ... unless we need to specify the name
+    res = super_ds.containers_run(cmd, container_name="sub/mycontainer")
     # container becomes an 'input' for `run` -> get request (needed this time)
     assert_result_count(
         res, 1, action='get', status='ok',
