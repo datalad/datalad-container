@@ -1,5 +1,7 @@
 import os.path as op
 
+from six import text_type
+
 from datalad.api import Dataset
 from datalad.api import create
 from datalad.api import containers_add
@@ -7,13 +9,25 @@ from datalad.api import containers_run
 from datalad.api import containers_list
 
 from datalad.tests.utils import ok_clean_git
+from datalad.tests.utils import assert_in
 from datalad.tests.utils import assert_result_count
+from datalad.tests.utils import assert_raises
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import skip_if_no_network
 from datalad.utils import on_windows
 
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
+
+
+@with_tempfile
+def test_run_mispecified(path):
+    ds = Dataset(path).create()
+
+    # Abort if no containers exist.
+    with assert_raises(ValueError) as cm:
+        ds.containers_run("doesn't matter")
+    assert_in("No known containers", text_type(cm.exception))
 
 
 @skip_if_no_network
