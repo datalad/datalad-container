@@ -38,7 +38,7 @@ class ContainersRun(Interface):
     """Drop-in replacement of 'run' to perform containerized command execution
 
     Container(s) need to be configured beforehand (see containers-add).
-    If only one container is known, it will be selected automatically,
+    If only one container is known, it will be selected automatically;
     otherwise a specific container has to be specified.
 
     A command is generated based on the input arguments such that the
