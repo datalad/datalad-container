@@ -9,6 +9,7 @@ import os.path as op
 from shutil import copyfile
 from simplejson import loads
 
+from datalad.cmd import Runner
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
@@ -51,7 +52,7 @@ def _guess_call_fmt(ds, name, url):
     """
     if url is None:
         return None
-    elif url.startswith('shub://'):
+    elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return 'python -m datalad_container.adapters.docker run {img} {cmd}'
@@ -85,12 +86,13 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is 'shub://', the command format string will be
-            auto-guessed when [CMD: --call-fmt CMD][PY: call_fmt PY] is not
-            specified. For the scheme 'dhub://', the rest of the URL will be
-            interpreted as the argument to 'docker pull', the image will be
-            saved to the location specified by `name`, and the call format will
-            be auto-guessed if not given.""",
+            the URL scheme is one recognized by Singularity, 'shub://' or
+            'docker://', the command format string will be auto-guessed when
+            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
+            scheme 'dhub://', the rest of the URL will be interpreted as the
+            argument to 'docker pull', the image will be saved to the location
+            specified by `name`, and the call format will be auto-guessed if
+            not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -136,6 +138,7 @@ class ContainersAdd(Interface):
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
+        runner = Runner()
 
         # prevent madness in the config file
         if not re.match(r'^[0-9a-zA-Z-]+$', name):
@@ -216,15 +219,22 @@ class ContainersAdd(Interface):
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
             if url.startswith("dhub://"):
                 from .adapters import docker
-                from subprocess import check_call
 
                 docker_image = url[len("dhub://"):]
 
                 lgr.debug(
                     "Running 'docker pull %s and saving image to %s",
                     docker_image, image)
-                check_call(["docker", "pull", docker_image])
+                runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif url.startswith("docker://"):
+                image_dir, image_basename = op.split(image)
+                if not image_basename:
+                    raise ValueError("No basename in path {}".format(image))
+                if image_dir and not op.exists(image_dir):
+                    os.makedirs(image_dir)
+                runner.run(["singularity", "build", image_basename, url],
+                           cwd=image_dir or None)
             elif op.exists(url):
                 lgr.info("Copying local file %s to %s", url, image)
                 image_dir = op.dirname(image)
