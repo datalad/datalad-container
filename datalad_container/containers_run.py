@@ -81,7 +81,7 @@ class ContainersRun(Interface):
                 raise ValueError(
                     'Container selection impossible: not specified, ambiguous '
                     'or unknown (known containers are: {})'
-                    ''.format(list(containers.keys()))
+                    .format(', '.join(containers))
                 )
 
         image_path = op.relpath(container["path"], pwd)
