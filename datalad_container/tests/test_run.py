@@ -42,6 +42,11 @@ def test_run_mispecified(path):
         ds.containers_run("doesn't matter")
     assert_in("explicitly specify container", text_type(cm.exception))
 
+    # Abort if unknown container is specified.
+    with assert_raises(ValueError) as cm:
+        ds.containers_run("doesn't matter", container_name="ghost")
+    assert_in("Container selection impossible", text_type(cm.exception))
+
 
 @skip_if_no_network
 @with_tempfile
