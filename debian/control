@@ -17,7 +17,8 @@ Package: datalad-container
 Architecture: all
 Depends:
  datalad (>= 0.11.1~),
- python-requests (>= 1.2),
+ python3-requests (>= 1.2),
+ python3-chardet (>= 3.0.4),
  ${misc:Depends},
  ${python3:Depends}
 Recommends:
