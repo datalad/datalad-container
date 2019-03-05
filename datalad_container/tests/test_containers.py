@@ -165,6 +165,8 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     # add it as subdataset to a super ds:
     ds = Dataset(ds_path).create()
     ds.install("sub", source=subds_path)
+    # add it again one level down to see actual recursion:
+    Dataset(op.join(ds.path, "sub")).install("subsub", source=subds_path)
 
     # We come up empty without recursive:
     res = ds.containers_list(recursive=False)
@@ -172,7 +174,7 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
 
     # query available containers from within super:
     res = ds.containers_list(recursive=True)
-    assert_result_count(res, 1)
+    assert_result_count(res, 2)
 
     # default location within the subdataset:
     target_path = op.join(ds_path, 'sub',
@@ -192,7 +194,7 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     # same results as before, not crashing or somehow confused by a not present
     # subds:
     res = ds.containers_list(recursive=True)
-    assert_result_count(res, 1)
+    assert_result_count(res, 2)
     # default location within the subdataset:
     target_path = op.join(ds_path, 'sub',
                           '.datalad', 'environments', 'first', 'image')
