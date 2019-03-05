@@ -9,6 +9,13 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 0.3.1 (Mar 05, 2019) -- Upgrayeddd
+
+### Fixes
+
+- `containers-list` recursion actually does recursion.
+
+
 ## 0.3.0 (Mar 05, 2019) -- Upgrayedd
 
 ### API changes
