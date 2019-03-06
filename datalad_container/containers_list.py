@@ -7,6 +7,7 @@ import os.path as op
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
+from datalad.interface.common_opts import recursion_flag
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
 from datalad.distribution.dataset import require_dataset
@@ -34,21 +35,23 @@ class ContainersList(Interface):
             attempt is made to identify the dataset based on the current
             working directory""",
             constraints=EnsureDataset() | EnsureNone()),
+        recursive=recursion_flag,
     )
 
     @staticmethod
     @datasetmethod(name='containers_list')
     @eval_results
-    def __call__(dataset=None):
+    def __call__(dataset=None, recursive=False):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='list containers')
 
-        for sub in ds.subdatasets(return_type='generator'):
-            subds = Dataset(sub['path'])
-            if subds.is_installed():
-                for c in subds.containers_list():
-                    c['name'] = sub['gitmodule_name'] + '/' + c['name']
-                    yield c
+        if recursive:
+            for sub in ds.subdatasets(return_type='generator'):
+                subds = Dataset(sub['path'])
+                if subds.is_installed():
+                    for c in subds.containers_list(recursive=recursive):
+                        c['name'] = sub['gitmodule_name'] + '/' + c['name']
+                        yield c
 
         # all info is in the dataset config!
         var_prefix = 'datalad.containers.'

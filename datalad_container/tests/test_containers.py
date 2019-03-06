@@ -10,6 +10,8 @@ from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import ok_
+from datalad.tests.utils import ok_file_has_content
+from datalad.tests.utils import assert_equal
 from datalad.tests.utils import assert_status
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
@@ -114,6 +116,42 @@ def test_container_files(ds_path, local_file, url):
 
 
 @with_tempfile
+@with_tree(tree={'foo.img': "foo",
+                 'bar.img': "bar"})
+@serve_path_via_http
+def test_container_update(ds_path, local_file, url):
+    url_foo = get_local_file_url(op.join(local_file, 'foo.img'))
+    url_bar = get_local_file_url(op.join(local_file, 'bar.img'))
+    img = op.join(".datalad", "environments", "foo", "image")
+
+    ds = Dataset(ds_path).create()
+
+    ds.containers_add(name="foo", call_fmt="call-fmt1", url=url_foo)
+
+    # Abort without --update flag.
+    res = ds.containers_add(name="foo", on_failure="ignore")
+    assert_result_count(res, 1, action="containers_add", status="impossible")
+
+    # Abort if nothing to update is specified.
+    res = ds.containers_add(name="foo", update=True, on_failure="ignore")
+    assert_result_count(res, 1, action="containers_add", status="impossible",
+                        message="No values to update specified")
+
+    # Update call format.
+    ds.containers_add(name="foo", update=True, call_fmt="call-fmt2")
+    assert_equal(ds.config.get("datalad.containers.foo.cmdexec"),
+                 "call-fmt2")
+    ok_file_has_content(op.join(ds.path, img), "foo")
+
+    # Update URL/image.
+    ds.drop(img)  # Make sure it works even with absent content.
+    res = ds.containers_add(name="foo", update=True, url=url_bar)
+    assert_result_count(res, 1, action="remove", status="ok", path=img)
+    assert_result_count(res, 1, action="save", status="ok")
+    ok_file_has_content(op.join(ds.path, img), "bar")
+
+
+@with_tempfile
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 def test_container_from_subdataset(ds_path, subds_path, local_file):
@@ -127,10 +165,17 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     # add it as subdataset to a super ds:
     ds = Dataset(ds_path).create()
     ds.install("sub", source=subds_path)
+    # add it again one level down to see actual recursion:
+    Dataset(op.join(ds.path, "sub")).install("subsub", source=subds_path)
+
+    # We come up empty without recursive:
+    res = ds.containers_list(recursive=False)
+    assert_result_count(res, 0)
 
     # query available containers from within super:
-    res = ds.containers_list()
-    assert_result_count(res, 1)
+    res = ds.containers_list(recursive=True)
+    assert_result_count(res, 2)
+
     # default location within the subdataset:
     target_path = op.join(ds_path, 'sub',
                           '.datalad', 'environments', 'first', 'image')
@@ -148,8 +193,8 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
 
     # same results as before, not crashing or somehow confused by a not present
     # subds:
-    res = ds.containers_list()
-    assert_result_count(res, 1)
+    res = ds.containers_list(recursive=True)
+    assert_result_count(res, 2)
     # default location within the subdataset:
     target_path = op.join(ds_path, 'sub',
                           '.datalad', 'environments', 'first', 'image')

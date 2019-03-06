@@ -9,6 +9,7 @@ import os.path as op
 from shutil import copyfile
 from simplejson import loads
 
+from datalad.cmd import Runner
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
@@ -51,7 +52,7 @@ def _guess_call_fmt(ds, name, url):
     """
     if url is None:
         return None
-    elif url.startswith('shub://'):
+    elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return 'python -m datalad_container.adapters.docker run {img} {cmd}'
@@ -85,12 +86,13 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is 'shub://', the command format string will be
-            auto-guessed when [CMD: --call-fmt CMD][PY: call_fmt PY] is not
-            specified. For the scheme 'dhub://', the rest of the URL will be
-            interpreted as the argument to 'docker pull', the image will be
-            saved to the location specified by `name`, and the call format will
-            be auto-guessed if not given.""",
+            the URL scheme is one recognized by Singularity, 'shub://' or
+            'docker://', the command format string will be auto-guessed when
+            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
+            scheme 'dhub://', the rest of the URL will be interpreted as the
+            argument to 'docker pull', the image will be saved to the location
+            specified by `name`, and the call format will be auto-guessed if
+            not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -115,24 +117,59 @@ class ContainersAdd(Interface):
             metavar="IMAGE",
             constraints=EnsureStr() | EnsureNone(),
 
+        ),
+        update=Parameter(
+            args=("--update",),
+            action="store_true",
+            doc="""Update the existing container for `name`. If no other
+            options are specified, URL will be set to 'updateurl', if
+            configured. If a container with `name` does not already exist, this
+            option is ignored."""
         )
     )
 
     @staticmethod
     @datasetmethod(name='containers_add')
     @eval_results
-    def __call__(name, url=None, dataset=None, call_fmt=None, image=None):
+    def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
+                 update=False):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
+        runner = Runner()
 
         # prevent madness in the config file
         if not re.match(r'^[0-9a-zA-Z-]+$', name):
             raise ValueError(
                 "Container names can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(name))
+
+        cfgbasevar = "datalad.containers.{}".format(name)
+        if cfgbasevar + ".image" in ds.config:
+            if not update:
+                yield get_status_dict(
+                    action="containers_add", ds=ds, logger=lgr,
+                    status="impossible",
+                    message=("Container named %r already exists. "
+                             "Use --update to reconfigure.",
+                             name))
+                return
+
+            if not (url or image or call_fmt):
+                # No updated values were provided. See if an update url is
+                # configured (currently relevant only for Singularity Hub).
+                url = ds.config.get(cfgbasevar + ".updateurl")
+                if not url:
+                    yield get_status_dict(
+                        action="containers_add", ds=ds, logger=lgr,
+                        status="impossible",
+                        message="No values to update specified")
+                    return
+
+            call_fmt = call_fmt or ds.config.get(cfgbasevar + ".cmdexec")
+            image = image or ds.config.get(cfgbasevar + ".image")
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
@@ -170,19 +207,34 @@ class ContainersAdd(Interface):
         to_save = []
         imgurl = url
         if url:
+            if update and op.lexists(image):
+                # XXX: check=False is used to avoid dropping the image. It
+                # should use drop=False if remove() gets such an option (see
+                # DataLad's gh-2673).
+                for r in ds.remove(image, save=False, check=False,
+                                   return_type="generator"):
+                    yield r
+
             imgurl = _resolve_img_url(url)
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
             if url.startswith("dhub://"):
                 from .adapters import docker
-                from subprocess import check_call
 
                 docker_image = url[len("dhub://"):]
 
                 lgr.debug(
                     "Running 'docker pull %s and saving image to %s",
                     docker_image, image)
-                check_call(["docker", "pull", docker_image])
+                runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif url.startswith("docker://"):
+                image_dir, image_basename = op.split(image)
+                if not image_basename:
+                    raise ValueError("No basename in path {}".format(image))
+                if image_dir and not op.exists(image_dir):
+                    os.makedirs(image_dir)
+                runner.run(["singularity", "build", image_basename, url],
+                           cwd=image_dir or None)
             elif op.exists(url):
                 lgr.info("Copying local file %s to %s", url, image)
                 image_dir = op.dirname(image)
@@ -191,7 +243,6 @@ class ContainersAdd(Interface):
                 copyfile(url, image)
             else:
                 try:
-                    # ATM gives no progress indication
                     ds.repo.add_url_to_file(image, imgurl)
                 except Exception as e:
                     result["status"] = "error"
@@ -210,7 +261,6 @@ class ContainersAdd(Interface):
             return
 
         # store configs
-        cfgbasevar = "datalad.containers.{}".format(name)
         if imgurl != url:
             # store originally given URL, as it resolves to something
             # different and maybe can be used to update the container
@@ -230,7 +280,8 @@ class ContainersAdd(Interface):
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
                 path=to_save,
-                message="[DATALAD] Configure containerized environment '{name}'".format(
+                message="[DATALAD] {do} containerized environment '{name}'".format(
+                    do="Update" if update else "Configure",
                     name=name)):
             yield r
         result["status"] = "ok"
