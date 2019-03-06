@@ -1,3 +1,10 @@
+datalad-container (0.3.1-1) experimental; urgency=medium
+
+  * Fresh upstream release
+  * debian/patches - dropped, upstreamed
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 06 Mar 2019 10:09:17 -0500
+
 datalad-container (0.2.2-2) unstable; urgency=medium
 
   * Re-upload to Debian proper (Closes: #918924)
