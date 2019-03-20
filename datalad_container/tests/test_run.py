@@ -70,6 +70,12 @@ def test_container_files(path, super_path):
         updateurl=testimg_url)
     ok_clean_git(path)
 
+    def assert_no_change(res, path):
+        # this command changed nothing
+        assert_result_count(
+            res, 1, action='add', status='notneeded',
+            path=path, type='dataset')
+
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
     res = ds.containers_run(cmd)
@@ -77,9 +83,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         res, 1, action='get', status='notneeded',
         path=op.join(ds.path, 'righthere'), type='file')
-    # this command changed nothing
-    assert_result_count(
-        res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+    assert_no_change(res, ds.path)
 
     # same thing as we specify the container by its name:
     res = ds.containers_run(cmd,
@@ -88,9 +92,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         res, 1, action='get', status='notneeded',
         path=op.join(ds.path, 'righthere'), type='file')
-    # this command changed nothing
-    assert_result_count(
-        res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+    assert_no_change(res, ds.path)
 
     # we can also specify the container by its path:
     res = ds.containers_run(cmd,
@@ -99,9 +101,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         res, 1, action='get', status='notneeded',
         path=op.join(ds.path, 'righthere'), type='file')
-    # this command changed nothing
-    assert_result_count(
-        res, 1, action='add', status='notneeded', path=ds.path, type='dataset')
+    assert_no_change(res, ds.path)
 
     # Now, test the same thing, but with this dataset being a subdataset of
     # another one:
@@ -119,7 +119,4 @@ def test_container_files(path, super_path):
     assert_result_count(
         res, 1, action='get', status='ok',
         path=op.join(super_ds.path, 'sub', 'righthere'), type='file')
-    # this command changed nothing
-    assert_result_count(
-        res, 1, action='add', status='notneeded', path=super_ds.path, type='dataset')
-
+    assert_no_change(res, super_ds.path)
