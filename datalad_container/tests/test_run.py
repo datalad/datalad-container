@@ -72,8 +72,11 @@ def test_container_files(path, super_path):
 
     def assert_no_change(res, path):
         # this command changed nothing
+        #
+        # Avoid specifying the action because it will change from "add" to
+        # "save" in DataLad v0.12.
         assert_result_count(
-            res, 1, action='add', status='notneeded',
+            res, 1, status='notneeded',
             path=path, type='dataset')
 
     # now we can run stuff in the container
