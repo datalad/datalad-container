@@ -23,8 +23,6 @@ from datalad.utils import (
 )
 from datalad.support.network import get_local_file_url
 
-import mock
-
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
 
@@ -134,22 +132,18 @@ def test_container_files(path, super_path):
 
 
 @with_tempfile
-def test_custom_call_fmt(path): # , local_file):
+@with_tree(tree={'some_container.img': "doesn't matter"})
+def test_custom_call_fmt(path, local_file):
     ds = Dataset(path).create()
     subds = ds.create('sub')
 
-    def touch_img(self, img, *args):
-        with open(img, 'w'):
-            pass
-
-    with mock.patch.object(subds.repo, 'add_url_to_file', touch_img):
-        # plug in a proper singularity image
-        subds.containers_add(
-            'mycontainer',
-            url='bogus',
-            image='righthere',
-            call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath}'
-        )
+    # plug in a proper singularity image
+    subds.containers_add(
+        'mycontainer',
+        url=get_local_file_url(op.join(local_file, 'some_container.img')),
+        image='righthere',
+        call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath}'
+    )
     ds.save()  # record the effect in super-dataset
 
     # Running should work fine either withing sub or within super
