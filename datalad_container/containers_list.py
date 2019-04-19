@@ -75,6 +75,8 @@ class ContainersList(Interface):
             if 'image' not in v:
                 # there is no container location configured
                 continue
+            if dataset and 'dspath' not in v:
+                v['dspath'] = dataset.path
             res = get_status_dict(
                 status='ok',
                 action='containers',
