@@ -64,7 +64,7 @@ class ContainersRun(Interface):
         image_path = op.relpath(container["path"], pwd)
         # container record would contain path to the (sub)dataset containing
         # it.  If not - take current dataset, as it must be coming from it
-        container_dspath = op.relpath(container.get('dspath', ds.path), pwd)
+        image_dspath = op.relpath(container.get('dspath', ds.path), pwd)
 
         # sure we could check whether the container image is present,
         # but it might live in a subdataset that isn't even installed yet
@@ -89,7 +89,7 @@ class ContainersRun(Interface):
             cmd = callspec.format(
                 img=image_path,
                 cmd=cmd,
-                dspath=op.join('{pwd}', container_dspath)
+                img_dspath=image_dspath,
             )
         else:
             # just prepend and pray
