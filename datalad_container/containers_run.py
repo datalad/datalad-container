@@ -101,7 +101,7 @@ class ContainersRun(Interface):
         # fire!
         for r in Run.__call__(
                 cmd=cmd,
-                dataset=ds,
+                dataset=dataset or (ds if ds.path == pwd else None),
                 inputs=inputs,
                 outputs=outputs,
                 message=message,
