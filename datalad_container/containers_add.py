@@ -235,6 +235,10 @@ class ContainersAdd(Interface):
                     raise ValueError("No basename in path {}".format(image))
                 if image_dir and not op.exists(image_dir):
                     os.makedirs(image_dir)
+
+                lgr.info("Building Singularity image for %s "
+                         "(this may take some time)",
+                         url)
                 runner.run(["singularity", "build", image_basename, url],
                            cwd=image_dir or None)
             elif op.exists(url):
