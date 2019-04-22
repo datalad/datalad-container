@@ -12,9 +12,11 @@ from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import assert_in
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_raises
+from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
+from datalad.utils import chpwd
 from datalad.utils import on_windows
 
 
@@ -123,3 +125,29 @@ def test_container_files(path, super_path):
         res, 1, action='get', status='ok',
         path=op.join(super_ds.path, 'sub', 'righthere'), type='file')
     assert_no_change(res, super_ds.path)
+
+
+@skip_if_no_network
+@with_tree(tree={"subdir": {"in": "innards"}})
+def test_run_no_explicit_dataset(path):
+    ds = Dataset(path).create(force=True)
+    ds.add(".")
+    ds.containers_add("deb", url=testimg_url,
+                      call_fmt="singularity exec {img} {cmd}")
+
+    # When no explicit dataset is given, paths are interpreted as relative to
+    # the current working directory.
+
+    # From top-level directory.
+    with chpwd(path):
+        containers_run("cat {inputs[0]} {inputs[0]} >doubled",
+                       inputs=[op.join("subdir", "in")],
+                       outputs=["doubled"])
+        ok_file_has_content(op.join(path, "doubled"), "innardsinnards")
+
+    # From under a subdirectory.
+    subdir = op.join(ds.path, "subdir")
+    with chpwd(subdir):
+        containers_run("cat {inputs[0]} {inputs[0]} >doubled",
+                       inputs=["in"], outputs=["doubled"])
+    ok_file_has_content(op.join(subdir, "doubled"), "innardsinnards")
