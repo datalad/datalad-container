@@ -1,3 +1,4 @@
+import os
 import os.path as op
 
 from six import text_type
@@ -16,8 +17,12 @@ from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
-from datalad.utils import chpwd
-from datalad.utils import on_windows
+from datalad.tests.utils import swallow_outputs
+from datalad.utils import (
+    chpwd,
+    on_windows,
+)
+from datalad.support.network import get_local_file_url
 
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
@@ -125,6 +130,39 @@ def test_container_files(path, super_path):
         res, 1, action='get', status='ok',
         path=op.join(super_ds.path, 'sub', 'righthere'), type='file')
     assert_no_change(res, super_ds.path)
+
+
+@with_tempfile
+@with_tree(tree={'some_container.img': "doesn't matter"})
+def test_custom_call_fmt(path, local_file):
+    ds = Dataset(path).create()
+    subds = ds.create('sub')
+
+    # plug in a proper singularity image
+    subds.containers_add(
+        'mycontainer',
+        url=get_local_file_url(op.join(local_file, 'some_container.img')),
+        image='righthere',
+        call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath}'
+    )
+    ds.save()  # record the effect in super-dataset
+
+    # Running should work fine either withing sub or within super
+    with swallow_outputs() as cmo:
+        subds.containers_run('XXX', container_name='mycontainer')
+        assert_in('image=righthere cmd=XXX img_dspath=.', cmo.out)
+
+    with swallow_outputs() as cmo:
+        ds.containers_run('XXX', container_name='sub/mycontainer')
+        assert_in('image=sub/righthere cmd=XXX img_dspath=sub', cmo.out)
+
+    # Test within subdirectory of the super-dataset
+    subdir = op.join(ds.path, 'subdir')
+    os.mkdir(subdir)
+    with chpwd(subdir):
+        with swallow_outputs() as cmo:
+            containers_run('XXX', container_name='sub/mycontainer')
+            assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', cmo.out)
 
 
 @skip_if_no_network

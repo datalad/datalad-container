@@ -154,19 +154,19 @@ def test_container_update(ds_path, local_file, url):
 @with_tempfile
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
-def test_container_from_subdataset(ds_path, subds_path, local_file):
+def test_container_from_subdataset(ds_path, src_subds_path, local_file):
 
     # prepare a to-be subdataset with a registered container
-    subds = Dataset(subds_path).create()
-    subds.containers_add(name="first",
+    src_subds = Dataset(src_subds_path).create()
+    src_subds.containers_add(name="first",
                          url=get_local_file_url(op.join(local_file,
                                                         'some_container.img'))
                          )
     # add it as subdataset to a super ds:
     ds = Dataset(ds_path).create()
-    ds.install("sub", source=subds_path)
+    subds = ds.install("sub", source=src_subds_path)
     # add it again one level down to see actual recursion:
-    Dataset(op.join(ds.path, "sub")).install("subsub", source=subds_path)
+    subds.install("subsub", source=src_subds_path)
 
     # We come up empty without recursive:
     res = ds.containers_list(recursive=False)
@@ -177,12 +177,14 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     assert_result_count(res, 2)
 
     # default location within the subdataset:
-    target_path = op.join(ds_path, 'sub',
+    target_path = op.join(subds.path,
                           '.datalad', 'environments', 'first', 'image')
     assert_result_count(
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
-        path=target_path)
+        path=target_path,
+        parentds=subds.path
+    )
 
     # not installed subdataset doesn't pose an issue:
     sub2 = ds.create("sub2")
@@ -195,10 +197,9 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     # subds:
     res = ds.containers_list(recursive=True)
     assert_result_count(res, 2)
-    # default location within the subdataset:
-    target_path = op.join(ds_path, 'sub',
-                          '.datalad', 'environments', 'first', 'image')
     assert_result_count(
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
-        path=target_path)
+        path=target_path,
+        parentds=subds.path
+    )

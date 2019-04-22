@@ -62,6 +62,9 @@ class ContainersRun(Interface):
 
         container = find_container(ds, container_name)
         image_path = op.relpath(container["path"], pwd)
+        # container record would contain path to the (sub)dataset containing
+        # it.  If not - take current dataset, as it must be coming from it
+        image_dspath = op.relpath(container.get('parentds', ds.path), pwd)
 
         # sure we could check whether the container image is present,
         # but it might live in a subdataset that isn't even installed yet
@@ -83,8 +86,11 @@ class ContainersRun(Interface):
                     raise ValueError(
                         'cmdexe {!r} is in an old, unsupported format. '
                         'Convert it to a plain string.'.format(callspec))
-
-            cmd = callspec.format(img=image_path, cmd=cmd)
+            cmd = callspec.format(
+                img=image_path,
+                cmd=cmd,
+                img_dspath=image_dspath,
+            )
         else:
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
