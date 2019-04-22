@@ -183,7 +183,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
         path=target_path,
-        dspath=subds.path
+        parentds=subds.path
     )
 
     # not installed subdataset doesn't pose an issue:
@@ -201,5 +201,5 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
         path=target_path,
-        dspath=subds.path
+        parentds=subds.path
     )
