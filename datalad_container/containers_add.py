@@ -105,7 +105,9 @@ class ContainersAdd(Interface):
             doc="""Command format string indicating how to execute a command in
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
-            replaced with the desired command.""",
+            replaced with the desired command. Additional placeholders:
+            '{img_dspath}' is relative path to the dataset containing the image.
+            """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
         ),
