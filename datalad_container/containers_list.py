@@ -75,14 +75,13 @@ class ContainersList(Interface):
             if 'image' not in v:
                 # there is no container location configured
                 continue
-            if dataset and 'dspath' not in v:
-                v['dspath'] = dataset.path
             res = get_status_dict(
                 status='ok',
                 action='containers',
                 name=k,
                 type='file',
                 path=op.join(ds.path, v.pop('image')),
+                parentds=ds.path,
                 # TODO
                 #state='absent' if ... else 'present'
                 **v)
