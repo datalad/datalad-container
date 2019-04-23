@@ -54,8 +54,6 @@ def _guess_call_fmt(ds, name, url):
         return None
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
-    elif url.startswith('dhub://'):
-        return 'python -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 @build_doc
@@ -88,11 +86,7 @@ class ContainersAdd(Interface):
             doc="""A URL (or local path) to get the container image from. If
             the URL scheme is one recognized by Singularity, 'shub://' or
             'docker://', the command format string will be auto-guessed when
-            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
-            scheme 'dhub://', the rest of the URL will be interpreted as the
-            argument to 'docker pull', the image will be saved to the location
-            specified by `name`, and the call format will be auto-guessed if
-            not given.""",
+            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -219,17 +213,7 @@ class ContainersAdd(Interface):
 
             imgurl = _resolve_img_url(url)
             lgr.debug('Attempt to obtain container image from: %s', imgurl)
-            if url.startswith("dhub://"):
-                from .adapters import docker
-
-                docker_image = url[len("dhub://"):]
-
-                lgr.debug(
-                    "Running 'docker pull %s and saving image to %s",
-                    docker_image, image)
-                runner.run(["docker", "pull", docker_image])
-                docker.save(docker_image, image)
-            elif url.startswith("docker://"):
+            if url.startswith("docker://"):
                 image_dir, image_basename = op.split(image)
                 if not image_basename:
                     raise ValueError("No basename in path {}".format(image))
