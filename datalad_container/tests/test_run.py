@@ -55,6 +55,18 @@ def test_run_mispecified(path):
     assert_in("Container selection impossible", text_type(cm.exception))
 
 
+@with_tree(tree={"i.img": "doesn't matter"})
+def test_run_unknown_cmdexec_placeholder(path):
+    ds = Dataset(path).create(force=True)
+    ds.containers_add("i", image="i.img", call_fmt="{youdontknowme}")
+    assert_result_count(
+        ds.containers_run("doesn't matter", on_failure="ignore"),
+        1,
+        path=ds.path,
+        action="run",
+        status="error")
+
+
 @skip_if_no_network
 @with_tempfile
 @with_tempfile
