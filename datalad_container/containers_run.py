@@ -12,6 +12,7 @@ from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
 
+from datalad.interface.results import get_status_dict
 from datalad.interface.run import Run
 from datalad.interface.run import get_command_pwds
 from datalad.interface.run import normalize_command
@@ -86,11 +87,24 @@ class ContainersRun(Interface):
                     raise ValueError(
                         'cmdexe {!r} is in an old, unsupported format. '
                         'Convert it to a plain string.'.format(callspec))
-            cmd = callspec.format(
-                img=image_path,
-                cmd=cmd,
-                img_dspath=image_dspath,
-            )
+            try:
+                cmd_kwargs = dict(
+                    img=image_path,
+                    cmd=cmd,
+                    img_dspath=image_dspath,
+                )
+                cmd = callspec.format(**cmd_kwargs)
+            except KeyError as exc:
+                yield get_status_dict(
+                    'run',
+                    ds=ds,
+                    status='error',
+                    message=(
+                        'Unrecognized cmdexec placeholder: %s. '
+                        'See containers-add for information on known ones: %s',
+                        exc,
+                        ", ".join(cmd_kwargs)))
+                return
         else:
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
