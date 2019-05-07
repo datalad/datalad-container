@@ -181,7 +181,7 @@ def test_custom_call_fmt(path, local_file):
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path):
     ds = Dataset(path).create(force=True)
-    ds.add(".")
+    ds.rev_save()
     ds.containers_add("deb", url=testimg_url,
                       call_fmt="singularity exec {img} {cmd}")
 
