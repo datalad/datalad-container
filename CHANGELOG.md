@@ -24,6 +24,9 @@ The minimum required DataLad version is now 0.11.5.
   `extra_inputs` argument so that a run command's "{inputs}" field is
   restricted to inputs that the caller explicitly specified.
 
+- During execution, `containers-run` now sets the environment variable
+  `DATALAD_CONTAINER_NAME` to the name of the container.
+
 ### Fixes
 
 - `containers-run` mishandled paths when called from a subdirectory.
