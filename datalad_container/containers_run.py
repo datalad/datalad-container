@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext'
 
 import logging
+import os
 import os.path as op
 
 from datalad.interface.base import Interface
@@ -20,6 +21,10 @@ from datalad_container.find_container import find_container
 
 lgr = logging.getLogger("datalad.containers.containers_run")
 
+# Environment variable to be set during execution to possibly
+# inform underlying shim scripts about the original name of
+# the container
+CONTAINER_NAME_ENVVAR = 'DATALAD_CONTAINER_NAME'
 
 _run_params = dict(
     Run._params_,
@@ -47,7 +52,14 @@ class ContainersRun(Interface):
     A command is generated based on the input arguments such that the
     container image itself will be recorded as an input dependency of
     the command execution in the `run` record in the git history.
+
+    During execution the environment variable {name_envvar} is set to the
+    name of the used container.
     """
+
+    _docs_ = dict(
+        name_envvar=CONTAINER_NAME_ENVVAR
+    )
 
     _params_ = _run_params
 
@@ -57,6 +69,7 @@ class ContainersRun(Interface):
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
                  explicit=False, sidecar=None):
+        from mock import patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
@@ -112,16 +125,18 @@ class ContainersRun(Interface):
         # with amend inputs to also include the container image
         inputs = (inputs or []) + [image_path]
 
-        # fire!
-        for r in Run.__call__(
-                cmd=cmd,
-                dataset=dataset or (ds if ds.path == pwd else None),
-                inputs=inputs,
-                outputs=outputs,
-                message=message,
-                expand=expand,
-                explicit=explicit,
-                sidecar=sidecar,
-                on_failure="ignore",
-                return_type='generator'):
-            yield r
+        with patch.dict('os.environ',
+                        {CONTAINER_NAME_ENVVAR: container['name']}):
+            # fire!
+            for r in Run.__call__(
+                    cmd=cmd,
+                    dataset=dataset or (ds if ds.path == pwd else None),
+                    inputs=inputs,
+                    outputs=outputs,
+                    message=message,
+                    expand=expand,
+                    explicit=explicit,
+                    sidecar=sidecar,
+                    on_failure="ignore",
+                    return_type='generator'):
+                yield r

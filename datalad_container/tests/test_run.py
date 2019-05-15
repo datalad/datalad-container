@@ -155,14 +155,16 @@ def test_custom_call_fmt(path, local_file):
         'mycontainer',
         url=get_local_file_url(op.join(local_file, 'some_container.img')),
         image='righthere',
-        call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath}'
+        call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath} '
+                 # and environment variable being set/propagated by default
+                 'name=$DATALAD_CONTAINER_NAME'
     )
     ds.save()  # record the effect in super-dataset
 
     # Running should work fine either withing sub or within super
     with swallow_outputs() as cmo:
         subds.containers_run('XXX', container_name='mycontainer')
-        assert_in('image=righthere cmd=XXX img_dspath=.', cmo.out)
+        assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer', cmo.out)
 
     with swallow_outputs() as cmo:
         ds.containers_run('XXX', container_name='sub/mycontainer')
