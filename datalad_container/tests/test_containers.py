@@ -23,7 +23,8 @@ from datalad.support.network import get_local_file_url
 
 
 @with_tempfile
-def test_add_noop(path):
+@with_tempfile(content="new")
+def test_add_noop(path, new_image):
     ds = Dataset(path).create()
     ok_clean_git(ds.path)
     assert_raises(TypeError, ds.containers_add)
@@ -45,6 +46,19 @@ def test_add_noop(path):
     )
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
+
+    # and if we point to the real existing file with content, it will be copied
+    # over an existing dummy one (note that here I define 2nd container to
+    # point to the same image -- we have no guards against that, somewhat by
+    # design to allow different configurations for the same image)
+    res = ds.containers_add(
+        'broken2',
+        url=new_image, image='dummy',
+        on_failure='ignore'
+    )
+    assert_status('ok', res)
+    assert_result_count(res, 1, action='save', status='ok')
+    ok_file_has_content(op.join(ds.path, 'dummy'), 'new')
 
 
 @with_tempfile

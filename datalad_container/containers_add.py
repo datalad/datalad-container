@@ -246,6 +246,9 @@ class ContainersAdd(Interface):
                 image_dir = op.dirname(image)
                 if image_dir and not op.exists(image_dir):
                     os.makedirs(image_dir)
+                if op.lexists(image):
+                    lgr.debug("Image file %s already exists, removing", image)
+                    os.unlink(image)
                 copyfile(url, image)
             else:
                 try:
