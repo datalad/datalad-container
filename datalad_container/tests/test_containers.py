@@ -150,6 +150,15 @@ def test_container_update(ds_path, local_file, url):
     assert_result_count(res, 1, action="save", status="ok")
     ok_file_has_content(op.join(ds.path, img), "bar")
 
+    # Test commit message
+    # In the above case it was updating existing image so should have "Update "
+    get_commit_msg = lambda *args: ds.repo.format_commit('%B')
+    assert_in("Update ", get_commit_msg())
+
+    # If we add a new image with update=True should say Configure
+    res = ds.containers_add(name="foo2", update=True, url=url_bar)
+    assert_in("Configure ", get_commit_msg())
+
 
 @with_tempfile
 @with_tempfile
