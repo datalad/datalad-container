@@ -208,8 +208,10 @@ class ContainersAdd(Interface):
         # collect bits for a final and single save() call
         to_save = []
         imgurl = url
+        was_updated = False
         if url:
             if update and op.lexists(image):
+                was_updated = True
                 # XXX: check=False is used to avoid dropping the image. It
                 # should use drop=False if remove() gets such an option (see
                 # DataLad's gh-2673).
@@ -287,7 +289,7 @@ class ContainersAdd(Interface):
         for r in ds.save(
                 path=to_save,
                 message="[DATALAD] {do} containerized environment '{name}'".format(
-                    do="Update" if update else "Configure",
+                    do="Update" if was_updated else "Configure",
                     name=name)):
             yield r
         result["status"] = "ok"
