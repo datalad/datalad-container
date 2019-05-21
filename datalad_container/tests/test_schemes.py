@@ -6,6 +6,7 @@ from datalad.api import containers_add
 from datalad.api import containers_list
 from datalad.api import containers_run
 
+from datalad.utils import swallow_outputs
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import assert_result_count
@@ -26,8 +27,5 @@ def test_docker(path):  # Singularity's "docker://" scheme.
     assert_result_count(ds.containers_list(), 1, path=img, name="bb")
     ok_clean_git(path)
 
-    ds.containers_run(["sh", "-c", "cat /singularity >out"])
-    ok_file_has_content(
-        op.join(ds.path, "out"),
-        "There is no runscript defined for this container",
-        re_=True, match=False)
+    with swallow_outputs():
+        ds.containers_run(["ls", "/singularity"])
