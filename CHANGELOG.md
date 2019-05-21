@@ -34,6 +34,9 @@ The minimum required DataLad version is now 0.11.5.
 - `containers-run` didn't provide an informative error message when
   `cmdexec` contained an unknown placeholder.
 
+- `containers-add` ignores the `--update` flag when the container
+  doesn't yet exist, but it confusingly still used the word "update"
+  in the commit message.
 
 ## 0.3.1 (Mar 05, 2019) -- Upgrayeddd
 
