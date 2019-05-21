@@ -38,8 +38,11 @@ def test_add_noop(path):
     ok_clean_git(ds.path)
     # config will be added, as long as there is a file, even when URL access
     # fails
-    res = ds.containers_add('broken', url='bogus', image='dummy',
-                            on_failure='ignore')
+    res = ds.containers_add(
+        'broken',
+        url='bogus-protocol://bogus-server', image='dummy',
+        on_failure='ignore'
+    )
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
 
