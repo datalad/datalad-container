@@ -105,7 +105,9 @@ class ContainersAdd(Interface):
             doc="""Command format string indicating how to execute a command in
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
-            replaced with the desired command.""",
+            replaced with the desired command. Additional placeholders:
+            '{img_dspath}' is relative path to the dataset containing the image.
+            """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -206,8 +208,10 @@ class ContainersAdd(Interface):
         # collect bits for a final and single save() call
         to_save = []
         imgurl = url
+        was_updated = False
         if url:
             if update and op.lexists(image):
+                was_updated = True
                 # XXX: check=False is used to avoid dropping the image. It
                 # should use drop=False if remove() gets such an option (see
                 # DataLad's gh-2673).
@@ -233,6 +237,10 @@ class ContainersAdd(Interface):
                     raise ValueError("No basename in path {}".format(image))
                 if image_dir and not op.exists(image_dir):
                     os.makedirs(image_dir)
+
+                lgr.info("Building Singularity image for %s "
+                         "(this may take some time)",
+                         url)
                 runner.run(["singularity", "build", image_basename, url],
                            cwd=image_dir or None)
             elif op.exists(url):
@@ -281,7 +289,7 @@ class ContainersAdd(Interface):
         for r in ds.save(
                 path=to_save,
                 message="[DATALAD] {do} containerized environment '{name}'".format(
-                    do="Update" if update else "Configure",
+                    do="Update" if was_updated else "Configure",
                     name=name)):
             yield r
         result["status"] = "ok"

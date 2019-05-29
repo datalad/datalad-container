@@ -38,8 +38,11 @@ def test_add_noop(path):
     ok_clean_git(ds.path)
     # config will be added, as long as there is a file, even when URL access
     # fails
-    res = ds.containers_add('broken', url='bogus', image='dummy',
-                            on_failure='ignore')
+    res = ds.containers_add(
+        'broken',
+        url='bogus-protocol://bogus-server', image='dummy',
+        on_failure='ignore'
+    )
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
 
@@ -150,23 +153,32 @@ def test_container_update(ds_path, local_file, url):
     assert_result_count(res, 1, action="save", status="ok")
     ok_file_has_content(op.join(ds.path, img), "bar")
 
+    # Test commit message
+    # In the above case it was updating existing image so should have "Update "
+    get_commit_msg = lambda *args: ds.repo.format_commit('%B')
+    assert_in("Update ", get_commit_msg())
+
+    # If we add a new image with update=True should say Configure
+    res = ds.containers_add(name="foo2", update=True, url=url_bar)
+    assert_in("Configure ", get_commit_msg())
+
 
 @with_tempfile
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
-def test_container_from_subdataset(ds_path, subds_path, local_file):
+def test_container_from_subdataset(ds_path, src_subds_path, local_file):
 
     # prepare a to-be subdataset with a registered container
-    subds = Dataset(subds_path).create()
-    subds.containers_add(name="first",
+    src_subds = Dataset(src_subds_path).create()
+    src_subds.containers_add(name="first",
                          url=get_local_file_url(op.join(local_file,
                                                         'some_container.img'))
                          )
     # add it as subdataset to a super ds:
     ds = Dataset(ds_path).create()
-    ds.install("sub", source=subds_path)
+    subds = ds.install("sub", source=src_subds_path)
     # add it again one level down to see actual recursion:
-    Dataset(op.join(ds.path, "sub")).install("subsub", source=subds_path)
+    subds.install("subsub", source=src_subds_path)
 
     # We come up empty without recursive:
     res = ds.containers_list(recursive=False)
@@ -177,12 +189,14 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     assert_result_count(res, 2)
 
     # default location within the subdataset:
-    target_path = op.join(ds_path, 'sub',
+    target_path = op.join(subds.path,
                           '.datalad', 'environments', 'first', 'image')
     assert_result_count(
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
-        path=target_path)
+        path=target_path,
+        parentds=subds.path
+    )
 
     # not installed subdataset doesn't pose an issue:
     sub2 = ds.create("sub2")
@@ -195,10 +209,9 @@ def test_container_from_subdataset(ds_path, subds_path, local_file):
     # subds:
     res = ds.containers_list(recursive=True)
     assert_result_count(res, 2)
-    # default location within the subdataset:
-    target_path = op.join(ds_path, 'sub',
-                          '.datalad', 'environments', 'first', 'image')
     assert_result_count(
         res, 1,
         name='sub/first', type='file', action='containers', status='ok',
-        path=target_path)
+        path=target_path,
+        parentds=subds.path
+    )

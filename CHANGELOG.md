@@ -9,6 +9,35 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 0.4.0 (May 29, 2019) -- run-baby-run
+
+The minimum required DataLad version is now 0.11.5.
+
+### New features
+
+- The call format gained the "{img_dspath}" placeholder, which expands
+  to the relative path of the dataset that contains the image.  This
+  is useful for pointing to a wrapper script that is bundled in the
+  same subdataset as a container.
+
+- `containers-run` now passes the container image to `run` via its
+  `extra_inputs` argument so that a run command's "{inputs}" field is
+  restricted to inputs that the caller explicitly specified.
+
+- During execution, `containers-run` now sets the environment variable
+  `DATALAD_CONTAINER_NAME` to the name of the container.
+
+### Fixes
+
+- `containers-run` mishandled paths when called from a subdirectory.
+
+- `containers-run` didn't provide an informative error message when
+  `cmdexec` contained an unknown placeholder.
+
+- `containers-add` ignores the `--update` flag when the container
+  doesn't yet exist, but it confusingly still used the word "update"
+  in the commit message.
+
 ## 0.3.1 (Mar 05, 2019) -- Upgrayeddd
 
 ### Fixes
