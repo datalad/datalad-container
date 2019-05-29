@@ -1,6 +1,7 @@
 datalad-container (0.4.0-1) experimental; urgency=medium
 
   * Fresh upstream release
+    - d/control: minimal required datalad version is 0.11.5
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Wed, 29 May 2019 15:28:39 -0400
 

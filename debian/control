@@ -5,7 +5,7 @@ Priority: optional
 Build-Depends:
  debhelper (>= 9),
  dh-python,
- datalad (>= 0.11.1~),
+ datalad (>= 0.11.5~),
  python-requests (>= 1.2),
  python3-setuptools,
  python3-all,
@@ -16,7 +16,7 @@ Homepage: http://datalad-container.rtfd.org
 Package: datalad-container
 Architecture: all
 Depends:
- datalad (>= 0.11.1~),
+ datalad (>= 0.11.5~),
  python3-requests (>= 1.2),
  python3-chardet (>= 3.0.4),
  ${misc:Depends},
