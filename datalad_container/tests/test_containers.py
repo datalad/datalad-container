@@ -16,6 +16,7 @@ from datalad.tests.utils import assert_status
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_in
+from datalad.tests.utils import assert_in_results
 from datalad.tests.utils import assert_not_in
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
@@ -187,6 +188,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     # query available containers from within super:
     res = ds.containers_list(recursive=True)
     assert_result_count(res, 2)
+    assert_in_results(res, action="containers", refds=ds.path)
 
     # default location within the subdataset:
     target_path = op.join(subds.path,

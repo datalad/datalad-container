@@ -44,6 +44,7 @@ class ContainersList(Interface):
     def __call__(dataset=None, recursive=False):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='list containers')
+        refds = ds.path
 
         if recursive:
             for sub in ds.subdatasets(return_type='generator'):
@@ -51,6 +52,7 @@ class ContainersList(Interface):
                 if subds.is_installed():
                     for c in subds.containers_list(recursive=recursive):
                         c['name'] = sub['gitmodule_name'] + '/' + c['name']
+                        c['refds'] = refds
                         yield c
 
         # all info is in the dataset config!
@@ -81,6 +83,7 @@ class ContainersList(Interface):
                 name=k,
                 type='file',
                 path=op.join(ds.path, v.pop('image')),
+                refds=refds,
                 parentds=ds.path,
                 # TODO
                 #state='absent' if ... else 'present'
