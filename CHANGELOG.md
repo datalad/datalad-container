@@ -9,6 +9,13 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 0.5.0 () --
+
+### New features
+
+- The default result renderer for `containers-list` is now a custom
+  renderer that includes the container name in the output.
+
 ## 0.4.0 (May 29, 2019) -- run-baby-run
 
 The minimum required DataLad version is now 0.11.5.
