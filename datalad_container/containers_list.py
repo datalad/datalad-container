@@ -11,10 +11,13 @@ from datalad.interface.common_opts import recursion_flag
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
 from datalad.distribution.dataset import require_dataset
+from datalad.interface.utils import default_result_renderer
 from datalad.interface.utils import eval_results
 from datalad.support.constraints import EnsureNone
+import datalad.support.ansi_colors as ac
 from datalad.interface.results import get_status_dict
 from datalad.coreapi import subdatasets
+from datalad.ui import ui
 
 lgr = logging.getLogger("datalad.containers.containers_list")
 
@@ -27,6 +30,7 @@ class ContainersList(Interface):
     """List containers known to a dataset
     """
 
+    result_renderer = 'tailored'
     # parameters of the command, must be exhaustive
     _params_ = dict(
         dataset=Parameter(
@@ -94,3 +98,13 @@ class ContainersList(Interface):
                 #state='absent' if ... else 'present'
                 **v)
             yield res
+
+    @staticmethod
+    def custom_result_renderer(res, **kwargs):
+        if res["action"] != "containers":
+            default_result_renderer(res)
+        else:
+            ui.message(
+                "{name} -> {path}"
+                .format(name=ac.color_word(res["name"], ac.MAGENTA),
+                        path=op.relpath(res["path"], res["refds"])))

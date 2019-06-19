@@ -6,6 +6,7 @@ from datalad.api import containers_add
 from datalad.api import containers_remove
 from datalad.api import containers_list
 
+from datalad.utils import swallow_outputs
 from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import with_tree
@@ -18,6 +19,7 @@ from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_in
 from datalad.tests.utils import assert_in_results
 from datalad.tests.utils import assert_not_in
+from datalad.tests.utils import assert_re_in
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
@@ -223,3 +225,14 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
         path=target_path,
         parentds=subds.path
     )
+
+    # The default renderer includes the image names.
+    with swallow_outputs() as out:
+        ds.containers_list(recursive=True)
+        lines = out.out.splitlines()
+    assert_re_in("sub/first", lines)
+    assert_re_in("sub/subsub/first", lines)
+    # But we are careful not to render partial names from subdataset traversals
+    # (i.e. we recurse with containers_list(..., result_renderer=None)).
+    with assert_raises(AssertionError):
+        assert_re_in("subsub/first", lines)
