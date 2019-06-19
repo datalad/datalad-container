@@ -50,7 +50,12 @@ class ContainersList(Interface):
             for sub in ds.subdatasets(return_type='generator'):
                 subds = Dataset(sub['path'])
                 if subds.is_installed():
-                    for c in subds.containers_list(recursive=recursive):
+                    for c in subds.containers_list(recursive=recursive,
+                                                   return_type='generator',
+                                                   on_failure='ignore',
+                                                   result_filter=None,
+                                                   result_renderer=None,
+                                                   result_xfm=None):
                         c['name'] = sub['gitmodule_name'] + '/' + c['name']
                         c['refds'] = refds
                         yield c
