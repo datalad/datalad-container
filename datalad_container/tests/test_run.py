@@ -18,6 +18,7 @@ from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
 from datalad.tests.utils import swallow_outputs
+from datalad.tests.utils import SkipTest
 from datalad.utils import (
     chpwd,
     on_windows,
@@ -71,6 +72,7 @@ def test_run_unknown_cmdexec_placeholder(path):
 @with_tempfile
 @with_tempfile
 def test_container_files(path, super_path):
+    raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create()
     cmd = ['dir'] if on_windows else ['ls']
 
@@ -182,6 +184,7 @@ def test_custom_call_fmt(path, local_file):
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path):
+    raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create(force=True)
     ds.add(".")
     ds.containers_add("deb", url=testimg_url,
