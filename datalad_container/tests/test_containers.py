@@ -6,6 +6,7 @@ from datalad.api import containers_add
 from datalad.api import containers_remove
 from datalad.api import containers_list
 
+from datalad.utils import swallow_outputs
 from datalad.tests.utils import SkipTest
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import with_tree
@@ -16,7 +17,9 @@ from datalad.tests.utils import assert_status
 from datalad.tests.utils import assert_raises
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_in
+from datalad.tests.utils import assert_in_results
 from datalad.tests.utils import assert_not_in
+from datalad.tests.utils import assert_re_in
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
@@ -68,6 +71,12 @@ def test_add_local_path(path, local_file):
     assert_in(ds.repo.WEB_UUID, ds.repo.whereis(bar_target))
 
 
+RAW_KWDS = dict(return_type='list',
+                result_filter=None,
+                result_renderer=None,
+                result_xfm=None)
+
+
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 @serve_path_via_http
@@ -88,7 +97,7 @@ def test_container_files(ds_path, local_file, url):
     ds.save(message="Configure container mountpoint")
 
     # no containers yet:
-    res = ds.containers_list()
+    res = ds.containers_list(**RAW_KWDS)
     assert_result_count(res, 0)
 
     # add first "image": must end up at the configured default location
@@ -101,7 +110,7 @@ def test_container_files(ds_path, local_file, url):
                         action="containers_add")
     ok_(op.lexists(target_path))
 
-    res = ds.containers_list()
+    res = ds.containers_list(**RAW_KWDS)
     assert_result_count(res, 1)
     assert_result_count(
         res, 1,
@@ -113,7 +122,7 @@ def test_container_files(ds_path, local_file, url):
     assert_raises(TypeError, ds.containers_remove)
     res = ds.containers_remove('first', remove_image=True)
     assert_status('ok', res)
-    assert_result_count(ds.containers_list(), 0)
+    assert_result_count(ds.containers_list(**RAW_KWDS), 0)
     # image removed
     assert(not op.lexists(target_path))
 
@@ -181,12 +190,13 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     subds.install("subsub", source=src_subds_path)
 
     # We come up empty without recursive:
-    res = ds.containers_list(recursive=False)
+    res = ds.containers_list(recursive=False, **RAW_KWDS)
     assert_result_count(res, 0)
 
     # query available containers from within super:
-    res = ds.containers_list(recursive=True)
+    res = ds.containers_list(recursive=True, **RAW_KWDS)
     assert_result_count(res, 2)
+    assert_in_results(res, action="containers", refds=ds.path)
 
     # default location within the subdataset:
     target_path = op.join(subds.path,
@@ -207,7 +217,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
 
     # same results as before, not crashing or somehow confused by a not present
     # subds:
-    res = ds.containers_list(recursive=True)
+    res = ds.containers_list(recursive=True, **RAW_KWDS)
     assert_result_count(res, 2)
     assert_result_count(
         res, 1,
@@ -215,3 +225,14 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
         path=target_path,
         parentds=subds.path
     )
+
+    # The default renderer includes the image names.
+    with swallow_outputs() as out:
+        ds.containers_list(recursive=True)
+        lines = out.out.splitlines()
+    assert_re_in("sub/first", lines)
+    assert_re_in("sub/subsub/first", lines)
+    # But we are careful not to render partial names from subdataset traversals
+    # (i.e. we recurse with containers_list(..., result_renderer=None)).
+    with assert_raises(AssertionError):
+        assert_re_in("subsub/first", lines)

@@ -57,7 +57,12 @@ def find_container(ds, container_name):
     recurse = container_name and "/" in container_name
     containers = {c['name']: c
                   for c in ContainersList.__call__(dataset=ds,
-                                                   recursive=recurse)}
+                                                   recursive=recurse,
+                                                   return_type='generator',
+                                                   on_failure='ignore',
+                                                   result_filter=None,
+                                                   result_renderer=None,
+                                                   result_xfm=None)}
 
     if not containers:
         raise ValueError("No known containers. Use containers-add")

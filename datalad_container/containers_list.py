@@ -11,10 +11,13 @@ from datalad.interface.common_opts import recursion_flag
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
 from datalad.distribution.dataset import require_dataset
+from datalad.interface.utils import default_result_renderer
 from datalad.interface.utils import eval_results
 from datalad.support.constraints import EnsureNone
+import datalad.support.ansi_colors as ac
 from datalad.interface.results import get_status_dict
 from datalad.coreapi import subdatasets
+from datalad.ui import ui
 
 lgr = logging.getLogger("datalad.containers.containers_list")
 
@@ -27,6 +30,7 @@ class ContainersList(Interface):
     """List containers known to a dataset
     """
 
+    result_renderer = 'tailored'
     # parameters of the command, must be exhaustive
     _params_ = dict(
         dataset=Parameter(
@@ -44,13 +48,20 @@ class ContainersList(Interface):
     def __call__(dataset=None, recursive=False):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='list containers')
+        refds = ds.path
 
         if recursive:
             for sub in ds.subdatasets(return_type='generator'):
                 subds = Dataset(sub['path'])
                 if subds.is_installed():
-                    for c in subds.containers_list(recursive=recursive):
+                    for c in subds.containers_list(recursive=recursive,
+                                                   return_type='generator',
+                                                   on_failure='ignore',
+                                                   result_filter=None,
+                                                   result_renderer=None,
+                                                   result_xfm=None):
                         c['name'] = sub['gitmodule_name'] + '/' + c['name']
+                        c['refds'] = refds
                         yield c
 
         # all info is in the dataset config!
@@ -81,8 +92,19 @@ class ContainersList(Interface):
                 name=k,
                 type='file',
                 path=op.join(ds.path, v.pop('image')),
+                refds=refds,
                 parentds=ds.path,
                 # TODO
                 #state='absent' if ... else 'present'
                 **v)
             yield res
+
+    @staticmethod
+    def custom_result_renderer(res, **kwargs):
+        if res["action"] != "containers":
+            default_result_renderer(res)
+        else:
+            ui.message(
+                "{name} -> {path}"
+                .format(name=ac.color_word(res["name"], ac.MAGENTA),
+                        path=op.relpath(res["path"], res["refds"])))
