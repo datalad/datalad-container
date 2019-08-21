@@ -6,6 +6,7 @@ import re
 import logging
 import os
 import os.path as op
+import sys
 from shutil import copyfile
 from simplejson import loads
 
@@ -55,7 +56,7 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
-        return 'python -m datalad_container.adapters.docker run {img} {cmd}'
+        return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 @build_doc
