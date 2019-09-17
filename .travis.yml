@@ -2,6 +2,9 @@
 # travis-ci.org definition for DataLad build
 language: python
 
+services:
+  - docker
+
 git:
   # we use submodules to be managed with datalad
   submodules: false
