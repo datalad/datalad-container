@@ -38,7 +38,7 @@ def _get_container_by_path(ds, name, containers):
 # Entry point
 
 
-def find_container(ds, container_name):
+def find_container(ds, container_name=None):
     """Find the container in dataset `ds` specified by `container_name`.
 
     Parameters
