@@ -25,7 +25,10 @@ def _get_container_by_name(_, name, containers):
 
 def _get_container_by_path(ds, name, containers):
     from datalad.distribution.dataset import resolve_path
-    container_path = resolve_path(name, ds)
+    # Note: since datalad0.12.0rc6 resolve_path returns a Path object here,
+    #       which then fails to equal c['path'] below as this is taken from
+    #       config as a string
+    container_path = str(resolve_path(name, ds))
     container = [c for c in containers.values()
                  if c['path'] == container_path]
     if len(container) == 1:
@@ -35,7 +38,7 @@ def _get_container_by_path(ds, name, containers):
 # Entry point
 
 
-def find_container(ds, container_name):
+def find_container(ds, container_name=None):
     """Find the container in dataset `ds` specified by `container_name`.
 
     Parameters
