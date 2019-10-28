@@ -188,9 +188,10 @@ def main(args):
 if __name__ == "__main__":
     try:
         main(sys.argv)
-    except sp.CalledProcessError as exc:
-        lgr.exception(exc)
-        sys.exit(exc.returncode)
     except Exception as exc:
-        lgr.exception(exc)
-        sys.exit(1)
+        lgr.exception("Failed to execute %s", sys.argv)
+        if isinstance(exc, sp.CalledProcessError):
+            excode = exc.returncode
+        else:
+            excode = 1
+        sys.exit(excode)
