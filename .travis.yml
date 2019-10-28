@@ -66,7 +66,7 @@ script:
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
-    $NOSE_WRAPPER `which nosetests` $NOSE_OPTS
+    $NOSE_WRAPPER python -m nose $NOSE_OPTS
       -v -A "$NOSE_SELECTION_OP(integration or usecase or slow)"
       --with-doctest
       --with-cov --cover-package datalad_container
