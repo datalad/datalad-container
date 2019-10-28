@@ -47,6 +47,24 @@ except (ImportError, OSError) as exc:
     )
     long_description = open(README).read()
 
+requires = {
+    'core': [
+        'datalad>=0.11.5',
+        'requests>=1.2',  # to talk to Singularity-hub
+        'mock',   # used in containers_run
+    ],
+    'devel-docs': [
+        # used for converting README.md -> .rst for long_description
+        'pypandoc',
+        # Documentation
+        'sphinx>=1.6.2',
+        'sphinx-rtd-theme',
+    ],
+    'tests': [
+        'nose>=1.3.4',
+    ],
+}
+requires['devel'] = sum(list(requires.values()), [])
 
 setup(
     # basic project properties can be set arbitrarily
@@ -58,18 +76,8 @@ setup(
     long_description=long_description,
     packages=[pkg for pkg in find_packages('.') if pkg.startswith('datalad')],
     # datalad command suite specs from here
-    install_requires=[
-        'datalad>=0.11.5',
-        'requests>=1.2',  # to talk to Singularity-hub
-    ],
-    extras_require={
-        'devel-docs': [
-            # used for converting README.md -> .rst for long_description
-            'pypandoc',
-            # Documentation
-            'sphinx',
-            'sphinx-rtd-theme',
-        ]},
+    install_requires=requires['core'],
+    extras_require=requires,
     cmdclass=cmdclass,
     entry_points = {
         # 'datalad.extensions' is THE entrypoint inspected by the datalad API builders
