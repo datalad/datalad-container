@@ -16,6 +16,10 @@ repository](http://github.com/datalad/datalad-container) for more details.
 - The Docker adapter, which is used for the "dhub://" URL scheme,
   assumed the Python executable was spelled "python".
 
+- A call to DataLad's `resolve_path` helper assumed a string return
+  value, which isn't true as of the latest DataLad release candidate,
+  0.12.0rc6.
+
 ## 0.5.0 (Jul 12, 2019) -- damn-you-malicious-users
 
 ### New features
