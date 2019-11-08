@@ -16,8 +16,8 @@ We would recommend to consult log of the `DataLad git
 repository <http://github.com/datalad/datalad-container>`__ for more
 details.
 
-unreleased () –
----------------
+0.5.1 (Nov 08, 2019) –
+----------------------
 
 Fixes
 ~~~~~
