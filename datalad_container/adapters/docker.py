@@ -131,8 +131,10 @@ def cli_run(namespace):
               # dataset without the user needing to manually adjust the
               # permissions.
               "-u", "{}:{}".format(os.getuid(), os.getgid()),
-              "-it", "--rm",
-              image_id]
+              "--rm"]
+    if sys.stdin.isatty():
+        prefix.append("-it")
+    prefix.append(image_id)
     cmd = prefix + namespace.cmd
     lgr.debug("Running %r", cmd)
     sp.check_call(cmd)
