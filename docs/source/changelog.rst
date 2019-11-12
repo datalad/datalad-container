@@ -16,8 +16,20 @@ We would recommend to consult log of the `DataLad git
 repository <http://github.com/datalad/datalad-container>`__ for more
 details.
 
+0.5.2 (Nov 12, 2019) –
+----------------------
+
+Fixes
+~~~~~
+
+-  The Docker adapter unconditionally called ``docker run`` with
+   ``--interactive`` and ``--tty`` even when stdin was not attached to a
+   TTY, leading to an error.
+
 0.5.1 (Nov 08, 2019) –
 ----------------------
+
+.. _fixes-1:
 
 Fixes
 ~~~~~
@@ -38,7 +50,7 @@ New features
 -  The default result renderer for ``containers-list`` is now a custom
    renderer that includes the container name in the output.
 
-.. _fixes-1:
+.. _fixes-2:
 
 Fixes
 ~~~~~
@@ -67,7 +79,7 @@ New features
 -  During execution, ``containers-run`` now sets the environment
    variable ``DATALAD_CONTAINER_NAME`` to the name of the container.
 
-.. _fixes-2:
+.. _fixes-3:
 
 Fixes
 ~~~~~
@@ -84,7 +96,7 @@ Fixes
 0.3.1 (Mar 05, 2019) – Upgrayeddd
 ---------------------------------
 
-.. _fixes-3:
+.. _fixes-4:
 
 Fixes
 ~~~~~
@@ -165,7 +177,7 @@ API changes
 -  Use “name” instead of “label” for referring to a container (e.g.
    ``containers-run -n ...`` instead of ``containers-run -l``.
 
-.. _fixes-4:
+.. _fixes-5:
 
 Fixes
 ~~~~~

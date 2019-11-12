@@ -9,7 +9,7 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
-## unreleased () --
+## 0.5.2 (Nov 12, 2019) --
 
 ### Fixes
 
