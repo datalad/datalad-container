@@ -14,7 +14,7 @@ repository](http://github.com/datalad/datalad-container) for more details.
 ### Fixes
 
 - The Docker adapter unconditionally called `docker run` with
-  `--interactive` and --tty` even when stdin was not attached to a
+  `--interactive` and `--tty` even when stdin was not attached to a
   TTY, leading to an error.
 
 ## 0.5.1 (Nov 08, 2019) --
