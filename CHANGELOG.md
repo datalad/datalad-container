@@ -9,6 +9,14 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## unreleased () --
+
+### Fixes
+
+- The Docker adapter unconditionally called `docker run` with
+  `--interactive` and --tty` even when stdin was not attached to a
+  TTY, leading to an error.
+
 ## 0.5.1 (Nov 08, 2019) --
 
 ### Fixes
