@@ -37,7 +37,7 @@ def test_add_noop(path):
     # place a dummy "image" file
     with open(op.join(ds.path, 'dummy'), 'w') as f:
         f.write('some')
-    ds.add('dummy')
+    ds.save('dummy')
     ok_clean_git(ds.path)
     # config will be added, as long as there is a file, even when URL access
     # fails
