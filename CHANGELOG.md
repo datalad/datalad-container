@@ -9,6 +9,32 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 1.0.0 (Feb 23, 2020) -- not-as-a-shy-one
+
+Extension is pretty stable so releasing as 1. MAJOR release, so we could
+start tracking API breakages and enhancements properly.
+
+- Drops support for Python 2 and DatLad prior 0.12
+
+## 0.5.2 (Nov 12, 2019) --
+
+### Fixes
+
+- The Docker adapter unconditionally called `docker run` with
+  `--interactive` and `--tty` even when stdin was not attached to a
+  TTY, leading to an error.
+
+## 0.5.1 (Nov 08, 2019) --
+
+### Fixes
+
+- The Docker adapter, which is used for the "dhub://" URL scheme,
+  assumed the Python executable was spelled "python".
+
+- A call to DataLad's `resolve_path` helper assumed a string return
+  value, which isn't true as of the latest DataLad release candidate,
+  0.12.0rc6.
+
 ## 0.5.0 (Jul 12, 2019) -- damn-you-malicious-users
 
 ### New features

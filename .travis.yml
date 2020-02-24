@@ -2,14 +2,18 @@
 # travis-ci.org definition for DataLad build
 language: python
 
+services:
+  - docker
+
 git:
   # we use submodules to be managed with datalad
   submodules: false
 
 python:
-  - 2.7
   - 3.5
   - 3.6
+  - 3.7
+  - 3.8
 
 cache:
   - apt
@@ -54,25 +58,17 @@ install:
   - git config --global user.email "test@travis.land"
   - git config --global user.name "Travis Almighty"
   - cd ..; pip install -q codecov; cd -
-  - pip install -r requirements.txt
-  - pip install 'sphinx>=1.6.2'
-  - pip install 'sphinx-rtd-theme'
-  # heudiconv for conversion testing:
-  - travis_retry sudo eatmydata apt-get install dcm2niix
-  - pip install git+https://github.com/mvdoc/dcmstack@bf/importsys
-  - pip install git+https://github.com/nipy/heudiconv.git
-  # So we could test under sudo -E with PATH pointing to installed location
-  - sudo sed -i -e 's/^Defaults.*secure_path.*$//' /etc/sudoers
+  - pip install -r requirements-devel.txt
 
 script:
   # Verify that setup.py build doesn't puke
   - python setup.py build
   # Test installation system-wide
-  - sudo pip install .
+  - sudo `which pip` install .
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
-    $NOSE_WRAPPER `which nosetests` $NOSE_OPTS
+    $NOSE_WRAPPER python -m nose $NOSE_OPTS
       -v -A "$NOSE_SELECTION_OP(integration or usecase or slow)"
       --with-doctest
       --with-cov --cover-package datalad_container

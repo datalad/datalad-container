@@ -47,9 +47,8 @@ datalad containers-run cp /etc/debian_version proof.txt
 # is being executed, or which local directories shall be made available to
 # a container.
 #
-# At the moment there is built-in support for Singularity images, but other
+# At the moment there is built-in support for Singularity and Docker, but other
 # container execution systems can be used together with custom helper scripts.
-# Direct support for Docker is under development.
 #% EXAMPLE END
 
 testEquality() {

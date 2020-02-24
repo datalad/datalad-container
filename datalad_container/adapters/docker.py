@@ -131,8 +131,10 @@ def cli_run(namespace):
               # dataset without the user needing to manually adjust the
               # permissions.
               "-u", "{}:{}".format(os.getuid(), os.getgid()),
-              "-it", "--rm",
-              image_id]
+              "--rm"]
+    if sys.stdin.isatty():
+        prefix.append("-it")
+    prefix.append(image_id)
     cmd = prefix + namespace.cmd
     lgr.debug("Running %r", cmd)
     sp.check_call(cmd)
@@ -188,9 +190,10 @@ def main(args):
 if __name__ == "__main__":
     try:
         main(sys.argv)
-    except sp.CalledProcessError as exc:
-        lgr.exception(exc)
-        sys.exit(exc.returncode)
     except Exception as exc:
-        lgr.exception(exc)
-        sys.exit(1)
+        lgr.exception("Failed to execute %s", sys.argv)
+        if isinstance(exc, sp.CalledProcessError):
+            excode = exc.returncode
+        else:
+            excode = 1
+        sys.exit(excode)

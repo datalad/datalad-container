@@ -16,8 +16,87 @@ We would recommend to consult log of the `DataLad git
 repository <http://github.com/datalad/datalad-container>`__ for more
 details.
 
+0.5.2 (Nov 12, 2019) –
+----------------------
+
+Fixes
+~~~~~
+
+-  The Docker adapter unconditionally called ``docker run`` with
+   ``--interactive`` and ``--tty`` even when stdin was not attached to a
+   TTY, leading to an error.
+
+0.5.1 (Nov 08, 2019) –
+----------------------
+
+.. _fixes-1:
+
+Fixes
+~~~~~
+
+-  The Docker adapter, which is used for the “dhub://” URL scheme,
+   assumed the Python executable was spelled “python”.
+
+-  A call to DataLad’s ``resolve_path`` helper assumed a string return
+   value, which isn’t true as of the latest DataLad release candidate,
+   0.12.0rc6.
+
+0.5.0 (Jul 12, 2019) – damn-you-malicious-users
+-----------------------------------------------
+
+New features
+~~~~~~~~~~~~
+
+-  The default result renderer for ``containers-list`` is now a custom
+   renderer that includes the container name in the output.
+
+.. _fixes-2:
+
+Fixes
+~~~~~
+
+-  Temporarily skip two tests relying on SingularityHub – it is down.
+
+0.4.0 (May 29, 2019) – run-baby-run
+-----------------------------------
+
+The minimum required DataLad version is now 0.11.5.
+
+.. _new-features-1:
+
+New features
+~~~~~~~~~~~~
+
+-  The call format gained the “{img_dspath}” placeholder, which expands
+   to the relative path of the dataset that contains the image. This is
+   useful for pointing to a wrapper script that is bundled in the same
+   subdataset as a container.
+
+-  ``containers-run`` now passes the container image to ``run`` via its
+   ``extra_inputs`` argument so that a run command’s “{inputs}” field is
+   restricted to inputs that the caller explicitly specified.
+
+-  During execution, ``containers-run`` now sets the environment
+   variable ``DATALAD_CONTAINER_NAME`` to the name of the container.
+
+.. _fixes-3:
+
+Fixes
+~~~~~
+
+-  ``containers-run`` mishandled paths when called from a subdirectory.
+
+-  ``containers-run`` didn’t provide an informative error message when
+   ``cmdexec`` contained an unknown placeholder.
+
+-  ``containers-add`` ignores the ``--update`` flag when the container
+   doesn’t yet exist, but it confusingly still used the word “update” in
+   the commit message.
+
 0.3.1 (Mar 05, 2019) – Upgrayeddd
 ---------------------------------
+
+.. _fixes-4:
 
 Fixes
 ~~~~~
@@ -37,6 +116,8 @@ API changes
    automatic selection of a container name when no name is specified. If
    the current dataset has one container, that container is selected.
    Subdataset containers must always be explicitly specified.
+
+.. _new-features-2:
 
 New features
 ~~~~~~~~~~~~
@@ -80,7 +161,7 @@ New features
 0.1.1 (May 22, 2018) – The fixes
 --------------------------------
 
-.. _new-features-1:
+.. _new-features-3:
 
 New features
 ~~~~~~~~~~~~
@@ -96,7 +177,7 @@ API changes
 -  Use “name” instead of “label” for referring to a container (e.g.
    ``containers-run -n ...`` instead of ``containers-run -l``.
 
-.. _fixes-1:
+.. _fixes-5:
 
 Fixes
 ~~~~~
