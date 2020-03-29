@@ -6,7 +6,7 @@ Build-Depends:
  debhelper (>= 10),
  dh-python,
  datalad (>= 0.12~),
- python-requests (>= 1.2),
+ python3-requests (>= 1.2),
  python3-setuptools,
  python3-all,
  python3-nose,
