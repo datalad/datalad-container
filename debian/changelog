@@ -1,9 +1,9 @@
-datalad-container (1.0.0-1.1) unstable; urgency=medium
+datalad-container (1.0.0-2) unstable; urgency=medium
 
-  * Non-maintainer upload.
+  [ Sandro Tosi ]
   * Use python3-requests; Closes: #942936
 
- -- Sandro Tosi <morph@debian.org>  Sun, 29 Mar 2020 11:57:39 -0400
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 29 Mar 2020 16:26:42 -0400
 
 datalad-container (1.0.0-1) unstable; urgency=medium
 
