@@ -13,6 +13,7 @@ from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
 
+from datalad.interface.common_opts import eval_params
 from datalad.interface.results import get_status_dict
 from datalad.interface.run import Run
 from datalad.interface.run import run_command
@@ -28,7 +29,7 @@ lgr = logging.getLogger("datalad.containers.containers_run")
 CONTAINER_NAME_ENVVAR = 'DATALAD_CONTAINER_NAME'
 
 _run_params = dict(
-    Run._params_,
+    {k: v for k, v in Run._params_.items() if k not in eval_params},
     container_name=Parameter(
         args=('-n', '--container-name',),
         metavar="NAME",
