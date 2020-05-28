@@ -14,10 +14,12 @@ from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import eval_results
 
 from datalad.interface.results import get_status_dict
-from datalad.interface.run import Run
-from datalad.interface.run import run_command
-from datalad.interface.run import get_command_pwds
-from datalad.interface.run import normalize_command
+from datalad.core.local.run import (
+    Run,
+    get_command_pwds,
+    normalize_command,
+    run_command,
+)
 from datalad_container.find_container import find_container
 
 lgr = logging.getLogger("datalad.containers.containers_run")
