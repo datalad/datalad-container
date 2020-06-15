@@ -11,14 +11,11 @@ import os
 
 from distutils.core import Command
 from distutils.errors import DistutilsOptionError
-from distutils.version import LooseVersion
-from genericpath import exists
-from os import linesep, makedirs
-from os.path import dirname, join as opj, sep as pathsep, splitext, isabs
-from setuptools import findall, find_packages, setup
-
-from . import formatters as fmt
-
+from os.path import (
+    dirname,
+    join as opj,
+)
+from setuptools.config import read_configuration
 
 import versioneer
 
@@ -129,9 +126,12 @@ class BuildManPage(Command):
         #appname = self._parser.prog
         appname = 'datalad'
 
+        cfg = read_configuration(
+            opj(dirname(dirname(__file__)), 'setup.cfg'))['metadata']
+
         sections = {
             'Authors': """{0} is developed by {1} <{2}>.""".format(
-                appname, dist.get_author(), dist.get_author_email()),
+                appname, cfg['author'], cfg['author_email']),
         }
 
         for cls, opath, ext in ((fmt.ManPageFormatter, self.manpath, '1'),
