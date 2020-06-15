@@ -8,10 +8,6 @@
 
 import datetime
 import os
-import platform
-import setuptools
-import sys
-
 
 from distutils.core import Command
 from distutils.errors import DistutilsOptionError
@@ -24,32 +20,9 @@ from setuptools import findall, find_packages, setup
 from . import formatters as fmt
 
 
-def _path_rel2file(*p):
-    # dirname instead of joining with pardir so it works if
-    # datalad_build_support/ is just symlinked into some extension
-    # while developing
-    if isinstance(p, str) and isabs(p):
-        # do not mess with absolute paths
-        return p
-    else:
-        # relative means relative to the datalad package
-        return opj(dirname(dirname(__file__)), *p)
+import versioneer
 
-
-def get_version(name):
-    """Load version from version.py without entailing any imports
-
-    Parameters
-    ----------
-    name: str
-      Name of the folder (package) where from to read version.py
-    """
-    # This might entail lots of imports which might not yet be available
-    # so let's do ad-hoc parsing of the version.py
-    with open(_path_rel2file(name, 'version.py')) as f:
-        version_lines = list(filter(lambda x: x.startswith('__version__'), f))
-    assert (len(version_lines) == 1)
-    return version_lines[0].split('=')[1].strip(" '\"\t\n")
+from . import formatters as fmt
 
 
 class BuildManPage(Command):
@@ -87,8 +60,6 @@ class BuildManPage(Command):
             raise DistutilsOptionError('\'rstpath\' option is required')
         if self.parser is None:
             raise DistutilsOptionError('\'parser\' option is required')
-        self.manpath = _path_rel2file(self.manpath)
-        self.rstpath = _path_rel2file(self.rstpath)
         mod_name, func_name = self.parser.split(':')
         fromlist = mod_name.split('.')
         try:
@@ -177,7 +148,7 @@ class BuildManPage(Command):
                 format = cls(
                     cmdname,
                     ext_sections=sections,
-                    version=get_version(getattr(self, 'mod_name', appname)))
+                    version=versioneer.get_version())
                 formatted = format.format_man_page(p)
                 with open(opj(opath, '{0}.{1}'.format(
                         cmdname.replace(' ', '-'),
@@ -203,8 +174,6 @@ class BuildRSTExamplesFromScripts(Command):
             raise DistutilsOptionError('\'expath\' option is required')
         if self.rstpath is None:
             raise DistutilsOptionError('\'rstpath\' option is required')
-        self.expath = _path_rel2file(self.expath)
-        self.rstpath = _path_rel2file(self.rstpath)
         self.announce('Converting example scripts')
 
     def run(self):
@@ -235,7 +204,6 @@ class BuildConfigInfo(Command):
     def finalize_options(self):
         if self.rstpath is None:
             raise DistutilsOptionError('\'rstpath\' option is required')
-        self.rstpath = _path_rel2file(self.rstpath)
         self.announce('Generating configuration documentation')
 
     def run(self):
@@ -285,249 +253,3 @@ class BuildConfigInfo(Command):
                         desc_tmpl += 'undocumented\n'
                     v.update(docs)
                     rst.write(_indent(desc_tmpl.format(**v), '    '))
-
-
-class BuildSchema(Command):
-    description = 'Generate DataLad JSON-LD schema.'
-
-    user_options = [
-        ('path=', None, 'output path for schema file'),
-    ]
-
-    def initialize_options(self):
-        self.path = opj('docs', 'source', '_extras')
-
-    def finalize_options(self):
-        if self.path is None:
-            raise DistutilsOptionError('\'path\' option is required')
-        self.path = _path_rel2file(self.path)
-        self.announce('Generating JSON-LD schema file')
-
-    def run(self):
-        from datalad.metadata.definitions import common_defs
-        from datalad.metadata.definitions import version as schema_version
-        import json
-        import shutil
-
-        def _mk_fname(label, version):
-            return '{}{}{}.json'.format(
-                label,
-                '_v' if version else '',
-                version)
-
-        def _defs2context(defs, context_label, vocab_version, main_version=schema_version):
-            opath = opj(
-                self.path,
-                _mk_fname(context_label, vocab_version))
-            odir = dirname(opath)
-            if not os.path.exists(odir):
-                os.makedirs(odir)
-
-            # to become DataLad's own JSON-LD context
-            context = {}
-            schema = {"@context": context}
-            if context_label != 'schema':
-                schema['@vocab'] = 'http://docs.datalad.org/{}'.format(
-                    _mk_fname('schema', main_version))
-            for key, val in defs.items():
-                # git-annex doesn't allow ':', but in JSON-LD we need it for
-                # namespace separation -- let's make '.' in git-annex mean
-                # ':' in JSON-LD
-                key = key.replace('.', ':')
-                definition = val['def']
-                if definition.startswith('http://') or definition.startswith('https://'):
-                    # this is not a URL, hence an @id definitions that points
-                    # to another schema
-                    context[key] = definition
-                    continue
-                # the rest are compound definitions
-                props = {'@id': definition}
-                if 'unit' in val:
-                    props['unit'] = val['unit']
-                if 'descr' in val:
-                    props['description'] = val['descr']
-                context[key] = props
-
-            with open(opath, 'w') as fp:
-                json.dump(
-                    schema,
-                    fp,
-                    ensure_ascii=True,
-                    indent=1,
-                    separators=(', ', ': '),
-                    sort_keys=True)
-            print('schema written to {}'.format(opath))
-
-        # core vocabulary
-        _defs2context(common_defs, 'schema', schema_version)
-
-        # present the same/latest version also as the default
-        shutil.copy(
-            opj(self.path, _mk_fname('schema', schema_version)),
-            opj(self.path, 'schema.json'))
-
-
-def setup_entry_points(entry_points):
-    """Sneaky monkey patching could be fixed only via even sneakier monkey patching
-
-    It will never break, I promise!
-    """
-
-    def get_script_content(script_name, shebang="#!/usr/bin/env python"):
-        return linesep.join([
-            shebang,
-            "#",
-            "# Custom simplistic runner for DataLad. Assumes datalad module",
-            "# being available.  Generated by monkey patching monkey patched",
-            "# setuptools.",
-            "#",
-            "from %s import main" % entry_points[script_name],
-            "main()",
-            ""]).encode()
-
-    def patch_write_script(mod):
-        """Patches write_script of the module with our shim to provide
-        lightweight invocation script
-        """
-
-        orig_meth = getattr(mod, 'write_script')
-
-        def _provide_lean_script_contents(
-                self, script_name, contents, mode="t", *ignored):
-            # could be a script from another module -- let it be as is
-            if script_name in entry_points:
-                # keep shebang
-                contents = get_script_content(
-                    script_name,
-                    contents.splitlines()[0].decode())
-            return orig_meth(self, script_name, contents, mode=mode)
-
-        setattr(mod, 'write_script', _provide_lean_script_contents)
-
-    # We still need this one so that setuptools known about the scripts
-    # So we generate some bogus ones, and provide a list of them ;)
-    # pre-generate paths so we could give them to setuptools
-    scripts_build_dir = opj('build', 'scripts_generated')
-    scripts = [opj(scripts_build_dir, x) for x in entry_points]
-
-    if 'clean' not in sys.argv:
-        if not exists(scripts_build_dir):
-            makedirs(scripts_build_dir)
-        for s, mod in entry_points.items():
-            with open(opj(scripts_build_dir, s), 'wb') as f:
-                f.write(get_script_content(s))
-
-    platform_system = platform.system().lower()
-    setup_kwargs = {}
-
-    if platform_system == 'windows':
-        # TODO: investigate https://github.com/matthew-brett/myscripter,
-        # nibabel/nixext approach to support similar setup on Windows
-        setup_kwargs['entry_points'] = {
-            'console_scripts': ['%s=%s:main' % i for i in entry_points.items()]
-        }
-    else:
-        # Damn you sharktopus!
-        from setuptools.command.install_scripts import \
-            install_scripts as stinstall_scripts
-        from setuptools.command.easy_install import easy_install
-
-        patch_write_script(stinstall_scripts)
-        patch_write_script(easy_install)
-
-        setup_kwargs['scripts'] = scripts
-
-    return setup_kwargs
-
-
-def get_long_description_from_README():
-    """Read README.md, convert to .rst using pypandoc
-
-    If pypandoc is not available or fails - just output original .md.
-
-    Returns
-    -------
-    dict
-      with keys long_description and possibly long_description_content_type
-      for newer setuptools which support uploading of markdown as is.
-    """
-    # PyPI used to not render markdown. Workaround for a sane appearance
-    # https://github.com/pypa/pypi-legacy/issues/148#issuecomment-227757822
-    # is still in place for older setuptools
-
-    README = opj(_path_rel2file('README.md'))
-
-    ret = {}
-    if LooseVersion(setuptools.__version__) >= '38.6.0':
-        # check than this
-        ret['long_description'] = open(README).read()
-        ret['long_description_content_type'] = 'text/markdown'
-        return ret
-
-    # Convert or fall-back
-    try:
-        import pypandoc
-        return {'long_description': pypandoc.convert(README, 'rst')}
-    except (ImportError, OSError) as exc:
-        # attempting to install pandoc via brew on OSX currently hangs and
-        # pypandoc imports but throws OSError demanding pandoc
-        print(
-                "WARNING: pypandoc failed to import or thrown an error while "
-                "converting"
-                " README.md to RST: %r   .md version will be used as is" % exc
-        )
-        return {'long_description': open(README).read()}
-
-
-def findsome(subdir, extensions):
-    """Find files under subdir having specified extensions
-
-    Leading directory (datalad) gets stripped
-    """
-    return [
-        f.split(pathsep, 1)[1] for f in findall(opj('datalad', subdir))
-        if splitext(f)[-1].lstrip('.') in extensions
-    ]
-
-
-def datalad_setup(name, **kwargs):
-    """A helper for a typical invocation of setuptools.setup.
-
-    If not provided in kwargs, following fields will be autoset to the defaults
-    or obtained from the present on the file system files:
-
-    - author
-    - author_email
-    - packages -- all found packages which start with `name`
-    - long_description -- converted to .rst using pypandoc README.md
-    - version -- parsed `__version__` within `name/version.py`
-
-    Parameters
-    ----------
-    name: str
-        Name of the Python package
-    **kwargs:
-        The rest of the keyword arguments passed to setuptools.setup as is
-    """
-    # Simple defaults
-    for k, v in {
-        'author': "The DataLad Team and Contributors",
-        'author_email': "team@datalad.org"
-    }.items():
-        if kwargs.get(k) is None:
-            kwargs[k] = v
-
-    # More complex, requiring some function call
-    if kwargs.get('packages') is None:
-        kwargs['packages'] = find_packages('.')
-    if kwargs.get('long_description') is None:
-        kwargs.update(get_long_description_from_README())
-    if kwargs.get('version') is None:
-        kwargs['version'] = get_version(name)
-
-    cmdclass = kwargs.get('cmdclass', {})
-    # Check if command needs some module specific handling
-    for v in cmdclass.values():
-        if hasattr(v, 'handle_module'):
-            getattr(v, 'handle_module')(name, **kwargs)
-    return setup(name=name, **kwargs)
