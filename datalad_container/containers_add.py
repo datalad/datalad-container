@@ -57,6 +57,8 @@ def _guess_call_fmt(ds, name, url):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+    elif url.startswith('ecr://'):
+        return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 @build_doc
