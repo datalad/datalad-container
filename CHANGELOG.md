@@ -9,6 +9,12 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 1.0.1 (June 23, 2020) -- 
+
+- Prefer `datalad.core.local.run` to `datalad.interface.run`.  The
+  latter has been marked as obsolete since DataLad v0.12 (our minimum
+  requirement) and will be removed in DataLad's next feature release.
+
 ## 1.0.0 (Feb 23, 2020) -- not-as-a-shy-one
 
 Extension is pretty stable so releasing as 1. MAJOR release, so we could
