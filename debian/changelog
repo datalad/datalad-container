@@ -1,3 +1,10 @@
+datalad-container (1.0.1-1) unstable; urgency=medium
+
+  * Upstream release which should be compatible with upcoming
+    DataLad 0.14 (and current master)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 08 Sep 2020 18:39:27 -0400
+
 datalad-container (1.0.0-2) unstable; urgency=medium
 
   [ Sandro Tosi ]
