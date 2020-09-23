@@ -87,8 +87,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         ds.containers_list(), 1,
         path=op.join(ds.path, 'righthere'),
-        name='mycontainer',
-        updateurl=testimg_url)
+        name='mycontainer')
     ok_clean_git(path)
 
     def assert_no_change(res, path):
