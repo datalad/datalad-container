@@ -15,11 +15,6 @@ from datalad.support.constraints import EnsureNone
 from datalad.support.constraints import EnsureStr
 from datalad.interface.results import get_status_dict
 
-# required bound methods
-from datalad.coreapi import save
-from datalad.coreapi import remove
-
-
 lgr = logging.getLogger("datalad.containers.containers_remove")
 
 

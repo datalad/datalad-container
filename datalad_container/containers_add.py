@@ -22,9 +22,6 @@ from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
 
-# required bound commands
-from datalad.coreapi import save
-
 from .definitions import definitions
 
 lgr = logging.getLogger("datalad.containers.containers_add")
