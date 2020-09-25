@@ -27,5 +27,4 @@ def test_docker(path):  # Singularity's "docker://" scheme.
     assert_result_count(ds.containers_list(), 1, path=img, name="bb")
     ok_clean_git(path)
 
-    with swallow_outputs():
-        ds.containers_run(["ls", "/singularity"])
+    ds.containers_run(["ls", "/singularity"])
