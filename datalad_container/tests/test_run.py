@@ -187,7 +187,7 @@ def test_run_no_explicit_dataset(path):
     ds = Dataset(path).create(force=True)
     ds.save()
     ds.containers_add("deb", url=testimg_url,
-                      call_fmt="singularity exec {img} {cmd}")
+                      call_fmt="singularity --debug exec {img} {cmd}")
 
     # When no explicit dataset is given, paths are interpreted as relative to
     # the current working directory.
