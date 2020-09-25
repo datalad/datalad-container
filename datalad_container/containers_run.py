@@ -21,6 +21,7 @@ from datalad.core.local.run import (
     run_command,
 )
 from datalad_container.find_container import find_container
+from datalad.support.exceptions import CommandError
 
 lgr = logging.getLogger("datalad.containers.containers_run")
 
@@ -127,15 +128,26 @@ class ContainersRun(Interface):
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
-            # fire!
-            for r in run_command(
-                    cmd=cmd,
-                    dataset=dataset or (ds if ds.path == pwd else None),
-                    inputs=inputs,
-                    extra_inputs=[image_path],
-                    outputs=outputs,
-                    message=message,
-                    expand=expand,
-                    explicit=explicit,
-                    sidecar=sidecar):
-                yield r
+            for trial in range(5):
+                try:
+                    # fire!
+                    for r in run_command(
+                            cmd=cmd,
+                            dataset=dataset or (ds if ds.path == pwd else None),
+                            inputs=inputs,
+                            extra_inputs=[image_path],
+                            outputs=outputs,
+                            message=message,
+                            expand=expand,
+                            explicit=explicit,
+                            sidecar=sidecar):
+                        yield r
+                    break
+                except CommandError as e:
+                    if e.code == 255 and "singularity" in e.cmd:
+                        lgr.warning("Failed attempt #%dto run what seems to be a singularity, and exit is 255. Will "
+                                    "sleep and retry", trial+1)
+                        from time import sleep
+                        sleep(0.25)
+                        continue
+                    raise
