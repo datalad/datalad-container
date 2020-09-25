@@ -87,8 +87,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         ds.containers_list(), 1,
         path=op.join(ds.path, 'righthere'),
-        name='mycontainer',
-        updateurl=testimg_url)
+        name='mycontainer')
     ok_clean_git(path)
 
     def assert_no_change(res, path):
@@ -186,7 +185,7 @@ def test_custom_call_fmt(path, local_file):
 def test_run_no_explicit_dataset(path):
     raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create(force=True)
-    ds.add(".")
+    ds.save()
     ds.containers_add("deb", url=testimg_url,
                       call_fmt="singularity exec {img} {cmd}")
 

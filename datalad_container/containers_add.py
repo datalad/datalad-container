@@ -26,11 +26,23 @@ from .definitions import definitions
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
+# The DataLad special remote has built-in support for Singularity Hub URLs. Let
+# it handle shub:// URLs if it's available.
+_HAS_SHUB_DOWNLOADER = True
+try:
+    import datalad.downloaders.shub
+except ImportError:
+    lgr.debug("DataLad's shub downloader not found. "
+              "Custom handling for shub:// will be used")
+    _HAS_SHUB_DOWNLOADER = False
+
 
 def _resolve_img_url(url):
     """Takes a URL and tries to resolve it to an actual download
     URL that `annex addurl` can handle"""
-    if url.startswith('shub://'):
+    if not _HAS_SHUB_DOWNLOADER and url.startswith('shub://'):
+        # TODO: Remove this handling once the minimum DataLad version is at
+        # least 0.14.
         lgr.debug('Query singularity-hub for image download URL')
         import requests
         req = requests.get(
@@ -54,6 +66,28 @@ def _guess_call_fmt(ds, name, url):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+
+
+def _ensure_datalad_remote(repo):
+    """Initialize and enable datalad special remote if it isn't already."""
+    dl_remote = None
+    for info in repo.get_special_remotes().values():
+        if info["externaltype"] == "datalad":
+            dl_remote = info["name"]
+            break
+
+    if not dl_remote:
+        from datalad.consts import DATALAD_SPECIAL_REMOTE
+        from datalad.customremotes.base import init_datalad_remote
+
+        init_datalad_remote(repo, DATALAD_SPECIAL_REMOTE, autoenable=True)
+    elif repo.is_special_annex_remote(dl_remote, check_if_known=False):
+        lgr.debug("datalad special remote '%s' is already enabled",
+                  dl_remote)
+    else:
+        lgr.debug("datalad special remote '%s' found. Enabling",
+                  dl_remote)
+        repo.enable_remote(dl_remote)
 
 
 @build_doc
@@ -248,6 +282,9 @@ class ContainersAdd(Interface):
                     os.makedirs(image_dir)
                 copyfile(url, image)
             else:
+                if _HAS_SHUB_DOWNLOADER and url.startswith('shub://'):
+                    _ensure_datalad_remote(ds.repo)
+
                 try:
                     ds.repo.add_url_to_file(image, imgurl)
                 except Exception as e:
