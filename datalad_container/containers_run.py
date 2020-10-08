@@ -3,7 +3,6 @@
 __docformat__ = 'restructuredtext'
 
 import logging
-import os
 import os.path as op
 
 from datalad.interface.base import Interface
