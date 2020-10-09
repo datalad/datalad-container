@@ -167,13 +167,13 @@ def test_custom_call_fmt(path, local_file):
 
     # Running should work fine either withing sub or within super
     out = WitlessRunner(cwd=subds.path).run(
-        'datalad containers-run -n mycontainer XXX',
+        ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer',
               out['stdout'])
 
     out = WitlessRunner(cwd=ds.path).run(
-        'datalad containers-run -n sub/mycontainer XXX',
+        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('image=sub/righthere cmd=XXX img_dspath=sub', out['stdout'])
 
@@ -181,7 +181,7 @@ def test_custom_call_fmt(path, local_file):
     subdir = op.join(ds.path, 'subdir')
     os.mkdir(subdir)
     out = WitlessRunner(cwd=subdir).run(
-        'datalad containers-run -n sub/mycontainer XXX',
+        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
 
