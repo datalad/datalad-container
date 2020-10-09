@@ -80,6 +80,8 @@ class ContainersRun(Interface):
         for res in find_container_(ds, container_name):
             if res.get("action") == "containers":
                 container = res
+            else:
+                yield res
         assert container, "bug: container should always be defined here"
 
         image_path = op.relpath(container["path"], pwd)
