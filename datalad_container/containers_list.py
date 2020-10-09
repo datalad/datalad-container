@@ -39,19 +39,29 @@ class ContainersList(Interface):
             attempt is made to identify the dataset based on the current
             working directory""",
             constraints=EnsureDataset() | EnsureNone()),
+        contains=Parameter(
+            args=('--contains',),
+            metavar='PATH',
+            action='append',
+            doc="""when operating recursively, restrict the reported containers
+            to those from subdatasets that contain the given path (i.e. the
+            subdatasets that are reported by :command:`datalad subdatasets
+            --contains=PATH`). Top-level containers are always reported."""),
         recursive=recursion_flag,
     )
 
     @staticmethod
     @datasetmethod(name='containers_list')
     @eval_results
-    def __call__(dataset=None, recursive=False):
+    def __call__(dataset=None, recursive=False, contains=None):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='list containers')
         refds = ds.path
 
         if recursive:
-            for sub in ds.subdatasets(return_type='generator'):
+            for sub in ds.subdatasets(
+                    contains=contains,
+                    on_failure='ignore', return_type='generator'):
                 subds = Dataset(sub['path'])
                 if subds.is_installed():
                     for c in subds.containers_list(recursive=recursive,
