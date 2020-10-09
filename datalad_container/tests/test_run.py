@@ -24,6 +24,10 @@ from datalad.utils import (
     on_windows,
 )
 from datalad.support.network import get_local_file_url
+from datalad.cmd import (
+    StdOutCapture,
+    WitlessRunner,
+)
 
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
@@ -163,21 +167,24 @@ def test_custom_call_fmt(path, local_file):
     ds.save()  # record the effect in super-dataset
 
     # Running should work fine either withing sub or within super
-    with swallow_outputs() as cmo:
-        subds.containers_run('XXX', container_name='mycontainer')
-        assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer', cmo.out)
+    out = WitlessRunner(cwd=subds.path).run(
+        'datalad containers-run -n mycontainer XXX',
+        protocol=StdOutCapture)
+    assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer',
+              out['stdout'])
 
-    with swallow_outputs() as cmo:
-        ds.containers_run('XXX', container_name='sub/mycontainer')
-        assert_in('image=sub/righthere cmd=XXX img_dspath=sub', cmo.out)
+    out = WitlessRunner(cwd=ds.path).run(
+        'datalad containers-run -n sub/mycontainer XXX',
+        protocol=StdOutCapture)
+    assert_in('image=sub/righthere cmd=XXX img_dspath=sub', out['stdout'])
 
     # Test within subdirectory of the super-dataset
     subdir = op.join(ds.path, 'subdir')
     os.mkdir(subdir)
-    with chpwd(subdir):
-        with swallow_outputs() as cmo:
-            containers_run('XXX', container_name='sub/mycontainer')
-            assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', cmo.out)
+    out = WitlessRunner(cwd=subdir).run(
+        'datalad containers-run -n sub/mycontainer XXX',
+        protocol=StdOutCapture)
+    assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
 
 
 @skip_if_no_network
