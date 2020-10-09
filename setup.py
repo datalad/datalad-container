@@ -64,6 +64,17 @@ requires = {
         'nose>=1.3.4',
     ],
 }
+
+
+def restrict_to_minimal(requires):
+    for name, reqs in requires.items():
+        for i, req in enumerate(reqs):
+            reqs[i] = req.replace('>=', '==')
+    return requires
+
+# TODO: based on env var
+requires = restrict_to_minimal(requires)
+
 requires['devel'] = sum(list(requires.values()), [])
 
 setup(
