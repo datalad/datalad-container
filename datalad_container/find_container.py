@@ -3,9 +3,9 @@
 
 from datalad_container.containers_list import ContainersList
 
-# Functions tried by find_container. These are called with the current dataset,
-# the container name, and a dictionary mapping the container name to a record
-# (as returned by containers-list).
+# Functions tried by find_container_. These are called with the current
+# dataset, the container name, and a dictionary mapping the container name to a
+# record (as returned by containers-list).
 
 
 def _get_the_one_and_only(_, name, containers):
@@ -35,10 +35,10 @@ def _get_container_by_path(ds, name, containers):
         return container[0]
 
 
-# Entry point
+# Entry points
 
 
-def find_container(ds, container_name=None):
+def find_container_(ds, container_name=None):
     """Find the container in dataset `ds` specified by `container_name`.
 
     Parameters
@@ -49,8 +49,8 @@ def find_container(ds, container_name=None):
         Name in the form of how `containers-list -d ds -r` would report it
         (e.g., "s0/s1/cname").
 
-    Returns
-    -------
+    Yields
+    ------
     The container record, as returned by containers-list.
 
     Raises
@@ -79,10 +79,25 @@ def find_container(ds, container_name=None):
     for fn in fns:
         container = fn(ds, container_name, containers)
         if container:
-            return container
+            yield container
+            return
 
     raise ValueError(
         'Container selection impossible: not specified, ambiguous '
         'or unknown (known containers are: {})'
         .format(', '.join(containers))
     )
+
+
+def find_container(ds, container_name=None):
+    """Like `find_container_`, but just return the container record.
+    """
+    # Note: This function was once used directly by containers_run(), but that
+    # now uses the find_container_() generator function directly. Now
+    # find_container() exists for compatibility with third-party tools
+    # (reproman) and the test_find.py tests.
+    for res in find_container_(ds, container_name):
+        if res.get("action") == "containers":
+            return res
+    raise RuntimeError(
+        "bug: find_container_() should return container or raise exception")

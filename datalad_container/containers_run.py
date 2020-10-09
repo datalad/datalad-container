@@ -19,7 +19,7 @@ from datalad.core.local.run import (
     normalize_command,
     run_command,
 )
-from datalad_container.find_container import find_container
+from datalad_container.find_container import find_container_
 
 lgr = logging.getLogger("datalad.containers.containers_run")
 
@@ -76,7 +76,12 @@ class ContainersRun(Interface):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
-        container = find_container(ds, container_name)
+        container = None
+        for res in find_container_(ds, container_name):
+            if res.get("action") == "containers":
+                container = res
+        assert container, "bug: container should always be defined here"
+
         image_path = op.relpath(container["path"], pwd)
         # container record would contain path to the (sub)dataset containing
         # it.  If not - take current dataset, as it must be coming from it
