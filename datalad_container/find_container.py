@@ -7,6 +7,18 @@ from datalad_container.containers_list import ContainersList
 
 lgr = logging.getLogger("datalad_container.find_container")
 
+
+def _list_containers(dataset, recursive):
+    return {c['name']: c
+            for c in ContainersList.__call__(dataset=dataset,
+                                             recursive=recursive,
+                                             return_type='generator',
+                                             on_failure='ignore',
+                                             result_filter=None,
+                                             result_renderer=None,
+                                             result_xfm=None)}
+
+
 # Functions tried by find_container_. These are called with the current
 # dataset, the container name, and a dictionary mapping the container name to a
 # record (as returned by containers-list).
@@ -62,14 +74,7 @@ def find_container_(ds, container_name=None):
     ValueError if a uniquely matching container cannot be found.
     """
     recurse = container_name and "/" in container_name
-    containers = {c['name']: c
-                  for c in ContainersList.__call__(dataset=ds,
-                                                   recursive=recurse,
-                                                   return_type='generator',
-                                                   on_failure='ignore',
-                                                   result_filter=None,
-                                                   result_renderer=None,
-                                                   result_xfm=None)}
+    containers = _list_containers(dataset=ds, recursive=recurse)
 
     if not containers:
         raise ValueError("No known containers. Use containers-add")
