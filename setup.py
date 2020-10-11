@@ -49,7 +49,7 @@ except (ImportError, OSError) as exc:
 
 requires = {
     'core': [
-        'datalad>=0.12.1',
+        'datalad>=0.13.0',
         'requests>=1.2',  # to talk to Singularity-hub
         'mock',   # used in containers_run
     ],
