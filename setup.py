@@ -49,7 +49,7 @@ except (ImportError, OSError) as exc:
 
 requires = {
     'core': [
-        'datalad>=0.12',
+        'datalad>=0.13.0',
         'requests>=1.2',  # to talk to Singularity-hub
         'mock',   # used in containers_run
     ],
@@ -64,6 +64,17 @@ requires = {
         'nose>=1.3.4',
     ],
 }
+
+
+def restrict_to_minimal(requires):
+    for name, reqs in requires.items():
+        for i, req in enumerate(reqs):
+            reqs[i] = req.replace('>=', '==')
+    return requires
+
+# TODO: based on env var
+requires = restrict_to_minimal(requires)
+
 requires['devel'] = sum(list(requires.values()), [])
 
 setup(
