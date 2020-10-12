@@ -1,7 +1,11 @@
 """Support module for selecting a container from a dataset and its subdatasets.
 """
 
+import logging
+
 from datalad_container.containers_list import ContainersList
+
+lgr = logging.getLogger("datalad_container.find_container")
 
 # Functions tried by find_container_. These are called with the current
 # dataset, the container name, and a dictionary mapping the container name to a
@@ -77,6 +81,7 @@ def find_container_(ds, container_name=None):
     ]
 
     for fn in fns:
+        lgr.debug("Trying to find container with %s", fn)
         container = fn(ds, container_name, containers)
         if container:
             yield container
