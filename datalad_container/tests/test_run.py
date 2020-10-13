@@ -17,7 +17,6 @@ from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
-from datalad.tests.utils import swallow_outputs
 from datalad.tests.utils import SkipTest
 from datalad.utils import (
     chpwd,
