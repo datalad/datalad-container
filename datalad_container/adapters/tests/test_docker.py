@@ -3,8 +3,11 @@ import os.path as op
 import sys
 
 import datalad_container.adapters.docker as da
-from datalad.cmd import Runner
-from datalad.utils import swallow_outputs
+from datalad.cmd import (
+    Runner,
+    StdOutCapture,
+    WitlessRunner,
+)
 from datalad.support.exceptions import CommandError
 from datalad.tests.utils import (
     SkipTest,
@@ -92,6 +95,8 @@ class TestAdapterBusyBox(object):
         ds = Dataset(path).create(force=True)
         ds.save(path="foo")
         ds.containers_add("bb", url="dhub://" + self.image_name)
-        with swallow_outputs() as out:
-            ds.containers_run(["cat", "foo"], container_name="bb")
-            assert_in("content", out.out)
+
+        out = WitlessRunner(cwd=ds.path).run(
+            ["datalad", "containers-run", "-n", "bb", "cat foo"],
+            protocol=StdOutCapture)
+        assert_in("content", out["stdout"])
