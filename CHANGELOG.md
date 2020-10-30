@@ -9,6 +9,21 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 1.1.0 (October 30, 2020) -- 
+
+- Datalad version 0.13.0 or later is now required.
+
+- In the upcoming 0.14.0 release of DataLad, the datalad special
+  remote will have built-in support for "shub://" URLs.  If
+  `containers-add` detects support for this feature, it will now add
+  the "shub://" URL as is rather than resolving the URL itself.  This
+  avoids registering short-lived URLs, allowing the image to be
+  retrieved later with `datalad get`.
+
+- `containers-run` learned to install necessary subdatasets when asked
+  to execute a container from underneath an uninstalled subdataset.
+
+
 ## 1.0.1 (June 23, 2020) -- 
 
 - Prefer `datalad.core.local.run` to `datalad.interface.run`.  The
