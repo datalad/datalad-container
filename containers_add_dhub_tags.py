@@ -33,6 +33,8 @@ def clean_container_name(name):
     Note that, although it probably doesn't matter in practice, this
     transformation is susceptible to conflicts and ambiguity.
     """
+    if name.startswith("library/"):
+        name = name[8:]
     name = name.replace("_", "-")
     return re.sub(r"[^0-9a-zA-Z-]", "--", name)
 
