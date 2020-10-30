@@ -29,7 +29,7 @@ DHUB_ENDPOINT = "https://hub.docker.com/v2"
 def add_container(repo, tag, digest):
     from datalad.api import containers_add
 
-    target = Path("images", digest)
+    target = Path("images", repo, digest)
     if target.exists():
         lgr.info("Skipping %s:%s. Already exists: %s",
                  repo, tag, target)
@@ -55,14 +55,13 @@ def add_container(repo, tag, digest):
         update=True)
 
 
-def write_manifest(digest, manifest):
-    subdir = Path("manifests")
-    target = subdir / f"{digest}.json"
+def write_manifest(repo, digest, manifest):
+    target = Path(f"manifests/{repo}/{digest}.json")
     if target.exists():
         lgr.info("Manifest already exists: %s", target)
         return
     lgr.info("Writing %s", target)
-    subdir.mkdir(exist_ok=True)
+    target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(manifest))
 
 
@@ -147,7 +146,7 @@ def process_files(files):
                     digest = manifest["config"]["digest"]
                     assert digest.startswith("sha256:")
                     digest = digest[7:]
-                    write_manifest(digest, manifest)
+                    write_manifest(repo, digest, manifest)
                     add_container(repo, tag, digest)
             except requests.HTTPError as exc:
                 lgr.warning(
