@@ -4,12 +4,12 @@ This command takes a set of Docker Hub repositories, looks up the
 tags, and calls `datalad containers-add ... dhub://REPO:TAG`.  The
 output of datalad-container's Docker adapter is dumped to
 
-    images/DIGEST/
+    images/REPO/DIGEST/
 
 where DIGEST is the .config.digest key of the manifest returned by
 Docker Hub.  In addition, that manifest is written to
-manifests/DIGEST.json.  In both cases, the step is skipped if the path
-is already present locally.
+manifests/REPO/DIGEST.json.  In both cases, the step is skipped if the
+path is already present locally.
 """
 
 import fileinput
