@@ -16,6 +16,7 @@ import fileinput
 import json
 import logging
 from pathlib import Path
+import re
 import requests
 
 lgr = logging.getLogger("containers_add_dhub_tags")
@@ -24,6 +25,16 @@ REGISTRY_AUTH_URL = ("https://auth.docker.io/token?service=registry.docker.io"
                      "&scope=repository:{repo}:pull")
 REGISTRY_ENDPOINT = "https://registry-1.docker.io/v2"
 DHUB_ENDPOINT = "https://hub.docker.com/v2"
+
+
+def clean_container_name(name):
+    """Transform `name` for use in datalad-containers-add.
+
+    Note that, although it probably doesn't matter in practice, this
+    transformation is susceptible to conflicts and ambiguity.
+    """
+    name = name.replace("_", "-")
+    return re.sub(r"[^0-9a-zA-Z-]", "--", name)
 
 
 def add_container(repo, tag, digest):
@@ -35,12 +46,7 @@ def add_container(repo, tag, digest):
                  repo, tag, target)
         return
 
-    # TODO: Using the digest in the container name isn't nice for
-    # recognizing the image by name, but we can't use the tags as is
-    # because the tags maybe have periods (and perhaps other
-    # characters) that containers-add doesn't allow in names.
-    repo_short = repo.rsplit("/", maxsplit=1)[1]
-    name = repo_short.replace("_", "-") + "-" + digest[:7]
+    name = clean_container_name(f"{repo}--{tag}")
     url = f"dhub://{repo}:{tag}"
     lgr.info("Adding %s as %s", url, name)
     # TODO: This would result in a commit for each image, which would
