@@ -37,6 +37,8 @@ DHUB_ENDPOINT = "https://hub.docker.com/v2"
 # or if we just make it one repository at a time, then could become CLI options
 target_architectures = '.*'
 target_tags = '.*'
+# TODO: forget_tags = 'master' -- those for which we might not want to retain prior versions
+# or may be exclude them completely since too frequently changing etc?
 
 # TEST on busybox on just a few architectures and tags - it is tiny but has too many
 #target_architectures = '^(amd64|.*86)$'
@@ -203,6 +205,9 @@ def process_files(files):
                 # image/datalad container -- we just add container entry pointing to that
                 # one.  If there is no matching one -- we do get "latest"
                 latest_matching_tag = None
+                # NOTE: "master" is also often used to signal a moving target
+                # it might, or not, correspond to tagged release.  I guess we are just
+                # doomed to breed those
                 if target_tags_re.match('latest'):
                     matching_tags = []
                     for tag, images in tag_images.items():
@@ -229,6 +234,7 @@ def process_files(files):
                     if not target_tags_re.match(tag):
                         lgr.debug("Skipping tag %(tag)s")
                         continue
+                    multiarch = len({i['architecture'] for i in images}) > 1
                     for image in images:
                         architecture = image['architecture']
                         if not target_architectures_re.match(architecture):
@@ -240,18 +246,24 @@ def process_files(files):
                         assert digest.startswith("sha256:")
                         digest = digest[7:]
                         digest_short = digest[:12]  # use short version in name
-                        last_pushed = image['last_pushed']
-                        assert last_pushed.endswith('Z')
-                        # take only date
-                        last_pushed = last_pushed[:10].replace('-', '')
-                        assert len(last_pushed) == 8
+                        last_pushed = image.get('last_pushed')
+                        if last_pushed:
+                            assert last_pushed.endswith('Z')
+                            # take only date
+                            last_pushed = last_pushed[:10].replace('-', '')
+                            assert len(last_pushed) == 8
                         cleaner_repo = repo
                         # this is how it looks on hub.docker.com URL
                         if repo.startswith('library/'):
                             cleaner_repo = "_/" + cleaner_repo[len('library/'):]
-                        # TODO: in case of a single architecture -- do not bother with
-                        # {architecture}
-                        image_name = (f"{cleaner_repo}/{tag}/{architecture}-{last_pushed}-{digest_short}")
+                        image_name = f"{cleaner_repo}/{tag}/"
+                        if multiarch:
+                            image_name += f"{architecture}-"
+                        if last_pushed:
+                            # apparently not in all, e.g. no for repronim/neurodocker
+                            # may be None for those built on the hub?
+                            image_name += f"{last_pushed}-"
+                        image_name += f"{digest_short}"
                         dl_container_name = clean_container_name(str(image_name))
                         image_path = Path("images") / image_name
                         url = f"dhub://{repo}:{tag}@{image['digest']}"
