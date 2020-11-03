@@ -4,7 +4,10 @@ This adapter uses Skopeo to save a Docker image (or any source that Skopeo
 supports) to a local directory that's compliant with the "Open Container Image
 Layout Specification" and can be tracked as objects in a DataLad dataset.
 
-This image can then be loaded on-the-fly in order for execution.
+This image can then be loaded on-the-fly in order for execution. Currently only
+docker-run is supported (i.e. the image is loaded with Skopeo's
+"docker-daemon:" transport), but the plan is to support podman-run (via the
+"containers-storage:" transport) as well.
 
 Examples
 --------
@@ -166,6 +169,13 @@ def main(args):
         "run",
         help="run a command with a directory's image")
 
+    # TODO: Support containers-storage/podman. This would need to be fed
+    # through cli_run() and load(). Also, a way to specify it should probably
+    # be available through containers-add.
+    # parser_run.add_argument(
+    #     "--dest", metavar="TRANSPORT",
+    #     choices=["docker-daemon", "containers-storage"],
+    #     ...)
     parser_run.add_argument(
         "path", metavar="PATH", type=Path,
         help="image directory")
