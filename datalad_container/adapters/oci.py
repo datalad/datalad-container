@@ -146,8 +146,11 @@ def save(image, path):
     except OSError as exc:
         raise OSError(exc) from None
     path.mkdir(parents=True)
-    sp.run(["skopeo", "copy", image, "oci:" + str(path)],
-           check=True)
+    dest = "oci:" + str(path)
+    tag = parse_docker_reference(image).tag
+    if tag:
+        dest += ":" + tag
+    sp.run(["skopeo", "copy", image, dest], check=True)
 
 
 def get_image_id(path):
