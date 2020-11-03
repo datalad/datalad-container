@@ -20,6 +20,8 @@ Load the image into the Docker daemon (if necessary) and run a command:
       run bb_1.32/ sh -c 'busybox | head -1'
     BusyBox v1.32.0 (2020-10-12 23:47:18 UTC) multi-call binary.
 """
+# ^TODO: Add note about expected image ID mismatches (e.g., between the docker
+# pulled entry and loaded one)?
 
 import json
 import logging
