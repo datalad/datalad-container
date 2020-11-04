@@ -17,11 +17,16 @@ from datalad.cmd import (
     StdOutErrCapture,
     WitlessRunner,
 )
+from datalad.consts import (
+    DATALAD_SPECIAL_REMOTE,
+    DATALAD_SPECIAL_REMOTES_UUIDS,
+)
 from datalad_container.adapters import oci
 from datalad_container.adapters.utils import get_docker_image_ids
 from datalad.tests.utils import (
     assert_in,
     integration,
+    ok_,
     skip_if_no_network,
     SkipTest,
     slow,
@@ -54,3 +59,21 @@ def test_oci_add_and_run(path):
         if not existed:
             WitlessRunner().run(["docker", "rmi", image_id])
     assert_in("BusyBox v1.30", out["stdout"])
+
+    from datalad.downloaders.providers import Providers
+    if not Providers.from_config_files().get_provider(
+            "https://registry-1.docker.io/v2/library",
+            only_nondefault=True):
+        # The rest of the test is about Docker Hub registry links, which
+        # require provider configuration for authentication.
+        return
+
+    layers = [r["path"]
+              for r in ds.status(image_path / "blobs", annex="basic",
+                                 result_renderer=None)
+              if "key" in r]
+    ok_(layers)
+
+    dl_uuid = DATALAD_SPECIAL_REMOTES_UUIDS[DATALAD_SPECIAL_REMOTE]
+    for where_res in ds.repo.whereis(list(map(str, layers))):
+        assert_in(dl_uuid, where_res)

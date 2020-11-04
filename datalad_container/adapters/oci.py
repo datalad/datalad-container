@@ -196,6 +196,68 @@ def save(image, path):
     _store_annotation(path, _IMAGE_SOURCE_KEY, image)
 
 
+_ENDPOINTS = {"docker.io": "https://registry-1.docker.io/v2/"}
+
+
+def link(ds, path, reference):
+    """Add Docker registry URLs to annexed layer images.
+
+    Parameters
+    ----------
+    ds : Dataset
+    path : pathlib.Path
+        Absolute path to the image directory.
+    reference : str
+        Docker reference (e.g., "busybox:1.32"). This should not include the
+        transport (i.e. "docker://").
+    """
+    from datalad.downloaders.providers import Providers
+    from datalad.support.exceptions import CommandError
+    from datalad_container.utils import ensure_datalad_remote
+
+    res = sp.run(["skopeo", "inspect", "oci:" + str(path)],
+                 stdout=sp.PIPE, stderr=sp.PIPE,
+                 universal_newlines=True, check=True)
+    info = json.loads(res.stdout)
+
+    ref = parse_docker_reference(reference, normalize=True)
+    registry, name = ref.name.split("/", maxsplit=1)
+    endpoint = _ENDPOINTS.get(registry)
+    if not endpoint:
+        lgr.debug("No known endpoint for %s. Skipping linking.", registry)
+        return
+    provider = Providers.from_config_files().get_provider(
+        endpoint + name, only_nondefault=True)
+    if not provider:
+        lgr.debug("Required Datalad provider configuration "
+                  "for Docker registry links not detected. Skipping linking.")
+        return
+
+    layers = {}  # path => digest
+    for layer in info["Layers"]:
+        algo, digest = layer.split(":")
+        layer_path = path / "blobs" / algo / digest
+        layers[layer_path] = layer
+
+    ds_repo = ds.repo
+    checked_dl_remote = False
+    for st in ds.status(layers.keys(), annex="basic", result_renderer=None):
+        if "keyname" in st:
+            if not checked_dl_remote:
+                ensure_datalad_remote(ds_repo)
+                checked_dl_remote = True
+            path = Path(st["path"])
+            url = "{}{}/blobs/{}".format(endpoint, name, layers[path])
+            try:
+                ds_repo.add_url_to_file(
+                    path, url, batch=True, options=['--relaxed'])
+            except CommandError as exc:
+                lgr.warning("Registering %s with %s failed: %s",
+                            path, url, exc)
+        else:
+            lgr.warning("Skipping non-annexed layer: %s", st["path"])
+
+
 def get_image_id(path):
     """Return a directory's image ID.
 

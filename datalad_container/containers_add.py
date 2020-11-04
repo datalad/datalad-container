@@ -319,3 +319,7 @@ class ContainersAdd(Interface):
             yield r
         result["status"] = "ok"
         yield result
+
+        # We need to do this after the image is saved.
+        if url and url.startswith("oci:docker://"):
+            oci.link(ds, Path(image), url[len("oci:docker://"):])
