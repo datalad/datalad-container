@@ -21,6 +21,7 @@ from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
+from datalad.utils import Path
 
 from .definitions import definitions
 
@@ -66,6 +67,8 @@ def _guess_call_fmt(ds, name, url):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+    elif url.startswith('oci:'):
+        return op.basename(sys.executable) + ' -m datalad_container.adapters.oci run {img} {cmd}'
 
 
 def _ensure_datalad_remote(repo):
@@ -121,10 +124,15 @@ class ContainersAdd(Interface):
             the URL scheme is one recognized by Singularity, 'shub://' or
             'docker://', the command format string will be auto-guessed when
             [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
-            scheme 'dhub://', the rest of the URL will be interpreted as the
-            argument to 'docker pull', the image will be saved to the location
-            specified by `name`, and the call format will be auto-guessed if
-            not given.""",
+            scheme 'oci:', the rest of the URL will be interpreted as the
+            source argument to a `skopeo copy` call and the image will be saved
+            as an OCI-compliant directory at location specified by `name`.
+            Similarly, there is a 'dhub://' scheme where the rest of the URL
+            will be interpreted as the argument to 'docker pull', the image
+            will be saved to the location specified by `name`. However, using
+            the 'oci:' scheme is recommended if you have skopeo installed. The
+            call format for the 'oci:' and 'dhub://' schemes will be
+            auto-guessed if not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -263,6 +271,9 @@ class ContainersAdd(Interface):
                     docker_image, image)
                 runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif url.startswith("oci:"):
+                from .adapters import oci
+                oci.save(url[len("oci:"):], Path(image))
             elif url.startswith("docker://"):
                 image_dir, image_basename = op.split(image)
                 if not image_basename:

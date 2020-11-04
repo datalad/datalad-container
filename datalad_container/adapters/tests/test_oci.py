@@ -1,4 +1,8 @@
 """Test of oci adapter that do not depend on skopeo or docker being installed.
+
+
+See datalad_container.adapters.tests.test_oci_more for tests that do depend on
+this.
 """
 
 import json
