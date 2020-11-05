@@ -126,6 +126,46 @@ def parse_docker_reference(reference, normalize=False, strip_transport=False):
     return Reference(front, tag, digest)
 
 
+def _store_annotation(path, key, value):
+    """Set a value of image's org.datalad.container.image.source annotation.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Image directory. It must contain only one image.
+    key, value : str
+        Key and value to store in the image's "annotations" field.
+    """
+    index = path / "index.json"
+    index_info = json.loads(index.read_text())
+    annot = index_info["manifests"][0].get("annotations", {})
+
+    annot[key] = value
+    index_info["manifests"][0]["annotations"] = annot
+    with index.open("w") as fh:
+        json.dump(index_info, fh)
+
+
+def _get_annotation(path, key):
+    """Return value for `key` in an image's annotation.
+
+    Parameters
+    ----------
+    path : pathlib.Path
+        Image directory. It must contain only one image.
+    key : str
+        Key in the image's "annotations" field.
+
+    Returns
+    -------
+    str or None
+    """
+    index = path / "index.json"
+    index_info = json.loads(index.read_text())
+    # Assume one manifest because skopeo-inspect would fail anyway otherwise.
+    return index_info["manifests"][0].get("annotations", {}).get(key)
+
+
 def save(image, path):
     """Save an image to an OCI-compliant directory.
 
