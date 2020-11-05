@@ -242,9 +242,21 @@ def load(path):
         # order to copy it, the particular values don't matter for execution
         # purposes; they're chosen to help users identify the container in the
         # `docker images` output.
-        name = re.sub("[^a-z0-9-_.]", "", path.name.lower()[:10])
-        assert image_id.startswith("sha256:")
-        tag = image_id.replace(":", "-")[:14]
+        source = _get_annotation(path, _IMAGE_SOURCE_KEY)
+        if source:
+            ref = parse_docker_reference(source, strip_transport=True)
+            name = ref.name
+            if ref.tag:
+                tag = ref.tag
+            else:
+                if ref.digest:
+                    tag = "source-" + ref.digest.replace(":", "-")[:14]
+                else:
+                    tag = "latest"
+
+        else:
+            name = re.sub("[^a-z0-9-_.]", "", path.name.lower()[:10])
+            tag = image_id.replace(":", "-")[:14]
 
         lgr.debug("Copying %s to Docker daemon", image_id)
         sp.run(["skopeo", "copy", "oci:" + str(path),
