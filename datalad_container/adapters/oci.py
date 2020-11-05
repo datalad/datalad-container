@@ -26,6 +26,7 @@ Load the image into the Docker daemon (if necessary) and run a command:
 # ^TODO: Add note about expected image ID mismatches (e.g., between the docker
 # pulled entry and loaded one)?
 
+from collections import namedtuple
 import json
 import logging
 from pathlib import Path
@@ -41,6 +42,88 @@ from datalad_container.adapters.utils import (
 )
 
 lgr = logging.getLogger("datalad.container.adapters.oci")
+
+
+def _normalize_reference(reference):
+    """Normalize a short repository name to a canonical one.
+
+    Parameters
+    ----------
+    reference : str
+        A Docker reference (e.g., "neurodebian", "library/neurodebian").
+
+    Returns
+    -------
+    A fully-qualified reference (e.g., "docker.io/library/neurodebian")
+
+    Note: This tries to follow containers/image's splitDockerDomain().
+    """
+    parts = reference.split("/", maxsplit=1)
+    if len(parts) == 1 or (not any(c in parts[0] for c in [".", ":"])
+                           and parts[0] != "localhost"):
+        domain, remainder = "docker.io", reference
+    else:
+        domain, remainder = parts
+
+    if domain == "docker.io" and "/" not in remainder:
+        remainder = "library/" + remainder
+    return domain + "/" + remainder
+
+
+Reference = namedtuple("Reference", ["name", "tag", "digest"])
+
+
+def parse_docker_reference(reference, normalize=False, strip_transport=False):
+    """Parse a Docker reference into a name, tag, and digest.
+
+    Parameters
+    ----------
+    reference : str
+        A Docker reference (e.g., "busybox" or "library/busybox:latest")
+    normalize : bool, optional
+        Whether to normalize short names like "busybox" to the fully qualified
+        name ("docker.io/library/busybox")
+    strip_transport : bool, optional
+        Remove Skopeo transport value ("docker://" or "docker-daemon:") from
+        the name. Unless this is true, reference should not include a
+        transport.
+
+    Returns
+    -------
+    A Reference namedtuple with .name, .tag, and .digest attributes
+    """
+    if strip_transport:
+        try:
+            reference = reference.split(":", maxsplit=1)[1]
+        except IndexError:
+            raise ValueError("Reference did not have transport: {}"
+                             .format(reference))
+        if reference.startswith("//"):
+            reference = reference[2:]
+
+    parts = reference.split("/")
+    last = parts[-1]
+    if "@" in last:
+        sep = "@"
+    elif ":" in last:
+        sep = ":"
+    else:
+        sep = None
+
+    tag = None
+    digest = None
+    if sep:
+        repo, label = last.split(sep)
+        front = "/".join(parts[:-1] + [repo])
+        if sep == "@":
+            digest = label
+        else:
+            tag = label
+    else:
+        front, tag = "/".join(parts), None
+    if normalize:
+        front = _normalize_reference(front)
+    return Reference(front, tag, digest)
 
 
 def save(image, path):
