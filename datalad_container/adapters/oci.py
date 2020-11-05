@@ -43,6 +43,8 @@ from datalad_container.adapters.utils import (
 
 lgr = logging.getLogger("datalad.container.adapters.oci")
 
+_IMAGE_SOURCE_KEY = "org.datalad.container.image.source"
+
 
 def _normalize_reference(reference):
     """Normalize a short repository name to a canonical one.
@@ -191,6 +193,7 @@ def save(image, path):
     if tag:
         dest += ":" + tag
     sp.run(["skopeo", "copy", image, dest], check=True)
+    _store_annotation(path, _IMAGE_SOURCE_KEY, image)
 
 
 def get_image_id(path):
