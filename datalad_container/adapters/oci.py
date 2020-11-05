@@ -119,6 +119,9 @@ def load(path):
 
         lgr.debug("Copying %s to Docker daemon", image_id)
         sp.run(["skopeo", "copy", "oci:" + str(path),
+                # This load happens right before the command executes. Don't
+                # let the output be confused for the command's output.
+                "--quiet",
                 "docker-daemon:datalad-container/{}:{}".format(name, tag)],
                check=True)
     else:
