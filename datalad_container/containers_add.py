@@ -24,6 +24,7 @@ from datalad.interface.results import get_status_dict
 from datalad.utils import Path
 
 from .definitions import definitions
+from .utils import ensure_datalad_remote
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -69,28 +70,6 @@ def _guess_call_fmt(ds, name, url):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
     elif url.startswith('oci:'):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.oci run {img} {cmd}'
-
-
-def _ensure_datalad_remote(repo):
-    """Initialize and enable datalad special remote if it isn't already."""
-    dl_remote = None
-    for info in repo.get_special_remotes().values():
-        if info["externaltype"] == "datalad":
-            dl_remote = info["name"]
-            break
-
-    if not dl_remote:
-        from datalad.consts import DATALAD_SPECIAL_REMOTE
-        from datalad.customremotes.base import init_datalad_remote
-
-        init_datalad_remote(repo, DATALAD_SPECIAL_REMOTE, autoenable=True)
-    elif repo.is_special_annex_remote(dl_remote, check_if_known=False):
-        lgr.debug("datalad special remote '%s' is already enabled",
-                  dl_remote)
-    else:
-        lgr.debug("datalad special remote '%s' found. Enabling",
-                  dl_remote)
-        repo.enable_remote(dl_remote)
 
 
 @build_doc
@@ -294,7 +273,7 @@ class ContainersAdd(Interface):
                 copyfile(url, image)
             else:
                 if _HAS_SHUB_DOWNLOADER and url.startswith('shub://'):
-                    _ensure_datalad_remote(ds.repo)
+                    ensure_datalad_remote(ds.repo)
 
                 try:
                     ds.repo.add_url_to_file(image, imgurl)
