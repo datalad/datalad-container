@@ -51,7 +51,7 @@ def save(image, path):
     with tempfile.NamedTemporaryFile() as stream:
         # Windows can't write to an already opened file
         stream.close()
-        sp.check_call(["docker", "save", "-o", stream.name, image])
+        sp.run(["docker", "save", "-o", stream.name, image], check=True)
         with tarfile.open(stream.name, mode="r:") as tar:
             if not op.exists(path):
                 lgr.debug("Creating new directory at %s", path)

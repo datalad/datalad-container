@@ -13,9 +13,11 @@ lgr = logging.getLogger("datalad.containers.adapters.utils")
 
 def get_docker_image_ids():
     """Return IDs of all known images."""
-    out = sp.check_output(
-        ["docker", "images", "--all", "--quiet", "--no-trunc"])
-    return out.decode().splitlines()
+    out = sp.run(
+        ["docker", "images", "--all", "--quiet", "--no-trunc"],
+        stdout=sp.PIPE, stderr=sp.PIPE,
+        universal_newlines=True, check=True)
+    return out.stdout.splitlines()
 
 
 def docker_run(image_id, cmd):
@@ -46,4 +48,4 @@ def docker_run(image_id, cmd):
     prefix.append(image_id)
     full_cmd = prefix + cmd
     lgr.debug("Running %r", full_cmd)
-    sp.check_call(full_cmd)
+    sp.run(full_cmd, check=True)
