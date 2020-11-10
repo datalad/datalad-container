@@ -20,6 +20,10 @@ import tempfile
 
 import logging
 
+from datalad.utils import (
+    on_windows,
+)
+
 lgr = logging.getLogger("datalad.containers.adapters.docker")
 
 # Note: A dockerpy dependency probably isn't worth it in the current
@@ -130,8 +134,10 @@ def cli_run(namespace):
               # Make it possible for the output files to be added to the
               # dataset without the user needing to manually adjust the
               # permissions.
-              "-u", "{}:{}".format(os.getuid(), os.getgid()),
               "--rm"]
+    if not on_windows:
+        prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
+
     if sys.stdin.isatty():
         prefix.append("-it")
     prefix.append(image_id)
