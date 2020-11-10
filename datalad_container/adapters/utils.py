@@ -32,6 +32,8 @@ def log_and_exit(logger):
         logger.exception("Failed to execute %s", sys.argv)
         if isinstance(exc, sp.CalledProcessError):
             excode = exc.returncode
+            if exc.stderr:
+                sys.stderr.write(exc.stderr)
         else:
             excode = 1
         sys.exit(excode)
