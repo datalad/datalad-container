@@ -21,8 +21,8 @@ import tempfile
 import logging
 
 from datalad_container.adapters.utils import (
-    _list_images,
     docker_run,
+    get_docker_image_ids,
 )
 
 lgr = logging.getLogger("datalad.containers.adapters.docker")
@@ -94,7 +94,7 @@ def load(path):
     # things, loading the image from the dataset will tag the old neurodebian
     # image as the latest.
     image_id = "sha256:" + get_image(path)
-    if image_id not in _list_images():
+    if image_id not in get_docker_image_ids():
         lgr.debug("Loading %s", image_id)
         cmd = ["docker", "load"]
         p = sp.Popen(cmd, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -108,7 +108,7 @@ def load(path):
     else:
         lgr.debug("Image %s is already present", image_id)
 
-    if image_id not in _list_images():
+    if image_id not in get_docker_image_ids():
         raise RuntimeError(
             "docker image {} was not successfully loaded".format(image_id))
     return image_id
