@@ -20,8 +20,9 @@ import tempfile
 
 import logging
 
-from datalad.utils import (
-    on_windows,
+from datalad_container.adapters.utils import (
+    _list_images,
+    docker_run,
 )
 
 lgr = logging.getLogger("datalad.containers.adapters.docker")
@@ -59,12 +60,6 @@ def save(image, path):
                 raise OSError("Directory {} is not empty".format(path))
             tar.extractall(path=path)
             lgr.info("Saved %s to %s", image, path)
-
-
-def _list_images():
-    out = sp.check_output(
-        ["docker", "images", "--all", "--quiet", "--no-trunc"])
-    return out.decode().splitlines()
 
 
 def get_image(path):
@@ -128,25 +123,7 @@ def cli_save(namespace):
 
 def cli_run(namespace):
     image_id = load(namespace.path)
-    prefix = ["docker", "run",
-              # FIXME: The -v/-w settings are convenient for testing, but they
-              # should be configurable.
-              "-v", "{}:/tmp".format(os.getcwd()),
-              "-w", "/tmp",
-              "--rm",
-              "--interactive"]
-    if not on_windows:
-        # Make it possible for the output files to be added to the
-        # dataset without the user needing to manually adjust the
-        # permissions.
-        prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
-
-    if sys.stdin.isatty():
-        prefix.append("--tty")
-    prefix.append(image_id)
-    cmd = prefix + namespace.cmd
-    lgr.debug("Running %r", cmd)
-    sp.check_call(cmd)
+    docker_run(image_id, namespace.cmd)
 
 
 def main(args):
