@@ -44,6 +44,8 @@ def save(image, path):
     # Use a temporary file because docker save (or actually tar underneath)
     # complains that stdout needs to be redirected if we use Popen and PIPE.
     with tempfile.NamedTemporaryFile() as stream:
+        # Windows can't write to an already opened file
+        stream.close()
         sp.check_call(["docker", "save", "-o", stream.name, image])
         with tarfile.open(stream.name, mode="r:") as tar:
             if not op.exists(path):
