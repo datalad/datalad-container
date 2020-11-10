@@ -12,9 +12,15 @@ lgr = logging.getLogger("datalad.containers.adapters.utils")
 
 
 def setup_logger(level):
-    logging.basicConfig(
-        level=level,
-        format="%(message)s")
+    logger = logging.getLogger("datalad.containers.adapters")
+    logger.setLevel(level)
+    if not logger.hasHandlers():
+        # If this script is executed with the file name rather than the
+        # documented `python -m ...` invocation, we can't rely on DataLad's
+        # handler. Add a minimal one.
+        handler = logger.StreamHandler()
+        handler.setFormatter(logger.Formatter('%(message)s'))
+        logger.addHandler(handler)
 
 
 def get_docker_image_ids():
