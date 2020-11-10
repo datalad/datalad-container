@@ -23,6 +23,7 @@ import logging
 from datalad_container.adapters.utils import (
     docker_run,
     get_docker_image_ids,
+    setup_logger,
 )
 
 lgr = logging.getLogger("datalad.containers.adapters.docker")
@@ -166,9 +167,7 @@ def main(args):
 
     namespace = parser.parse_args(args[1:])
 
-    logging.basicConfig(
-        level=logging.DEBUG if namespace.verbose else logging.INFO,
-        format="%(message)s")
+    setup_logger(logging.DEBUG if namespace.verbose else logging.INFO)
 
     namespace.func(namespace)
 

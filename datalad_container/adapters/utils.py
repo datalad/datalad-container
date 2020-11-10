@@ -11,6 +11,12 @@ from datalad.utils import on_windows
 lgr = logging.getLogger("datalad.containers.adapters.utils")
 
 
+def setup_logger(level):
+    logging.basicConfig(
+        level=level,
+        format="%(message)s")
+
+
 def get_docker_image_ids():
     """Return IDs of all known images."""
     out = sp.run(
