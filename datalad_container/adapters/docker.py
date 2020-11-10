@@ -23,6 +23,7 @@ import logging
 from datalad_container.adapters.utils import (
     docker_run,
     get_docker_image_ids,
+    log_and_exit,
     setup_logger,
 )
 
@@ -173,12 +174,5 @@ def main(args):
 
 
 if __name__ == "__main__":
-    try:
+    with log_and_exit(lgr):
         main(sys.argv)
-    except Exception as exc:
-        lgr.exception("Failed to execute %s", sys.argv)
-        if isinstance(exc, sp.CalledProcessError):
-            excode = exc.returncode
-        else:
-            excode = 1
-        sys.exit(excode)

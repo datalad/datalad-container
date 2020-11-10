@@ -1,6 +1,7 @@
 """Utilities used across the adapters
 """
 
+import contextlib
 import logging
 import os
 import subprocess as sp
@@ -21,6 +22,19 @@ def setup_logger(level):
         handler = logger.StreamHandler()
         handler.setFormatter(logger.Formatter('%(message)s'))
         logger.addHandler(handler)
+
+
+@contextlib.contextmanager
+def log_and_exit(logger):
+    try:
+        yield
+    except Exception as exc:
+        logger.exception("Failed to execute %s", sys.argv)
+        if isinstance(exc, sp.CalledProcessError):
+            excode = exc.returncode
+        else:
+            excode = 1
+        sys.exit(excode)
 
 
 def get_docker_image_ids():
