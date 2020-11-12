@@ -4,7 +4,6 @@ import sys
 
 import datalad_container.adapters.docker as da
 from datalad.cmd import (
-    Runner,
     StdOutCapture,
     WitlessRunner,
 )
@@ -22,18 +21,17 @@ from datalad.tests.utils import (
 if not find_executable("docker"):
     raise SkipTest("'docker' not found on path")
 
-RUNNER = Runner()
-
 
 def call(args, **kwds):
-    return RUNNER.run(
+    return WitlessRunner().run(
         [sys.executable, "-m", "datalad_container.adapters.docker"] + args,
         **kwds)
 
 
 def list_images(args):
     cmd = ["docker", "images", "--quiet", "--no-trunc"] + args
-    return RUNNER.run(cmd)[0].strip().split()
+    res = WitlessRunner().run(cmd, protocol=StdOutCapture)
+    return res["stdout"].strip().split()
 
 
 def images_exist(args):
@@ -59,12 +57,12 @@ class TestAdapterBusyBox(object):
             cls.image_existed = True
         else:
             cls.image_existed = False
-            RUNNER.run(["docker", "pull", cls.image_name])
+            WitlessRunner().run(["docker", "pull", cls.image_name])
 
     @classmethod
     def teardown_class(cls):
         if not cls.image_existed and images_exist([cls.image_name]):
-            RUNNER.run(["docker", "rmi", cls.image_name])
+            WitlessRunner().run(["docker", "rmi", cls.image_name])
 
     @with_tempfile(mkdir=True)
     def test_save_and_run(self, path):
@@ -77,12 +75,13 @@ class TestAdapterBusyBox(object):
             img_ids[0])
 
         if not self.image_existed:
-            RUNNER.run(["docker", "rmi", self.image_name])
+            WitlessRunner().run(["docker", "rmi", self.image_name])
 
-        out, _ = call(["run", image_dir, "ls"], cwd=path)
+        out = call(["run", image_dir, "ls"], cwd=path,
+                   protocol=StdOutCapture)
 
         assert images_exist([self.image_name])
-        assert_in("image", out)
+        assert_in("image", out["stdout"])
 
     @with_tree({"foo": "content"})
     def test_containers_run(self, path):
