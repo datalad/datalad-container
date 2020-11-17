@@ -133,11 +133,11 @@ def cli_run(namespace):
               # should be configurable.
               "-v", "{}:/tmp".format(os.getcwd()),
               "-w", "/tmp",
-              # Make it possible for the output files to be added to the
-              # dataset without the user needing to manually adjust the
-              # permissions.
               "--rm"]
     if not on_windows:
+        # Make it possible for the output files to be added to the
+        # dataset without the user needing to manually adjust the
+        # permissions.
         prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
 
     if sys.stdin.isatty():
