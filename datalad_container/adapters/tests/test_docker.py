@@ -99,3 +99,11 @@ class TestAdapterBusyBox(object):
             ["datalad", "containers-run", "-n", "bb", "cat foo"],
             protocol=StdOutCapture)
         assert_in("content", out["stdout"])
+
+        # Data can be received on stdin.
+        with (ds.pathobj / "foo").open() as ifh:
+            out = WitlessRunner(cwd=ds.path).run(
+                ["datalad", "containers-run", "-n", "bb", "cat"],
+                protocol=StdOutCapture,
+                stdin=ifh)
+        assert_in("content", out["stdout"])
