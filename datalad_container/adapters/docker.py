@@ -133,7 +133,8 @@ def cli_run(namespace):
               # should be configurable.
               "-v", "{}:/tmp".format(os.getcwd()),
               "-w", "/tmp",
-              "--rm"]
+              "--rm",
+              "--interactive"]
     if not on_windows:
         # Make it possible for the output files to be added to the
         # dataset without the user needing to manually adjust the
@@ -141,7 +142,7 @@ def cli_run(namespace):
         prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
 
     if sys.stdin.isatty():
-        prefix.append("-it")
+        prefix.append("--tty")
     prefix.append(image_id)
     cmd = prefix + namespace.cmd
     lgr.debug("Running %r", cmd)
