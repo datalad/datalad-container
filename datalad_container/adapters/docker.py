@@ -20,8 +20,11 @@ import tempfile
 
 import logging
 
-from datalad.utils import (
-    on_windows,
+from datalad_container.adapters.utils import (
+    docker_run,
+    get_docker_image_ids,
+    log_and_exit,
+    setup_logger,
 )
 
 lgr = logging.getLogger("datalad.containers.adapters.docker")
@@ -50,7 +53,7 @@ def save(image, path):
     with tempfile.NamedTemporaryFile() as stream:
         # Windows can't write to an already opened file
         stream.close()
-        sp.check_call(["docker", "save", "-o", stream.name, image])
+        sp.run(["docker", "save", "-o", stream.name, image], check=True)
         with tarfile.open(stream.name, mode="r:") as tar:
             if not op.exists(path):
                 lgr.debug("Creating new directory at %s", path)
@@ -59,12 +62,6 @@ def save(image, path):
                 raise OSError("Directory {} is not empty".format(path))
             tar.extractall(path=path)
             lgr.info("Saved %s to %s", image, path)
-
-
-def _list_images():
-    out = sp.check_output(
-        ["docker", "images", "--all", "--quiet", "--no-trunc"])
-    return out.decode().splitlines()
 
 
 def get_image(path):
@@ -99,7 +96,7 @@ def load(path):
     # things, loading the image from the dataset will tag the old neurodebian
     # image as the latest.
     image_id = "sha256:" + get_image(path)
-    if image_id not in _list_images():
+    if image_id not in get_docker_image_ids():
         lgr.debug("Loading %s", image_id)
         cmd = ["docker", "load"]
         p = sp.Popen(cmd, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -113,7 +110,7 @@ def load(path):
     else:
         lgr.debug("Image %s is already present", image_id)
 
-    if image_id not in _list_images():
+    if image_id not in get_docker_image_ids():
         raise RuntimeError(
             "docker image {} was not successfully loaded".format(image_id))
     return image_id
@@ -128,25 +125,7 @@ def cli_save(namespace):
 
 def cli_run(namespace):
     image_id = load(namespace.path)
-    prefix = ["docker", "run",
-              # FIXME: The -v/-w settings are convenient for testing, but they
-              # should be configurable.
-              "-v", "{}:/tmp".format(os.getcwd()),
-              "-w", "/tmp",
-              "--rm",
-              "--interactive"]
-    if not on_windows:
-        # Make it possible for the output files to be added to the
-        # dataset without the user needing to manually adjust the
-        # permissions.
-        prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
-
-    if sys.stdin.isatty():
-        prefix.append("--tty")
-    prefix.append(image_id)
-    cmd = prefix + namespace.cmd
-    lgr.debug("Running %r", cmd)
-    sp.check_call(cmd)
+    docker_run(image_id, namespace.cmd)
 
 
 def main(args):
@@ -189,20 +168,11 @@ def main(args):
 
     namespace = parser.parse_args(args[1:])
 
-    logging.basicConfig(
-        level=logging.DEBUG if namespace.verbose else logging.INFO,
-        format="%(message)s")
+    setup_logger(logging.DEBUG if namespace.verbose else logging.INFO)
 
     namespace.func(namespace)
 
 
 if __name__ == "__main__":
-    try:
+    with log_and_exit(lgr):
         main(sys.argv)
-    except Exception as exc:
-        lgr.exception("Failed to execute %s", sys.argv)
-        if isinstance(exc, sp.CalledProcessError):
-            excode = exc.returncode
-        else:
-            excode = 1
-        sys.exit(excode)

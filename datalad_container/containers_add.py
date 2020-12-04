@@ -21,8 +21,10 @@ from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
+from datalad.utils import Path
 
 from .definitions import definitions
+from .utils import ensure_datalad_remote
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -66,28 +68,8 @@ def _guess_call_fmt(ds, name, url):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
         return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
-
-
-def _ensure_datalad_remote(repo):
-    """Initialize and enable datalad special remote if it isn't already."""
-    dl_remote = None
-    for info in repo.get_special_remotes().values():
-        if info["externaltype"] == "datalad":
-            dl_remote = info["name"]
-            break
-
-    if not dl_remote:
-        from datalad.consts import DATALAD_SPECIAL_REMOTE
-        from datalad.customremotes.base import init_datalad_remote
-
-        init_datalad_remote(repo, DATALAD_SPECIAL_REMOTE, autoenable=True)
-    elif repo.is_special_annex_remote(dl_remote, check_if_known=False):
-        lgr.debug("datalad special remote '%s' is already enabled",
-                  dl_remote)
-    else:
-        lgr.debug("datalad special remote '%s' found. Enabling",
-                  dl_remote)
-        repo.enable_remote(dl_remote)
+    elif url.startswith('oci:'):
+        return op.basename(sys.executable) + ' -m datalad_container.adapters.oci run {img} {cmd}'
 
 
 @build_doc
@@ -121,10 +103,15 @@ class ContainersAdd(Interface):
             the URL scheme is one recognized by Singularity, 'shub://' or
             'docker://', the command format string will be auto-guessed when
             [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
-            scheme 'dhub://', the rest of the URL will be interpreted as the
-            argument to 'docker pull', the image will be saved to the location
-            specified by `name`, and the call format will be auto-guessed if
-            not given.""",
+            scheme 'oci:', the rest of the URL will be interpreted as the
+            source argument to a `skopeo copy` call and the image will be saved
+            as an OCI-compliant directory at location specified by `name`.
+            Similarly, there is a 'dhub://' scheme where the rest of the URL
+            will be interpreted as the argument to 'docker pull', the image
+            will be saved to the location specified by `name`. However, using
+            the 'oci:' scheme is recommended if you have skopeo installed. The
+            call format for the 'oci:' and 'dhub://' schemes will be
+            auto-guessed if not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -263,6 +250,9 @@ class ContainersAdd(Interface):
                     docker_image, image)
                 runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif url.startswith("oci:"):
+                from .adapters import oci
+                oci.save(url[len("oci:"):], Path(image))
             elif url.startswith("docker://"):
                 image_dir, image_basename = op.split(image)
                 if not image_basename:
@@ -283,7 +273,7 @@ class ContainersAdd(Interface):
                 copyfile(url, image)
             else:
                 if _HAS_SHUB_DOWNLOADER and url.startswith('shub://'):
-                    _ensure_datalad_remote(ds.repo)
+                    ensure_datalad_remote(ds.repo)
 
                 try:
                     ds.repo.add_url_to_file(image, imgurl)
@@ -329,3 +319,7 @@ class ContainersAdd(Interface):
             yield r
         result["status"] = "ok"
         yield result
+
+        # We need to do this after the image is saved.
+        if url and url.startswith("oci:docker://"):
+            oci.link(ds, Path(image), url[len("oci:docker://"):])
