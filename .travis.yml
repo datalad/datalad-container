@@ -49,6 +49,7 @@ before_install:
   - travis_retry sudo eatmydata apt-get install --no-install-recommends git-annex-standalone aria2 git-remote-gcrypt lsof gnupg nocache
   # chroot/container stuff
   - travis_retry sudo eatmydata apt-get install xz-utils singularity-container
+  - pip install --upgrade pip
 
 
 install:
