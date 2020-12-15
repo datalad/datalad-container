@@ -1,6 +1,9 @@
 datalad-container (1.1.0-1) unstable; urgency=medium
 
   * Recent upstream release
+  * d/rules
+    - exclude test_custom_call_fmt from running since then system-wide
+      datalad fails to find our extension
 
  -- Yaroslav Halchenko <debian@onerussian.com>  Mon, 14 Dec 2020 22:40:56 -0500
 
