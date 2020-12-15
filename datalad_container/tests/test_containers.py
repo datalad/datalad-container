@@ -24,6 +24,8 @@ from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import serve_path_via_http
 from datalad.support.network import get_local_file_url
 
+from datalad_container.tests.utils import add_pyscript_image
+
 
 @with_tempfile
 def test_add_noop(path):
@@ -236,3 +238,45 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     # (i.e. we recurse with containers_list(..., result_renderer=None)).
     with assert_raises(AssertionError):
         assert_re_in("subsub/first", lines)
+
+
+@with_tempfile
+def test_list_contains(path):
+    ds = Dataset(path).create()
+    subds_a = ds.create("a")
+    subds_b = ds.create("b")
+    subds_a_c = subds_a.create("c")
+
+    add_pyscript_image(subds_a_c, "in-c", "img")
+    add_pyscript_image(subds_a, "in-a", "img")
+    add_pyscript_image(subds_b, "in-b", "img")
+    add_pyscript_image(ds, "in-top", "img")
+
+    ds.save(recursive=True)
+
+    assert_result_count(ds.containers_list(recursive=True, **RAW_KWDS),
+                        4)
+
+    assert_result_count(
+        ds.containers_list(contains=["nowhere"], recursive=True, **RAW_KWDS),
+        1, name="in-top", action='containers')
+
+    res = ds.containers_list(contains=[subds_a.path], recursive=True,
+                             **RAW_KWDS)
+    assert_result_count(res, 3)
+    assert_in_results(res, name="in-top")
+    assert_in_results(res, name="a/in-a")
+    assert_in_results(res, name="a/c/in-c")
+
+    res = ds.containers_list(contains=[subds_a_c.path], recursive=True,
+                             **RAW_KWDS)
+    assert_result_count(res, 3)
+    assert_in_results(res, name="in-top")
+    assert_in_results(res, name="a/in-a")
+    assert_in_results(res, name="a/c/in-c")
+
+    res = ds.containers_list(contains=[subds_b.path], recursive=True,
+                             **RAW_KWDS)
+    assert_result_count(res, 2)
+    assert_in_results(res, name="in-top")
+    assert_in_results(res, name="b/in-b")

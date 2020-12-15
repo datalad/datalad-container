@@ -5,8 +5,11 @@ from datalad.api import create
 from datalad.api import containers_add
 from datalad.api import containers_list
 from datalad.api import containers_run
-
-from datalad.utils import swallow_outputs
+from datalad.cmd import (
+    Runner,
+    StdOutCapture,
+    WitlessRunner,
+)
 from datalad.tests.utils import ok_clean_git
 from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import assert_result_count
@@ -27,5 +30,6 @@ def test_docker(path):  # Singularity's "docker://" scheme.
     assert_result_count(ds.containers_list(), 1, path=img, name="bb")
     ok_clean_git(path)
 
-    with swallow_outputs():
-        ds.containers_run(["ls", "/singularity"])
+    WitlessRunner(cwd=ds.path).run(
+        ["datalad", "containers-run", "ls", "/singularity"],
+        protocol=StdOutCapture)

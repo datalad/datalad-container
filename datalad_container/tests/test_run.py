@@ -4,12 +4,17 @@ import os.path as op
 from six import text_type
 
 from datalad.api import Dataset
+from datalad.api import clone
 from datalad.api import create
 from datalad.api import containers_add
 from datalad.api import containers_run
 from datalad.api import containers_list
 
+from datalad.utils import Path
+from datalad.tests.utils import ok_
 from datalad.tests.utils import ok_clean_git
+from datalad.tests.utils import assert_false
+from datalad.tests.utils import assert_not_in_results
 from datalad.tests.utils import assert_in
 from datalad.tests.utils import assert_result_count
 from datalad.tests.utils import assert_raises
@@ -17,14 +22,18 @@ from datalad.tests.utils import ok_file_has_content
 from datalad.tests.utils import with_tempfile
 from datalad.tests.utils import with_tree
 from datalad.tests.utils import skip_if_no_network
-from datalad.tests.utils import swallow_outputs
 from datalad.tests.utils import SkipTest
 from datalad.utils import (
     chpwd,
     on_windows,
 )
 from datalad.support.network import get_local_file_url
+from datalad.cmd import (
+    StdOutCapture,
+    WitlessRunner,
+)
 
+from datalad_container.tests.utils import add_pyscript_image
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
 
@@ -87,8 +96,7 @@ def test_container_files(path, super_path):
     assert_result_count(
         ds.containers_list(), 1,
         path=op.join(ds.path, 'righthere'),
-        name='mycontainer',
-        updateurl=testimg_url)
+        name='mycontainer')
     ok_clean_git(path)
 
     def assert_no_change(res, path):
@@ -164,21 +172,24 @@ def test_custom_call_fmt(path, local_file):
     ds.save()  # record the effect in super-dataset
 
     # Running should work fine either withing sub or within super
-    with swallow_outputs() as cmo:
-        subds.containers_run('XXX', container_name='mycontainer')
-        assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer', cmo.out)
+    out = WitlessRunner(cwd=subds.path).run(
+        ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer',
+              out['stdout'])
 
-    with swallow_outputs() as cmo:
-        ds.containers_run('XXX', container_name='sub/mycontainer')
-        assert_in('image=sub/righthere cmd=XXX img_dspath=sub', cmo.out)
+    out = WitlessRunner(cwd=ds.path).run(
+        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('image=sub/righthere cmd=XXX img_dspath=sub', out['stdout'])
 
     # Test within subdirectory of the super-dataset
     subdir = op.join(ds.path, 'subdir')
     os.mkdir(subdir)
-    with chpwd(subdir):
-        with swallow_outputs() as cmo:
-            containers_run('XXX', container_name='sub/mycontainer')
-            assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', cmo.out)
+    out = WitlessRunner(cwd=subdir).run(
+        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
 
 
 @skip_if_no_network
@@ -186,7 +197,7 @@ def test_custom_call_fmt(path, local_file):
 def test_run_no_explicit_dataset(path):
     raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create(force=True)
-    ds.add(".")
+    ds.save()
     ds.containers_add("deb", url=testimg_url,
                       call_fmt="singularity exec {img} {cmd}")
 
@@ -206,3 +217,90 @@ def test_run_no_explicit_dataset(path):
         containers_run("cat {inputs[0]} {inputs[0]} >doubled",
                        inputs=["in"], outputs=["doubled"])
     ok_file_has_content(op.join(subdir, "doubled"), "innardsinnards")
+
+
+@with_tempfile
+def test_run_subdataset_install(path):
+    path = Path(path)
+    ds_src = Dataset(path / "src").create()
+    # Repository setup
+    #
+    # .
+    # |-- a/
+    # |   |-- a2/
+    # |   |   `-- img
+    # |   `-- img
+    # |-- b/               / module name: b-name /
+    # |   `-- b2/
+    # |       `-- img
+    # |-- c/
+    # |   `-- c2/
+    # |       `-- img
+    # `-- d/               / module name: d-name /
+    #     `-- d2/
+    #         `-- img
+    ds_src_a = ds_src.create("a")
+    ds_src_a2 = ds_src_a.create("a2")
+    ds_src_b = Dataset(ds_src.pathobj / "b").create()
+    ds_src_b2 = ds_src_b.create("b2")
+    ds_src_c = ds_src.create("c")
+    ds_src_c2 = ds_src_c.create("c2")
+    ds_src_d = Dataset(ds_src.pathobj / "d").create()
+    ds_src_d2 = ds_src_d.create("d2")
+
+    ds_src.repo.add_submodule("b", name="b-name")
+    ds_src.repo.add_submodule("d", name="d-name")
+    ds_src.save()
+
+    add_pyscript_image(ds_src_a, "in-a", "img")
+    add_pyscript_image(ds_src_a2, "in-a2", "img")
+    add_pyscript_image(ds_src_b2, "in-b2", "img")
+    add_pyscript_image(ds_src_c2, "in-c2", "img")
+    add_pyscript_image(ds_src_d2, "in-d2", "img")
+
+    ds_src.save(recursive=True)
+
+    ds_dest = clone(ds_src.path, str(path / "dest"))
+    ds_dest_a2 = Dataset(ds_dest.pathobj / "a" / "a2")
+    ds_dest_b2 = Dataset(ds_dest.pathobj / "b" / "b2")
+    ds_dest_c2 = Dataset(ds_dest.pathobj / "c" / "c2")
+    ds_dest_d2 = Dataset(ds_dest.pathobj / "d" / "d2")
+    assert_false(ds_dest_a2.is_installed())
+    assert_false(ds_dest_b2.is_installed())
+    assert_false(ds_dest_c2.is_installed())
+    assert_false(ds_dest_d2.is_installed())
+
+    # Needed subdatasets are installed if container name is given...
+    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2")
+    assert_result_count(
+        res, 1, action="install", status="ok", path=ds_dest_a2.path)
+    assert_result_count(
+        res, 1, action="get", status="ok",
+        path=str(ds_dest_a2.pathobj / "img"))
+    ok_(ds_dest_a2.is_installed())
+    # ... even if the name and path do not match.
+    res = ds_dest.containers_run(["arg"], container_name="b-name/b2/in-b2")
+    assert_result_count(
+        res, 1, action="install", status="ok", path=ds_dest_b2.path)
+    assert_result_count(
+        res, 1, action="get", status="ok",
+        path=str(ds_dest_b2.pathobj / "img"))
+    ok_(ds_dest_b2.is_installed())
+    # Subdatasets will also be installed if given an image path...
+    res = ds_dest.containers_run(["arg"], container_name=str(Path("c/c2/img")))
+    assert_result_count(
+        res, 1, action="install", status="ok", path=ds_dest_c2.path)
+    assert_result_count(
+        res, 1, action="get", status="ok",
+        path=str(ds_dest_c2.pathobj / "img"))
+    ok_(ds_dest_c2.is_installed())
+    # ... unless the module name chain doesn't match the subdataset path. In
+    # that case, the caller needs to install the subdatasets beforehand.
+    with assert_raises(ValueError):
+        ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
+    ds_dest.get(ds_dest_d2.path, recursive=True, get_data=False)
+    ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
+
+    # There's no install record if subdataset is already present.
+    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2")
+    assert_not_in_results(res, action="install")
