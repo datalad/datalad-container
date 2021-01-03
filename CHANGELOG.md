@@ -9,6 +9,11 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 1.1.1 (January 03, 2021) --
+
+- Drop use of `Runner` (to be removed in datalad 0.14.0) in favor of
+  `WitlessRunner`
+
 ## 1.1.0 (October 30, 2020) -- 
 
 - Datalad version 0.13.0 or later is now required.
