@@ -71,7 +71,7 @@ class ContainersRun(Interface):
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
                  explicit=False, sidecar=None):
-        from mock import patch  # delayed, since takes long (~600ms for yoh)
+        from unittest.mock import patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
