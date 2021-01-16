@@ -9,6 +9,11 @@ This is a high level and scarce summary of the changes between releases.  We
 would recommend to consult log of the [DataLad git
 repository](http://github.com/datalad/datalad-container) for more details.
 
+## 1.1.2 (January 16, 2021) --
+
+- Replace use of `mock` with `unittest.mock` as we do no longer support
+  Python 2
+
 ## 1.1.1 (January 03, 2021) --
 
 - Drop use of `Runner` (to be removed in datalad 0.14.0) in favor of
@@ -40,7 +45,7 @@ repository](http://github.com/datalad/datalad-container) for more details.
 Extension is pretty stable so releasing as 1. MAJOR release, so we could
 start tracking API breakages and enhancements properly.
 
-- Drops support for Python 2 and DatLad prior 0.12
+- Drops support for Python 2 and DataLad prior 0.12
 
 ## 0.5.2 (Nov 12, 2019) --
 
