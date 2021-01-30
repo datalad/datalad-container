@@ -1,3 +1,10 @@
+datalad-container (1.1.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release (missed 1.1.1).
+    - Now compatible wit DataLad 0.14x
+
+ -- Michael Hanke <mih@debian.org>  Sat, 30 Jan 2021 11:40:14 +0100
+
 datalad-container (1.1.0-1) unstable; urgency=medium
 
   * Recent upstream release
