@@ -6,7 +6,6 @@ from datalad.api import containers_add
 from datalad.api import containers_list
 from datalad.api import containers_run
 from datalad.cmd import (
-    Runner,
     StdOutCapture,
     WitlessRunner,
 )

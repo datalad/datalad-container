@@ -20,6 +20,10 @@ import tempfile
 
 import logging
 
+from datalad.utils import (
+    on_windows,
+)
+
 lgr = logging.getLogger("datalad.containers.adapters.docker")
 
 # Note: A dockerpy dependency probably isn't worth it in the current
@@ -44,6 +48,8 @@ def save(image, path):
     # Use a temporary file because docker save (or actually tar underneath)
     # complains that stdout needs to be redirected if we use Popen and PIPE.
     with tempfile.NamedTemporaryFile() as stream:
+        # Windows can't write to an already opened file
+        stream.close()
         sp.check_call(["docker", "save", "-o", stream.name, image])
         with tarfile.open(stream.name, mode="r:") as tar:
             if not op.exists(path):
@@ -127,13 +133,16 @@ def cli_run(namespace):
               # should be configurable.
               "-v", "{}:/tmp".format(os.getcwd()),
               "-w", "/tmp",
-              # Make it possible for the output files to be added to the
-              # dataset without the user needing to manually adjust the
-              # permissions.
-              "-u", "{}:{}".format(os.getuid(), os.getgid()),
-              "--rm"]
+              "--rm",
+              "--interactive"]
+    if not on_windows:
+        # Make it possible for the output files to be added to the
+        # dataset without the user needing to manually adjust the
+        # permissions.
+        prefix.extend(["-u", "{}:{}".format(os.getuid(), os.getgid())])
+
     if sys.stdin.isatty():
-        prefix.append("-it")
+        prefix.append("--tty")
     prefix.append(image_id)
     cmd = prefix + namespace.cmd
     lgr.debug("Running %r", cmd)

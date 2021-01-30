@@ -51,7 +51,6 @@ requires = {
     'core': [
         'datalad>=0.13',
         'requests>=1.2',  # to talk to Singularity-hub
-        'mock',   # used in containers_run
     ],
     'devel-docs': [
         # used for converting README.md -> .rst for long_description

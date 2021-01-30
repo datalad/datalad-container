@@ -10,7 +10,7 @@ import sys
 from shutil import copyfile
 from simplejson import loads
 
-from datalad.cmd import Runner
+from datalad.cmd import WitlessRunner
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
@@ -172,7 +172,7 @@ class ContainersAdd(Interface):
 
         ds = require_dataset(dataset, check_installed=True,
                              purpose='add container')
-        runner = Runner()
+        runner = WitlessRunner()
 
         # prevent madness in the config file
         if not re.match(r'^[0-9a-zA-Z-]+$', name):
