@@ -57,7 +57,11 @@ class TestAdapterBusyBox(object):
             cls.image_existed = True
         else:
             cls.image_existed = False
-            WitlessRunner().run(["docker", "pull", cls.image_name])
+            try:
+                WitlessRunner().run(["docker", "pull", cls.image_name])
+            except CommandError:
+                # This is probably due to rate limiting.
+                raise SkipTest("Plain `docker pull` failed; skipping")
 
     @classmethod
     def teardown_class(cls):
