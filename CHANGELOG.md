@@ -1,3 +1,21 @@
+# 1.1.3 (Thu Apr 15 2021)
+
+#### 🐛 Bug Fix
+
+- Set up workflow with auto for releasing & PyPI uploads [#151](https://github.com/datalad/datalad-container/pull/151) ([@yarikoptic](https://github.com/yarikoptic))
+- TST: docker_adapter: Skip tests if 'docker pull' in setup fails [#148](https://github.com/datalad/datalad-container/pull/148) ([@kyleam](https://github.com/kyleam))
+
+#### 🏠 Internal
+
+- ENH: containers-add-dhub - add multiple images/tags/repositories from docker hub [#135](https://github.com/datalad/datalad-container/pull/135) ([@kyleam](https://github.com/kyleam) [@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 2
+
+- Kyle Meyer ([@kyleam](https://github.com/kyleam))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
 # 1.1.2 (January 16, 2021) --
 
 - Replace use of `mock` with `unittest.mock` as we do no longer support
