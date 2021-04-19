@@ -3,5 +3,13 @@
     "baseBranch": "master",
     "author": "auto <auto@nil>",
     "noVersionPrefix": true,
-    "plugins": ["git-tag"]
+    "plugins": [
+        "git-tag",
+        [
+            "exec",
+            {
+                "beforeCommitChangelog": "awk 'NR==1 {print \"__version__ = \\\"\" $2 \"\\\"\"}' CHANGELOG.md > \"$(python setup.py --name)\"/version.py && git add \"$(python setup.py --name)\"/version.py"
+            }
+        ]
+    ]
 }
