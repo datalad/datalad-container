@@ -1,3 +1,15 @@
+# 1.1.4 (Mon Apr 19 2021)
+
+#### 🐛 Bug Fix
+
+- BF+RF: no need to pandoc long description for pypi + correctly boost MODULE/version.py for the release [#152](https://github.com/datalad/datalad-container/pull/152) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 1
+
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
 # 1.1.3 (Thu Apr 15 2021)
 
 #### 🐛 Bug Fix
