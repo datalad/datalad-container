@@ -1,3 +1,15 @@
+# 1.1.5 (Mon Jun 07 2021)
+
+#### 🐛 Bug Fix
+
+- BF: fix special remotes without "externaltype" [#156](https://github.com/datalad/datalad-container/pull/156) ([@loj](https://github.com/loj))
+
+#### Authors: 1
+
+- Laura Waite ([@loj](https://github.com/loj))
+
+---
+
 # 1.1.4 (Mon Apr 19 2021)
 
 #### 🐛 Bug Fix
