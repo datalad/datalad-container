@@ -72,7 +72,7 @@ def _ensure_datalad_remote(repo):
     """Initialize and enable datalad special remote if it isn't already."""
     dl_remote = None
     for info in repo.get_special_remotes().values():
-        if info["externaltype"] == "datalad":
+        if info.get("externaltype") == "datalad":
             dl_remote = info["name"]
             break
 
