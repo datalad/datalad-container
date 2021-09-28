@@ -230,13 +230,13 @@ def test_run_subdataset_install(path):
     # |   |-- a2/
     # |   |   `-- img
     # |   `-- img
-    # |-- b/               / module name: b-name /
+    # |-- b/
     # |   `-- b2/
     # |       `-- img
     # |-- c/
     # |   `-- c2/
     # |       `-- img
-    # `-- d/               / module name: d-name /
+    # `-- d/
     #     `-- d2/
     #         `-- img
     ds_src_a = ds_src.create("a")
@@ -248,8 +248,6 @@ def test_run_subdataset_install(path):
     ds_src_d = Dataset(ds_src.pathobj / "d").create()
     ds_src_d2 = ds_src_d.create("d2")
 
-    ds_src.repo.add_submodule("b", name="b-name")
-    ds_src.repo.add_submodule("d", name="d-name")
     ds_src.save()
 
     add_pyscript_image(ds_src_a, "in-a", "img")
@@ -279,7 +277,7 @@ def test_run_subdataset_install(path):
         path=str(ds_dest_a2.pathobj / "img"))
     ok_(ds_dest_a2.is_installed())
     # ... even if the name and path do not match.
-    res = ds_dest.containers_run(["arg"], container_name="b-name/b2/in-b2")
+    res = ds_dest.containers_run(["arg"], container_name="b/b2/in-b2")
     assert_result_count(
         res, 1, action="install", status="ok", path=ds_dest_b2.path)
     assert_result_count(
@@ -294,11 +292,6 @@ def test_run_subdataset_install(path):
         res, 1, action="get", status="ok",
         path=str(ds_dest_c2.pathobj / "img"))
     ok_(ds_dest_c2.is_installed())
-    # ... unless the module name chain doesn't match the subdataset path. In
-    # that case, the caller needs to install the subdatasets beforehand.
-    with assert_raises(ValueError):
-        ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
-    ds_dest.get(ds_dest_d2.path, recursive=True, get_data=False)
     ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
 
     # There's no install record if subdataset is already present.
