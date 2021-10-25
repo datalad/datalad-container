@@ -9,12 +9,11 @@
 import datetime
 import os
 
-from distutils.core import Command
-from distutils.errors import DistutilsOptionError
 from os.path import (
     dirname,
     join as opj,
 )
+from setuptools import Command, DistutilsOptionError
 from setuptools.config import read_configuration
 
 import versioneer
