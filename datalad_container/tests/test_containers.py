@@ -213,7 +213,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     # not installed subdataset doesn't pose an issue:
     sub2 = ds.create("sub2")
     assert_result_count(ds.subdatasets(), 2, type="dataset")
-    ds.uninstall("sub2")
+    ds.uninstall("sub2", check=False)
     from datalad.tests.utils import assert_false
     assert_false(sub2.is_installed())
 
