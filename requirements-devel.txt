@@ -1,1 +1,6 @@
--e .[devel]
+# requirements for a development environment
+nose
+coverage
+sphinx
+sphinx_rtd_theme
+six

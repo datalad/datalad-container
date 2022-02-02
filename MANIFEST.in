@@ -1,1 +1,5 @@
-include formatters.py setup_support.py
+include CONTRIBUTORS LICENSE versioneer.py
+graft _datalad_buildsupport
+graft docs
+prune docs/build
+global-exclude *.py[cod]
