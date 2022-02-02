@@ -169,7 +169,7 @@ def test_custom_call_fmt(path, local_file):
     )
     ds.save()  # record the effect in super-dataset
 
-    # Running should work fine either withing sub or within super
+    # Running should work fine either within sub or within super
     out = WitlessRunner(cwd=subds.path).run(
         ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
         protocol=StdOutCapture)
