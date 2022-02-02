@@ -118,13 +118,15 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is one recognized by Singularity, 'shub://' or
-            'docker://', the command format string will be auto-guessed when
-            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
-            scheme 'dhub://', the rest of the URL will be interpreted as the
-            argument to 'docker pull', the image will be saved to the location
-            specified by `name`, and the call format will be auto-guessed if
-            not given.""",
+            the URL scheme is one recognized by Singularity ('shub://' or
+            'docker://'), a command format string for Singularity-based
+            execution will be auto-configrued when
+            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.
+            For Docker-based container execution with the URL scheme 'dhub://',
+            the rest of the URL will be interpreted as the argument to
+            'docker pull', the image will be saved to a location
+            specified by `name`, and the call format will be auto-configured
+            to run docker, unless overwritten.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
