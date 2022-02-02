@@ -1,8 +1,6 @@
 import os
 import os.path as op
 
-from six import text_type
-
 from datalad.api import Dataset
 from datalad.api import clone
 from datalad.api import create
@@ -48,7 +46,7 @@ def test_run_mispecified(path):
     # Abort if no containers exist.
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter")
-    assert_in("No known containers", text_type(cm.exception))
+    assert_in("No known containers", str(cm.exception))
 
     # Abort if more than one container exists but no container name is
     # specified.
@@ -57,12 +55,12 @@ def test_run_mispecified(path):
 
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter")
-    assert_in("explicitly specify container", text_type(cm.exception))
+    assert_in("explicitly specify container", str(cm.exception))
 
     # Abort if unknown container is specified.
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter", container_name="ghost")
-    assert_in("Container selection impossible", text_type(cm.exception))
+    assert_in("Container selection impossible", str(cm.exception))
 
 
 @with_tree(tree={"i.img": "doesn't matter"})
@@ -144,7 +142,7 @@ def test_container_files(path, super_path):
     # When running, we don't discover containers in subdatasets
     with assert_raises(ValueError) as cm:
         super_ds.containers_run(cmd)
-    assert_in("No known containers", text_type(cm.exception))
+    assert_in("No known containers", str(cm.exception))
     # ... unless we need to specify the name
     res = super_ds.containers_run(cmd, container_name="sub/mycontainer")
     # container becomes an 'input' for `run` -> get request (needed this time)
