@@ -11,7 +11,6 @@ Documentation
 =============
 
 * :ref:`Documentation index <genindex>`
-* `Getting started`_
 * `API reference`_
 
 .. toctree::
@@ -19,18 +18,6 @@ Documentation
 
    changelog
    acknowledgements
-
-
-Getting started
----------------
-
-.. toctree::
-   :hidden:
-
-   generated/examples/basic_demo
-
-.. include:: generated/examples/basic_demo.rst
-   :start-after: ***************
 
 
 API Reference
