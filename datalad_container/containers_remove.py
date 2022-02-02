@@ -68,7 +68,7 @@ class ContainersRemove(Interface):
             if op.lexists(op.join(ds.path, imagepath)):
                 for r in ds.remove(
                         path=imagepath,
-                        # XXX shortcomming: this is the only way to say:
+                        # XXX shortcoming: this is the only way to say:
                         # don't drop
                         check=False,
                         # config setting might be outdated and image no longer
