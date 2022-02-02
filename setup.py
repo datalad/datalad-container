@@ -47,6 +47,8 @@ requires = {
     ],
     'tests': [
         'nose>=1.3.4',
+        'coverage',
+        'six',
     ],
 }
 requires['devel'] = sum(list(requires.values()), [])
