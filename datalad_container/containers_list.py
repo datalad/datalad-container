@@ -61,7 +61,9 @@ class ContainersList(Interface):
         if recursive:
             for sub in ds.subdatasets(
                     contains=contains,
-                    on_failure='ignore', return_type='generator'):
+                    on_failure='ignore',
+                    return_type='generator',
+                    result_renderer='disabled'):
                 subds = Dataset(sub['path'])
                 if subds.is_installed():
                     for c in subds.containers_list(recursive=recursive,
