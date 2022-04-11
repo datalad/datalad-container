@@ -34,6 +34,11 @@ a dedicated [virtualenv](https://virtualenv.pypa.io):
     # install from PyPi
     pip install datalad_container
 
+It is also available for conda package manager from conda-forge:
+
+    conda install -c conda-forge datalad-container
+
+
 ## Support
 
 The documentation of this project is found here:
