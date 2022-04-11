@@ -1,3 +1,40 @@
+# 1.1.6 (Mon Apr 11 2022)
+
+#### 🐛 Bug Fix
+
+- BF: Disable subdataset result rendering [#175](https://github.com/datalad/datalad-container/pull/175) ([@adswa](https://github.com/adswa))
+- DOC: A few typos in comments/docstrings [#173](https://github.com/datalad/datalad-container/pull/173) ([@yarikoptic](https://github.com/yarikoptic))
+- Update badges [#172](https://github.com/datalad/datalad-container/pull/172) ([@mih](https://github.com/mih))
+- Build docs in standard workflow, not with travis [#171](https://github.com/datalad/datalad-container/pull/171) ([@mih](https://github.com/mih))
+- Make six obsolete [#170](https://github.com/datalad/datalad-container/pull/170) ([@mih](https://github.com/mih))
+- Adopt standard extension setup [#169](https://github.com/datalad/datalad-container/pull/169) ([@mih](https://github.com/mih) [@jwodder](https://github.com/jwodder) [@yarikoptic](https://github.com/yarikoptic))
+- Adopt standard appveyor config [#167](https://github.com/datalad/datalad-container/pull/167) ([@mih](https://github.com/mih))
+- Clarify documentation for docker usage [#164](https://github.com/datalad/datalad-container/pull/164) ([@mih](https://github.com/mih))
+- Strip unsupported scenarios from travis [#166](https://github.com/datalad/datalad-container/pull/166) ([@mih](https://github.com/mih))
+- WIP: Implement the actual command "containers" [#2](https://github.com/datalad/datalad-container/pull/2) ([@mih](https://github.com/mih) [@bpoldrack](https://github.com/bpoldrack))
+- Stop using deprecated Repo.add_submodule() [#161](https://github.com/datalad/datalad-container/pull/161) ([@mih](https://github.com/mih))
+- BF:Docs: replace incorrect dashes with spaces in command names [#154](https://github.com/datalad/datalad-container/pull/154) ([@loj](https://github.com/loj))
+
+#### ⚠️ Pushed to `master`
+
+- Adjust test to acknowledge reckless behavior ([@mih](https://github.com/mih))
+- Slightly relax tests to account for upcoming remove() change ([@mih](https://github.com/mih))
+
+#### 📝 Documentation
+
+- Mention that could be installed from conda-forge [#177](https://github.com/datalad/datalad-container/pull/177) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 6
+
+- Adina Wagner ([@adswa](https://github.com/adswa))
+- Benjamin Poldrack ([@bpoldrack](https://github.com/bpoldrack))
+- John T. Wodder II ([@jwodder](https://github.com/jwodder))
+- Laura Waite ([@loj](https://github.com/loj))
+- Michael Hanke ([@mih](https://github.com/mih))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
 # 1.1.5 (Mon Jun 07 2021)
 
 #### 🐛 Bug Fix
