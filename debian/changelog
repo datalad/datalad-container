@@ -4,7 +4,11 @@ datalad-container (1.1.6-1) unstable; urgency=medium
   * New upstream release.
     - Fixes FTBFS. (Closes: #1009381)
 
- -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 26 May 2022 10:36:11 -0400
+  [ Yaroslav Halchenko ]
+  * Add debian/source/options to exclude diff in datalad_container/_version.py
+    produced by versioneer.
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Thu, 26 May 2022 10:40:11 -0400
 
 datalad-container (1.1.2-1) unstable; urgency=medium
 
