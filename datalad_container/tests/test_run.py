@@ -1,8 +1,6 @@
 import os
 import os.path as op
 
-from six import text_type
-
 from datalad.api import Dataset
 from datalad.api import clone
 from datalad.api import create
@@ -48,7 +46,7 @@ def test_run_mispecified(path):
     # Abort if no containers exist.
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter")
-    assert_in("No known containers", text_type(cm.exception))
+    assert_in("No known containers", str(cm.exception))
 
     # Abort if more than one container exists but no container name is
     # specified.
@@ -57,12 +55,12 @@ def test_run_mispecified(path):
 
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter")
-    assert_in("explicitly specify container", text_type(cm.exception))
+    assert_in("explicitly specify container", str(cm.exception))
 
     # Abort if unknown container is specified.
     with assert_raises(ValueError) as cm:
         ds.containers_run("doesn't matter", container_name="ghost")
-    assert_in("Container selection impossible", text_type(cm.exception))
+    assert_in("Container selection impossible", str(cm.exception))
 
 
 @with_tree(tree={"i.img": "doesn't matter"})
@@ -144,7 +142,7 @@ def test_container_files(path, super_path):
     # When running, we don't discover containers in subdatasets
     with assert_raises(ValueError) as cm:
         super_ds.containers_run(cmd)
-    assert_in("No known containers", text_type(cm.exception))
+    assert_in("No known containers", str(cm.exception))
     # ... unless we need to specify the name
     res = super_ds.containers_run(cmd, container_name="sub/mycontainer")
     # container becomes an 'input' for `run` -> get request (needed this time)
@@ -171,7 +169,7 @@ def test_custom_call_fmt(path, local_file):
     )
     ds.save()  # record the effect in super-dataset
 
-    # Running should work fine either withing sub or within super
+    # Running should work fine either within sub or within super
     out = WitlessRunner(cwd=subds.path).run(
         ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
         protocol=StdOutCapture)
@@ -230,13 +228,13 @@ def test_run_subdataset_install(path):
     # |   |-- a2/
     # |   |   `-- img
     # |   `-- img
-    # |-- b/               / module name: b-name /
+    # |-- b/
     # |   `-- b2/
     # |       `-- img
     # |-- c/
     # |   `-- c2/
     # |       `-- img
-    # `-- d/               / module name: d-name /
+    # `-- d/
     #     `-- d2/
     #         `-- img
     ds_src_a = ds_src.create("a")
@@ -248,8 +246,6 @@ def test_run_subdataset_install(path):
     ds_src_d = Dataset(ds_src.pathobj / "d").create()
     ds_src_d2 = ds_src_d.create("d2")
 
-    ds_src.repo.add_submodule("b", name="b-name")
-    ds_src.repo.add_submodule("d", name="d-name")
     ds_src.save()
 
     add_pyscript_image(ds_src_a, "in-a", "img")
@@ -279,7 +275,7 @@ def test_run_subdataset_install(path):
         path=str(ds_dest_a2.pathobj / "img"))
     ok_(ds_dest_a2.is_installed())
     # ... even if the name and path do not match.
-    res = ds_dest.containers_run(["arg"], container_name="b-name/b2/in-b2")
+    res = ds_dest.containers_run(["arg"], container_name="b/b2/in-b2")
     assert_result_count(
         res, 1, action="install", status="ok", path=ds_dest_b2.path)
     assert_result_count(
@@ -294,11 +290,6 @@ def test_run_subdataset_install(path):
         res, 1, action="get", status="ok",
         path=str(ds_dest_c2.pathobj / "img"))
     ok_(ds_dest_c2.is_installed())
-    # ... unless the module name chain doesn't match the subdataset path. In
-    # that case, the caller needs to install the subdatasets beforehand.
-    with assert_raises(ValueError):
-        ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
-    ds_dest.get(ds_dest_d2.path, recursive=True, get_data=False)
     ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
 
     # There's no install record if subdataset is already present.

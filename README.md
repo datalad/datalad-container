@@ -5,7 +5,7 @@
     |____/  \__,_| \__| \__,_||_____| \__,_| \__,_|
                                        Container
 
-[![Travis tests status](https://secure.travis-ci.org/datalad/datalad-container.png?branch=master)](https://travis-ci.org/datalad/datalad-container) [![codecov.io](https://codecov.io/github/datalad/datalad-container/coverage.svg?branch=master)](https://codecov.io/github/datalad/datalad-container?branch=master) [![Documentation](https://readthedocs.org/projects/datalad-container/badge/?version=latest)](http://datalad-container.rtfd.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![GitHub release](https://img.shields.io/github/release/datalad/datalad-container.svg)](https://GitHub.com/datalad/datalad-container/releases/) [![PyPI version fury.io](https://badge.fury.io/py/datalad-container.svg)](https://pypi.python.org/pypi/datalad-container/) [![Average time to resolve an issue](http://isitmaintained.com/badge/resolution/datalad/datalad-container.svg)](http://isitmaintained.com/project/datalad/datalad-container "Average time to resolve an issue") [![Percentage of issues still open](http://isitmaintained.com/badge/open/datalad/datalad-container.svg)](http://isitmaintained.com/project/datalad/datalad-container "Percentage of issues still open")
+[![Build status](https://ci.appveyor.com/api/projects/status/k4eyq1yygcvwf7wk/branch/master?svg=true)](https://ci.appveyor.com/project/mih/datalad-container/branch/master) [![Travis tests status](https://secure.travis-ci.org/datalad/datalad-container.png?branch=master)](https://travis-ci.org/datalad/datalad-container) [![codecov.io](https://codecov.io/github/datalad/datalad-container/coverage.svg?branch=master)](https://codecov.io/github/datalad/datalad-container?branch=master) [![Documentation](https://readthedocs.org/projects/datalad-container/badge/?version=latest)](http://datalad-container.rtfd.org) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) [![GitHub release](https://img.shields.io/github/release/datalad/datalad-container.svg)](https://GitHub.com/datalad/datalad-container/releases/) [![PyPI version fury.io](https://badge.fury.io/py/datalad-container.svg)](https://pypi.python.org/pypi/datalad-container/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3368666.svg)](https://doi.org/10.5281/zenodo.3368666)
 ![Conda](https://anaconda.org/conda-forge/datalad-container/badges/version.svg)
 
@@ -33,6 +33,11 @@ a dedicated [virtualenv](https://virtualenv.pypa.io):
 
     # install from PyPi
     pip install datalad_container
+
+It is also available for conda package manager from conda-forge:
+
+    conda install -c conda-forge datalad-container
+
 
 ## Support
 

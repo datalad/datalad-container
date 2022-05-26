@@ -1,25 +1,93 @@
-     ____          _           _                 _ 
-    |  _ \   __ _ | |_   __ _ | |      __ _   __| |
-    | | | | / _` || __| / _` || |     / _` | / _` |
-    | |_| || (_| || |_ | (_| || |___ | (_| || (_| |
-    |____/  \__,_| \__| \__,_||_____| \__,_| \__,_|
-                                          Container
+# 1.1.6 (Mon Apr 11 2022)
 
-This is a high level and scarce summary of the changes between releases.  We
-would recommend to consult log of the [DataLad git
-repository](http://github.com/datalad/datalad-container) for more details.
+#### 🐛 Bug Fix
 
-## 1.1.2 (January 16, 2021) --
+- BF: Disable subdataset result rendering [#175](https://github.com/datalad/datalad-container/pull/175) ([@adswa](https://github.com/adswa))
+- DOC: A few typos in comments/docstrings [#173](https://github.com/datalad/datalad-container/pull/173) ([@yarikoptic](https://github.com/yarikoptic))
+- Update badges [#172](https://github.com/datalad/datalad-container/pull/172) ([@mih](https://github.com/mih))
+- Build docs in standard workflow, not with travis [#171](https://github.com/datalad/datalad-container/pull/171) ([@mih](https://github.com/mih))
+- Make six obsolete [#170](https://github.com/datalad/datalad-container/pull/170) ([@mih](https://github.com/mih))
+- Adopt standard extension setup [#169](https://github.com/datalad/datalad-container/pull/169) ([@mih](https://github.com/mih) [@jwodder](https://github.com/jwodder) [@yarikoptic](https://github.com/yarikoptic))
+- Adopt standard appveyor config [#167](https://github.com/datalad/datalad-container/pull/167) ([@mih](https://github.com/mih))
+- Clarify documentation for docker usage [#164](https://github.com/datalad/datalad-container/pull/164) ([@mih](https://github.com/mih))
+- Strip unsupported scenarios from travis [#166](https://github.com/datalad/datalad-container/pull/166) ([@mih](https://github.com/mih))
+- WIP: Implement the actual command "containers" [#2](https://github.com/datalad/datalad-container/pull/2) ([@mih](https://github.com/mih) [@bpoldrack](https://github.com/bpoldrack))
+- Stop using deprecated Repo.add_submodule() [#161](https://github.com/datalad/datalad-container/pull/161) ([@mih](https://github.com/mih))
+- BF:Docs: replace incorrect dashes with spaces in command names [#154](https://github.com/datalad/datalad-container/pull/154) ([@loj](https://github.com/loj))
+
+#### ⚠️ Pushed to `master`
+
+- Adjust test to acknowledge reckless behavior ([@mih](https://github.com/mih))
+- Slightly relax tests to account for upcoming remove() change ([@mih](https://github.com/mih))
+
+#### 📝 Documentation
+
+- Mention that could be installed from conda-forge [#177](https://github.com/datalad/datalad-container/pull/177) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 6
+
+- Adina Wagner ([@adswa](https://github.com/adswa))
+- Benjamin Poldrack ([@bpoldrack](https://github.com/bpoldrack))
+- John T. Wodder II ([@jwodder](https://github.com/jwodder))
+- Laura Waite ([@loj](https://github.com/loj))
+- Michael Hanke ([@mih](https://github.com/mih))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
+# 1.1.5 (Mon Jun 07 2021)
+
+#### 🐛 Bug Fix
+
+- BF: fix special remotes without "externaltype" [#156](https://github.com/datalad/datalad-container/pull/156) ([@loj](https://github.com/loj))
+
+#### Authors: 1
+
+- Laura Waite ([@loj](https://github.com/loj))
+
+---
+
+# 1.1.4 (Mon Apr 19 2021)
+
+#### 🐛 Bug Fix
+
+- BF+RF: no need to pandoc long description for pypi + correctly boost MODULE/version.py for the release [#152](https://github.com/datalad/datalad-container/pull/152) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 1
+
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
+# 1.1.3 (Thu Apr 15 2021)
+
+#### 🐛 Bug Fix
+
+- Set up workflow with auto for releasing & PyPI uploads [#151](https://github.com/datalad/datalad-container/pull/151) ([@yarikoptic](https://github.com/yarikoptic))
+- TST: docker_adapter: Skip tests if 'docker pull' in setup fails [#148](https://github.com/datalad/datalad-container/pull/148) ([@kyleam](https://github.com/kyleam))
+
+#### 🏠 Internal
+
+- ENH: containers-add-dhub - add multiple images/tags/repositories from docker hub [#135](https://github.com/datalad/datalad-container/pull/135) ([@kyleam](https://github.com/kyleam) [@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 2
+
+- Kyle Meyer ([@kyleam](https://github.com/kyleam))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
+# 1.1.2 (January 16, 2021) --
 
 - Replace use of `mock` with `unittest.mock` as we do no longer support
   Python 2
 
-## 1.1.1 (January 03, 2021) --
+# 1.1.1 (January 03, 2021) --
 
 - Drop use of `Runner` (to be removed in datalad 0.14.0) in favor of
   `WitlessRunner`
 
-## 1.1.0 (October 30, 2020) -- 
+# 1.1.0 (October 30, 2020) -- 
 
 - Datalad version 0.13.0 or later is now required.
 
@@ -34,20 +102,20 @@ repository](http://github.com/datalad/datalad-container) for more details.
   to execute a container from underneath an uninstalled subdataset.
 
 
-## 1.0.1 (June 23, 2020) -- 
+# 1.0.1 (June 23, 2020) -- 
 
 - Prefer `datalad.core.local.run` to `datalad.interface.run`.  The
   latter has been marked as obsolete since DataLad v0.12 (our minimum
   requirement) and will be removed in DataLad's next feature release.
 
-## 1.0.0 (Feb 23, 2020) -- not-as-a-shy-one
+# 1.0.0 (Feb 23, 2020) -- not-as-a-shy-one
 
 Extension is pretty stable so releasing as 1. MAJOR release, so we could
 start tracking API breakages and enhancements properly.
 
 - Drops support for Python 2 and DataLad prior 0.12
 
-## 0.5.2 (Nov 12, 2019) --
+# 0.5.2 (Nov 12, 2019) --
 
 ### Fixes
 
@@ -55,7 +123,7 @@ start tracking API breakages and enhancements properly.
   `--interactive` and `--tty` even when stdin was not attached to a
   TTY, leading to an error.
 
-## 0.5.1 (Nov 08, 2019) --
+# 0.5.1 (Nov 08, 2019) --
 
 ### Fixes
 
@@ -66,7 +134,7 @@ start tracking API breakages and enhancements properly.
   value, which isn't true as of the latest DataLad release candidate,
   0.12.0rc6.
 
-## 0.5.0 (Jul 12, 2019) -- damn-you-malicious-users
+# 0.5.0 (Jul 12, 2019) -- damn-you-malicious-users
 
 ### New features
 
@@ -77,7 +145,7 @@ start tracking API breakages and enhancements properly.
 
 - Temporarily skip two tests relying on SingularityHub -- it is down.
 
-## 0.4.0 (May 29, 2019) -- run-baby-run
+# 0.4.0 (May 29, 2019) -- run-baby-run
 
 The minimum required DataLad version is now 0.11.5.
 
@@ -106,14 +174,14 @@ The minimum required DataLad version is now 0.11.5.
   doesn't yet exist, but it confusingly still used the word "update"
   in the commit message.
 
-## 0.3.1 (Mar 05, 2019) -- Upgrayeddd
+# 0.3.1 (Mar 05, 2019) -- Upgrayeddd
 
 ### Fixes
 
 - `containers-list` recursion actually does recursion.
 
 
-## 0.3.0 (Mar 05, 2019) -- Upgrayedd
+# 0.3.0 (Mar 05, 2019) -- Upgrayedd
 
 ### API changes
 
@@ -138,28 +206,28 @@ The minimum required DataLad version is now 0.11.5.
   now decides to look for containers in subdatasets based on whether
   the name has a slash (which is true of all subdataset containers).
 
-## 0.2.2 (Dec 19, 2018) -- The more the merrier
+# 0.2.2 (Dec 19, 2018) -- The more the merrier
 
 - list/use containers recursively from installed subdatasets
 - Allow to specify container by path rather than just by name
 - Adding a container from local filesystem will copy it now
 
-## 0.2.1 (Jul 14, 2018) -- Explicit lyrics
+# 0.2.1 (Jul 14, 2018) -- Explicit lyrics
 
 - Add support `datalad run --explicit`.
 
-## 0.2 (Jun 08, 2018) -- Docker
+# 0.2 (Jun 08, 2018) -- Docker
 
 - Initial support for adding and running Docker containers.
 - Add support `datalad run --sidecar`.
 - Simplify storage of `call_fmt` arguments in the Git config, by benefiting
   from `datalad run` being able to work with single-string compound commands.
 
-## 0.1.2 (May 28, 2018) -- The docs
+# 0.1.2 (May 28, 2018) -- The docs
 
 - Basic beginner documentation
 
-## 0.1.1 (May 22, 2018) -- The fixes
+# 0.1.1 (May 22, 2018) -- The fixes
 
 ### New features
 
@@ -176,7 +244,7 @@ The minimum required DataLad version is now 0.11.5.
 - Pass relative container path to `datalad run`.
 - `containers-run` no longer hides `datalad run` failures.
 
-## 0.1 (May 19, 2018) -- The Release
+# 0.1 (May 19, 2018) -- The Release
 
 - Initial release with basic functionality to add, remove, and list
   containers in a dataset, plus a `run` command wrapper that injects

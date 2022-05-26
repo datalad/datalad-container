@@ -10,8 +10,6 @@ git:
   submodules: false
 
 python:
-  - 3.5
-  - 3.6
   - 3.7
   - 3.8
 
@@ -30,9 +28,6 @@ env:
     # Special settings/helper for combined coverage from special remotes execution
     - COVERAGE=coverage
     - DATALAD_DATASETS_TOPURL=http://datasets-tests.datalad.org
-  matrix:
-    - DATALAD_REPO_VERSION=5
-    - DATALAD_REPO_VERSION=6
 
 
 before_install:
@@ -75,12 +70,6 @@ script:
       --with-cov --cover-package datalad_container
       --logging-level=INFO
       $TESTS_TO_PERFORM
-  # Run doc examples
-  # NOTE: We don't have a run_doc_examples ATM
-  # - $NOSE_WRAPPER tools/testing/run_doc_examples
-  - if [ ! "${DATALAD_LOG_LEVEL:-}" = 2 ]; then
-        PYTHONPATH=$PWD $NOSE_WRAPPER make -C docs html doctest;
-    fi
   # Report WTF information using system wide installed version
   - datalad wtf
 

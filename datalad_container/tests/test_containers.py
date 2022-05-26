@@ -160,8 +160,8 @@ def test_container_update(ds_path, local_file, url):
     # Update URL/image.
     ds.drop(img)  # Make sure it works even with absent content.
     res = ds.containers_add(name="foo", update=True, url=url_bar)
-    assert_result_count(res, 1, action="remove", status="ok", path=img)
-    assert_result_count(res, 1, action="save", status="ok")
+    assert_in_results(res, action="remove", status="ok")
+    assert_in_results(res, action="save", status="ok")
     ok_file_has_content(op.join(ds.path, img), "bar")
 
     # Test commit message
@@ -213,7 +213,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     # not installed subdataset doesn't pose an issue:
     sub2 = ds.create("sub2")
     assert_result_count(ds.subdatasets(), 2, type="dataset")
-    ds.uninstall("sub2")
+    ds.uninstall("sub2", check=False)
     from datalad.tests.utils import assert_false
     assert_false(sub2.is_installed())
 
