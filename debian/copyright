@@ -3,10 +3,10 @@ Upstream-Name: datalad
 Source: https://github.com/datalad/datalad-container
 
 Files: *
-Copyright: 2018, DataLad Team <team@datalad.org>
+Copyright: 2018-2022, DataLad Team <team@datalad.org>
 License: Expat
 
-Files: setup_support.py formatters.py
+Files: _datalad_buildsupport/setup.py _datalad_buildsupport/formatters.py
 Copyright: 2014 Oz Nahum Tiram  <nahumoz@gmail.com>
 License: Python2
 
