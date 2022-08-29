@@ -1,34 +1,37 @@
 import os
 import os.path as op
 
-from datalad.api import Dataset
-from datalad.api import clone
-from datalad.api import create
-from datalad.api import containers_add
-from datalad.api import containers_run
-from datalad.api import containers_list
-
-from datalad.utils import Path
-from datalad.tests.utils_pytest import ok_
-from datalad.tests.utils_pytest import ok_clean_git
-from datalad.tests.utils_pytest import assert_false
-from datalad.tests.utils_pytest import assert_not_in_results
-from datalad.tests.utils_pytest import assert_in
-from datalad.tests.utils_pytest import assert_result_count
-from datalad.tests.utils_pytest import assert_raises
-from datalad.tests.utils_pytest import ok_file_has_content
-from datalad.tests.utils_pytest import with_tempfile
-from datalad.tests.utils_pytest import with_tree
-from datalad.tests.utils_pytest import skip_if_no_network
-from datalad.tests.utils_pytest import SkipTest
-from datalad.utils import (
-    chpwd,
-    on_windows,
+from datalad.api import (
+    Dataset,
+    clone,
+    containers_add,
+    containers_list,
+    containers_run,
+    create,
 )
-from datalad.support.network import get_local_file_url
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
+)
+from datalad.support.network import get_local_file_url
+from datalad.tests.utils_pytest import (
+    SkipTest,
+    assert_false,
+    assert_in,
+    assert_not_in_results,
+    assert_raises,
+    assert_result_count,
+    ok_,
+    ok_clean_git,
+    ok_file_has_content,
+    skip_if_no_network,
+    with_tempfile,
+    with_tree,
+)
+from datalad.utils import (
+    Path,
+    chpwd,
+    on_windows,
 )
 
 from datalad_container.tests.utils import add_pyscript_image

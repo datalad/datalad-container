@@ -1,8 +1,10 @@
-from datalad.api import Dataset
-from datalad.api import clone
+import pytest
+from datalad.api import (
+    Dataset,
+    clone,
+)
 from datalad.consts import DATALAD_SPECIAL_REMOTE
 from datalad.customremotes.base import init_datalad_remote
-
 from datalad.tests.utils_pytest import (
     assert_false,
     assert_in,
@@ -12,8 +14,6 @@ from datalad.tests.utils_pytest import (
 from datalad.utils import Path
 
 from datalad_container.containers_add import _ensure_datalad_remote
-
-import pytest
 
 # NOTE: At the moment, testing of the containers-add itself happens implicitly
 # via use in other tests.

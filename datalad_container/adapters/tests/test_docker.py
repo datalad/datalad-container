@@ -1,8 +1,7 @@
-from distutils.spawn import find_executable
 import os.path as op
 import sys
+from distutils.spawn import find_executable
 
-import datalad_container.adapters.docker as da
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
@@ -17,6 +16,8 @@ from datalad.tests.utils_pytest import (
     with_tempfile,
     with_tree,
 )
+
+import datalad_container.adapters.docker as da
 
 if not find_executable("docker"):
     raise SkipTest("'docker' not found on path")

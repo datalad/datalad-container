@@ -1,28 +1,31 @@
 import os.path as op
 
-from datalad.api import Dataset
-from datalad.api import install
-from datalad.api import containers_add
-from datalad.api import containers_remove
-from datalad.api import containers_list
-
-from datalad.utils import swallow_outputs
-from datalad.tests.utils_pytest import SkipTest
-from datalad.tests.utils_pytest import ok_clean_git
-from datalad.tests.utils_pytest import with_tree
-from datalad.tests.utils_pytest import ok_
-from datalad.tests.utils_pytest import ok_file_has_content
-from datalad.tests.utils_pytest import assert_equal
-from datalad.tests.utils_pytest import assert_status
-from datalad.tests.utils_pytest import assert_raises
-from datalad.tests.utils_pytest import assert_result_count
-from datalad.tests.utils_pytest import assert_in
-from datalad.tests.utils_pytest import assert_in_results
-from datalad.tests.utils_pytest import assert_not_in
-from datalad.tests.utils_pytest import assert_re_in
-from datalad.tests.utils_pytest import with_tempfile
-from datalad.tests.utils_pytest import serve_path_via_http
+from datalad.api import (
+    Dataset,
+    containers_add,
+    containers_list,
+    containers_remove,
+    install,
+)
 from datalad.support.network import get_local_file_url
+from datalad.tests.utils_pytest import (
+    SkipTest,
+    assert_equal,
+    assert_in,
+    assert_in_results,
+    assert_not_in,
+    assert_raises,
+    assert_re_in,
+    assert_result_count,
+    assert_status,
+    ok_,
+    ok_clean_git,
+    ok_file_has_content,
+    serve_path_via_http,
+    with_tempfile,
+    with_tree,
+)
+from datalad.utils import swallow_outputs
 
 from datalad_container.tests.utils import add_pyscript_image
 

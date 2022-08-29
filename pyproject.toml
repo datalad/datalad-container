@@ -1,2 +1,7 @@
 [build-system]
 requires = ["setuptools >= 43.0.0", "wheel"]
+
+[tool.isort]
+force_grid_wrap = 2
+include_trailing_comma = true
+multi_line_output = 3

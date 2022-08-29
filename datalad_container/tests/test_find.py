@@ -1,14 +1,16 @@
 import os.path as op
+
 from datalad.api import Dataset
 from datalad.tests.utils_pytest import (
-    ok_clean_git,
     assert_in,
-    assert_is_instance,
     assert_in_results,
+    assert_is_instance,
+    assert_raises,
     assert_result_count,
-    assert_raises
+    ok_clean_git,
+    with_tree,
 )
-from datalad.tests.utils_pytest import with_tree
+
 from datalad_container.find_container import find_container
 
 
