@@ -9,16 +9,16 @@ from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
-from datalad.tests.utils import ok_clean_git
-from datalad.tests.utils import ok_file_has_content
-from datalad.tests.utils import assert_result_count
-from datalad.tests.utils import with_tempfile
-from datalad.tests.utils import skip_if_no_network
+from datalad.tests.utils_pytest import ok_clean_git
+from datalad.tests.utils_pytest import ok_file_has_content
+from datalad.tests.utils_pytest import assert_result_count
+from datalad.tests.utils_pytest import with_tempfile
+from datalad.tests.utils_pytest import skip_if_no_network
 
 
 @skip_if_no_network
 @with_tempfile
-def test_docker(path):  # Singularity's "docker://" scheme.
+def test_docker(path=None):  # Singularity's "docker://" scheme.
     ds = Dataset(path).create()
     ds.containers_add(
         "bb",

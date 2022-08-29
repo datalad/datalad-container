@@ -192,10 +192,9 @@ test_script:
   - cmd: md __testhome__
   - sh: mkdir __testhome__
   - cd __testhome__
-    # run test selecion (--traverse-namespace needed from Python 3.8 onwards)
-  - cmd: python -m nose --traverse-namespace -s -v -A "not (turtle)" --with-cov --cover-package datalad_container %DTS%
-  - sh:  python -m nose --traverse-namespace -s -v -A "not (turtle)" --with-cov --cover-package datalad_container ${DTS}
-
+  # run test selecion (--traverse-namespace needed from Python 3.8 onwards)
+  - cmd: python -m pytest -s -v -m "not (turtle)" --doctest-modules --cov=datalad_container --pyargs %DTS%
+  - sh:  python -m pytest -s -v -m "not (turtle)" --doctest-modules --cov=datalad_container --pyargs ${DTS}
 
 after_test:
   - python -m coverage xml

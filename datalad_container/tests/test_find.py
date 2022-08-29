@@ -1,6 +1,6 @@
 import os.path as op
 from datalad.api import Dataset
-from datalad.tests.utils import (
+from datalad.tests.utils_pytest import (
     ok_clean_git,
     assert_in,
     assert_is_instance,
@@ -8,12 +8,12 @@ from datalad.tests.utils import (
     assert_result_count,
     assert_raises
 )
-from datalad.tests.utils import with_tree
+from datalad.tests.utils_pytest import with_tree
 from datalad_container.find_container import find_container
 
 
 @with_tree(tree={"sub": {"i.img": "doesn't matter"}})
-def test_find_containers(path):
+def test_find_containers(path=None):
     ds = Dataset(path).create(force=True)
     ds.save(path=[op.join('sub', 'i.img')], message="dummy container")
     ds.containers_add("i", image=op.join('sub', 'i.img'))
