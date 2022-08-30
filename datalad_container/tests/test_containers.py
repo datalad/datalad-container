@@ -1,34 +1,37 @@
 import os.path as op
 
-from datalad.api import Dataset
-from datalad.api import install
-from datalad.api import containers_add
-from datalad.api import containers_remove
-from datalad.api import containers_list
-
-from datalad.utils import swallow_outputs
-from datalad.tests.utils import SkipTest
-from datalad.tests.utils import ok_clean_git
-from datalad.tests.utils import with_tree
-from datalad.tests.utils import ok_
-from datalad.tests.utils import ok_file_has_content
-from datalad.tests.utils import assert_equal
-from datalad.tests.utils import assert_status
-from datalad.tests.utils import assert_raises
-from datalad.tests.utils import assert_result_count
-from datalad.tests.utils import assert_in
-from datalad.tests.utils import assert_in_results
-from datalad.tests.utils import assert_not_in
-from datalad.tests.utils import assert_re_in
-from datalad.tests.utils import with_tempfile
-from datalad.tests.utils import serve_path_via_http
+from datalad.api import (
+    Dataset,
+    containers_add,
+    containers_list,
+    containers_remove,
+    install,
+)
 from datalad.support.network import get_local_file_url
+from datalad.tests.utils_pytest import (
+    SkipTest,
+    assert_equal,
+    assert_in,
+    assert_in_results,
+    assert_not_in,
+    assert_raises,
+    assert_re_in,
+    assert_result_count,
+    assert_status,
+    ok_,
+    ok_clean_git,
+    ok_file_has_content,
+    serve_path_via_http,
+    with_tempfile,
+    with_tree,
+)
+from datalad.utils import swallow_outputs
 
 from datalad_container.tests.utils import add_pyscript_image
 
 
 @with_tempfile
-def test_add_noop(path):
+def test_add_noop(path=None):
     ds = Dataset(path).create()
     ok_clean_git(ds.path)
     assert_raises(TypeError, ds.containers_add)
@@ -55,7 +58,7 @@ def test_add_noop(path):
 @with_tempfile
 @with_tree(tree={"foo.img": "doesn't matter 0",
                  "bar.img": "doesn't matter 1"})
-def test_add_local_path(path, local_file):
+def test_add_local_path(path=None, local_file=None):
     ds = Dataset(path).create()
     res = ds.containers_add(name="foobert",
                             url=op.join(local_file, "foo.img"))
@@ -82,7 +85,7 @@ RAW_KWDS = dict(return_type='list',
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 @serve_path_via_http
-def test_container_files(ds_path, local_file, url):
+def test_container_files(ds_path=None, local_file=None, url=None):
     # setup things to add
     #
     # Note: Since "adding" as a container doesn't actually call anything or use
@@ -133,7 +136,7 @@ def test_container_files(ds_path, local_file, url):
 @with_tree(tree={'foo.img': "foo",
                  'bar.img': "bar"})
 @serve_path_via_http
-def test_container_update(ds_path, local_file, url):
+def test_container_update(ds_path=None, local_file=None, url=None):
     url_foo = get_local_file_url(op.join(local_file, 'foo.img'))
     url_bar = get_local_file_url(op.join(local_file, 'bar.img'))
     img = op.join(".datalad", "environments", "foo", "image")
@@ -177,7 +180,7 @@ def test_container_update(ds_path, local_file, url):
 @with_tempfile
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
-def test_container_from_subdataset(ds_path, src_subds_path, local_file):
+def test_container_from_subdataset(ds_path=None, src_subds_path=None, local_file=None):
 
     # prepare a to-be subdataset with a registered container
     src_subds = Dataset(src_subds_path).create()
@@ -214,7 +217,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
     sub2 = ds.create("sub2")
     assert_result_count(ds.subdatasets(), 2, type="dataset")
     ds.uninstall("sub2", check=False)
-    from datalad.tests.utils import assert_false
+    from datalad.tests.utils_pytest import assert_false
     assert_false(sub2.is_installed())
 
     # same results as before, not crashing or somehow confused by a not present
@@ -241,7 +244,7 @@ def test_container_from_subdataset(ds_path, src_subds_path, local_file):
 
 
 @with_tempfile
-def test_list_contains(path):
+def test_list_contains(path=None):
     ds = Dataset(path).create()
     subds_a = ds.create("a")
     subds_b = ds.create("b")

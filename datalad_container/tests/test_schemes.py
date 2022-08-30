@@ -1,24 +1,28 @@
 import os.path as op
 
-from datalad.api import Dataset
-from datalad.api import create
-from datalad.api import containers_add
-from datalad.api import containers_list
-from datalad.api import containers_run
+from datalad.api import (
+    Dataset,
+    containers_add,
+    containers_list,
+    containers_run,
+    create,
+)
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
-from datalad.tests.utils import ok_clean_git
-from datalad.tests.utils import ok_file_has_content
-from datalad.tests.utils import assert_result_count
-from datalad.tests.utils import with_tempfile
-from datalad.tests.utils import skip_if_no_network
+from datalad.tests.utils_pytest import (
+    assert_result_count,
+    ok_clean_git,
+    ok_file_has_content,
+    skip_if_no_network,
+    with_tempfile,
+)
 
 
 @skip_if_no_network
 @with_tempfile
-def test_docker(path):  # Singularity's "docker://" scheme.
+def test_docker(path=None):  # Singularity's "docker://" scheme.
     ds = Dataset(path).create()
     ds.containers_add(
         "bb",
