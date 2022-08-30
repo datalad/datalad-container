@@ -1,3 +1,20 @@
+# 1.1.7 (Tue Aug 30 2022)
+
+#### 🐛 Bug Fix
+
+- DOC: Set language in Sphinx config to en [#178](https://github.com/datalad/datalad-container/pull/178) ([@adswa](https://github.com/adswa))
+
+#### 🧪 Tests
+
+- nose -> pytest, isort imports in tests, unify requirements-devel to correspond to the form as in core [#179](https://github.com/datalad/datalad-container/pull/179) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 2
+
+- Adina Wagner ([@adswa](https://github.com/adswa))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
 # 1.1.6 (Mon Apr 11 2022)
 
 #### 🐛 Bug Fix
