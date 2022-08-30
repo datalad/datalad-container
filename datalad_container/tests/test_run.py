@@ -15,7 +15,6 @@ from datalad.cmd import (
 )
 from datalad.support.network import get_local_file_url
 from datalad.tests.utils_pytest import (
-    SkipTest,
     assert_false,
     assert_in,
     assert_not_in_results,
@@ -82,7 +81,6 @@ def test_run_unknown_cmdexec_placeholder(path=None):
 @with_tempfile
 @with_tempfile
 def test_container_files(path=None, super_path=None):
-    raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create()
     cmd = ['dir'] if on_windows else ['ls']
 
@@ -145,7 +143,7 @@ def test_container_files(path=None, super_path=None):
     # When running, we don't discover containers in subdatasets
     with assert_raises(ValueError) as cm:
         super_ds.containers_run(cmd)
-    assert_in("No known containers", str(cm.exception))
+    assert_in("No known containers", str(cm.value))
     # ... unless we need to specify the name
     res = super_ds.containers_run(cmd, container_name="sub/mycontainer")
     # container becomes an 'input' for `run` -> get request (needed this time)
@@ -196,7 +194,6 @@ def test_custom_call_fmt(path=None, local_file=None):
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path=None):
-    raise SkipTest('SingularityHub is gone for now')
     ds = Dataset(path).create(force=True)
     ds.save()
     ds.containers_add("deb", url=testimg_url,
