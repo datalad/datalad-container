@@ -4,7 +4,7 @@ import sys
 
 from datalad.api import containers_add
 from datalad.utils import chpwd
-from datalad.tests.utils import SkipTest
+from datalad.tests.utils_pytest import SkipTest
 from datalad.interface.common_cfg import dirs as appdirs
 
 

@@ -22,9 +22,8 @@ env:
     - BOTO_CONFIG=/tmp/nowhere
     - DATALAD_TESTS_SSH=1
     - DATALAD_LOG_CMD_ENV=GIT_SSH_COMMAND
-    - TESTS_TO_PERFORM=
-    - NOSE_OPTS=-s
-    - NOSE_SELECTION_OP="not "   # so it would be "not (integration or usecase)"
+    - TESTS_TO_PERFORM=datalad_container
+    - PYTEST_OPTS=-s
     # Special settings/helper for combined coverage from special remotes execution
     - COVERAGE=coverage
     - DATALAD_DATASETS_TOPURL=http://datasets-tests.datalad.org
@@ -64,11 +63,11 @@ script:
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
-    $NOSE_WRAPPER python -m nose $NOSE_OPTS
-      -v -A "$NOSE_SELECTION_OP(integration or usecase or slow)"
-      --with-doctest
-      --with-cov --cover-package datalad_container
-      --logging-level=INFO
+    pytest $PYTEST_OPTS
+      -v
+      --cov datalad_container
+      --log-cli-level=INFO
+      --pyargs
       $TESTS_TO_PERFORM
   # Report WTF information using system wide installed version
   - datalad wtf

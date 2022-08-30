@@ -1,14 +1,13 @@
-from distutils.spawn import find_executable
 import os.path as op
 import sys
+from distutils.spawn import find_executable
 
-import datalad_container.adapters.docker as da
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
 from datalad.support.exceptions import CommandError
-from datalad.tests.utils import (
+from datalad.tests.utils_pytest import (
     SkipTest,
     assert_in,
     assert_raises,
@@ -17,6 +16,8 @@ from datalad.tests.utils import (
     with_tempfile,
     with_tree,
 )
+
+import datalad_container.adapters.docker as da
 
 if not find_executable("docker"):
     raise SkipTest("'docker' not found on path")
@@ -39,7 +40,7 @@ def images_exist(args):
 
 
 @with_tempfile
-def test_docker_save_doesnt_exist(path):
+def test_docker_save_doesnt_exist(path=None):
     image_name = "idonotexistsurely"
     if images_exist([image_name]):
         raise SkipTest("Image wasn't supposed to exist, but does: {}"
@@ -69,7 +70,7 @@ class TestAdapterBusyBox(object):
             WitlessRunner().run(["docker", "rmi", cls.image_name])
 
     @with_tempfile(mkdir=True)
-    def test_save_and_run(self, path):
+    def test_save_and_run(self, path=None):
         image_dir = op.join(path, "image")
         call(["save", self.image_name, image_dir])
         ok_exists(op.join(image_dir, "manifest.json"))
@@ -88,7 +89,7 @@ class TestAdapterBusyBox(object):
         assert_in("image", out["stdout"])
 
     @with_tree({"foo": "content"})
-    def test_containers_run(self, path):
+    def test_containers_run(self, path=None):
         if self.image_existed:
             raise SkipTest(
                 "Not pulling with containers-run due to existing image: {}"
