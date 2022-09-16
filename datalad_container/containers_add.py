@@ -2,13 +2,13 @@
 
 __docformat__ = 'restructuredtext'
 
-import re
+import json
 import logging
 import os
 import os.path as op
+import re
 import sys
 from shutil import copyfile
-from simplejson import loads
 
 from datalad.cmd import WitlessRunner
 from datalad.interface.base import Interface
@@ -48,7 +48,7 @@ def _resolve_img_url(url):
         req = requests.get(
             'https://www.singularity-hub.org/api/container/{}'.format(
                 url[7:]))
-        shub_info = loads(req.text)
+        shub_info = json.loads(req.text)
         url = shub_info['image']
     return url
 
