@@ -100,10 +100,10 @@ class ContainersRun(Interface):
 
             # Temporary kludge to give a more helpful message
             if callspec.startswith("["):
-                import simplejson
+                import json
                 try:
-                    simplejson.loads(callspec)
-                except simplejson.errors.JSONDecodeError:
+                    json.loads(callspec)
+                except json.JSONDecodeError:
                     pass  # Never mind, false positive.
                 else:
                     raise ValueError(
