@@ -1,0 +1,24 @@
+fragment_directory: changelog.d
+
+# Categories must be listed in descending order of precedence for determining
+# what category to apply to a PR with multiple labels.
+# The category names must align with the categories in changelog.d/scriv.ini
+categories:
+  - name: 💥 Breaking Changes
+    bump: minor
+    label: major
+  - name: 🚀 Enhancements and New Features
+    bump: minor
+    label: minor
+  - name: 🐛 Bug Fixes
+    label: patch
+  - name: 🔩 Dependencies
+    label: dependencies
+  - name: 📝 Documentation
+    label: documentation
+  - name: 🏠 Internal
+    label: internal
+  - name: 🏎 Performance
+    label: performance
+  - name: 🧪 Tests
+    label: tests
