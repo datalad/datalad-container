@@ -1,3 +1,24 @@
+# 1.1.8 (Mon Oct 10 2022)
+
+#### 🐛 Bug Fix
+
+- Replace `simplejson` with `json` [#182](https://github.com/datalad/datalad-container/pull/182) ([@christian-monch](https://github.com/christian-monch))
+
+#### 📝 Documentation
+
+- codespell fix some typos [#184](https://github.com/datalad/datalad-container/pull/184) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### 🧪 Tests
+
+- Reenabling tests using SingularityHub [#180](https://github.com/datalad/datalad-container/pull/180) ([@yarikoptic](https://github.com/yarikoptic))
+
+#### Authors: 2
+
+- Christian Mönch ([@christian-monch](https://github.com/christian-monch))
+- Yaroslav Halchenko ([@yarikoptic](https://github.com/yarikoptic))
+
+---
+
 # 1.1.7 (Tue Aug 30 2022)
 
 #### 🐛 Bug Fix
