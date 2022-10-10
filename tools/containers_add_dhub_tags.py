@@ -9,7 +9,7 @@ output of datalad-container's Docker adapter is dumped to
 where SHORTDIGEST is the first 12 characters of .config.digest key of
 the manifest returned by Docker Hub for the image for the arch which was
 uploaded on the DATE. In addition, that image record and manifest are
-written to a sattelite to that directory .image.json and .manifest.json files.
+written to a satellite to that directory .image.json and .manifest.json files.
 The step of adding the image is skipped if the path is already present locally.
 """
 
