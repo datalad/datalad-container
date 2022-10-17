@@ -5,7 +5,7 @@ fragment_directory: changelog.d
 # The category names must align with the categories in changelog.d/scriv.ini
 categories:
   - name: 💥 Breaking Changes
-    bump: minor
+    bump: major
     label: major
   - name: 🚀 Enhancements and New Features
     bump: minor
