@@ -58,8 +58,6 @@ install:
   - pip install -r requirements-devel.txt
 
 script:
-  # Verify that setup.py build doesn't puke
-  - python setup.py build
   # Test installation system-wide
   - sudo `which pip` install .
   # Run tests
