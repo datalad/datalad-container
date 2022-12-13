@@ -1,5 +1,6 @@
 # vim ft=yaml
 # travis-ci.org definition for DataLad build
+dist: jammy
 language: python
 
 services:
