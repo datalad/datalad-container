@@ -317,6 +317,6 @@ def test_extra_inputs(ds_path=None):
     )
     ds.save()
     outfile = "out.txt"
-    ds.containers_run(cmd="'echo -n $a $b > {outputs[0]}'", outputs=[outfile])
+    ds.containers_run(cmd="echo -n '$a' '$b' '>' {outputs[0]}", outputs=[outfile])
 
     ok_file_has_content(op.join(ds.path, outfile), "1 2")
