@@ -19,6 +19,7 @@ from datalad.distribution.dataset import require_dataset
 from datalad.interface.base import eval_results
 from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
+from datalad.support.constraints import EnsureListOf
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
 
@@ -155,6 +156,9 @@ class ContainersAdd(Interface):
             """,
             nargs="+",
             metavar="FILE",
+            # Can't use EnsureListOf(str) as it handles strings as interables...
+            # See this PR: https://github.com/datalad/datalad/pull/7267
+            # constraints=EnsureListOf(str) | EnsureNone(),
         ),
         image=Parameter(
             args=("-i", "--image"),
