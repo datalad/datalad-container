@@ -138,7 +138,7 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     "overlay1.img":  "overlay 1",
     "overlay2.img":  "overlay 2",
 })
-def test_extra_files(ds_path=None):
+def test_extra_inputs(ds_path=None):
     container_file = 'container.img'
     overlay1_file  = 'overlay1.img'
     overlay2_file  = 'overlay2.img'
@@ -161,7 +161,7 @@ def test_extra_files(ds_path=None):
     ds.containers_add(
         name="container-with-two-overlays",
         image=container_file,
-        call_fmt="apptainer exec --overlay {img_dir}/overlay1.img --overlay {img_dir}/overlay1.img:ro {img} {cmd}",
+        call_fmt="apptainer exec --overlay {img_dir}/overlay1.img --overlay {img_dir}/overlay2.img:ro {img} {cmd}",
         extra_inputs=[overlay1_file, overlay2_file]
     )
 

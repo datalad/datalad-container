@@ -295,3 +295,28 @@ def test_run_subdataset_install(path=None):
     # There's no install record if subdataset is already present.
     res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2")
     assert_not_in_results(res, action="install")
+
+
+@with_tree(
+    tree={
+        "containers": {
+            "container.sh": 'echo "$@";source $1;shift;source $1;shift;echo "$@";eval "$@"',
+            "overlay1.sh": "a=1",
+        },
+        "overlay2.sh": "b=2",
+    }
+)
+def test_extra_inputs(ds_path=None):
+    ds = Dataset(ds_path).create(force=True)
+    # make a fake 'container' (shell script) with 'overlays' (sourced scripts)
+    ds.containers_add(
+        name="container-with-two-overlays",
+        image="containers/container.sh",
+        call_fmt="sh -x {img} {img_dir}/overlay1.sh {img_dspath}/overlay2.sh {cmd}",
+        extra_inputs=["containers/overlay1.sh", "overlay2.sh"],
+    )
+    ds.save()
+    outfile = "out.txt"
+    ds.containers_run(cmd="'echo -n $a $b > {outputs[0]}'", outputs=[outfile])
+
+    ok_file_has_content(op.join(ds.path, outfile), "1 2")
