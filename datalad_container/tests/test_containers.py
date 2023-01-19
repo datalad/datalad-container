@@ -1,3 +1,4 @@
+import json
 import os.path as op
 
 from datalad.api import (
@@ -130,6 +131,46 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     assert_result_count(ds.containers_list(**RAW_KWDS), 0)
     # image removed
     assert(not op.lexists(target_path))
+
+
+@with_tree(tree={
+    "container.img": "container",
+    "overlay1.img":  "overlay 1",
+    "overlay2.img":  "overlay 2",
+})
+def test_extra_files(ds_path=None):
+    container_file = 'container.img'
+    overlay1_file  = 'overlay1.img'
+    overlay2_file  = 'overlay2.img'
+
+    # prepare dataset:
+    ds = Dataset(ds_path).create(force=True)
+    ds.save()
+
+    ds.containers_add(
+        name="container",
+        image=container_file,
+        call_fmt="apptainer exec {img} {cmd}",
+    )
+    ds.containers_add(
+        name="container-with-overlay",
+        image=container_file,
+        call_fmt="apptainer exec --overlay {img_dir}/overlay1.img {img} {cmd}",
+        extra_inputs=[overlay1_file]
+    )
+    ds.containers_add(
+        name="container-with-two-overlays",
+        image=container_file,
+        call_fmt="apptainer exec --overlay {img_dir}/overlay1.img --overlay {img_dir}/overlay1.img:ro {img} {cmd}",
+        extra_inputs=[overlay1_file, overlay2_file]
+    )
+
+    res = ds.containers_list(**RAW_KWDS)
+    assert_result_count(res, 3)
+
+    assert_equal(ds.config.get("datalad.containers.container.extra-inputs"), None)
+    assert_equal(json.loads(ds.config.get("datalad.containers.container-with-overlay.extra-inputs")), ["overlay1.img"])
+    assert_equal(json.loads(ds.config.get("datalad.containers.container-with-two-overlays.extra-inputs")), ["overlay1.img", "overlay2.img"])
 
 
 @with_tempfile
