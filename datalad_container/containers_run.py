@@ -3,6 +3,7 @@
 __docformat__ = 'restructuredtext'
 
 import logging
+import json
 import os.path as op
 
 from datalad.interface.base import Interface
@@ -100,7 +101,6 @@ class ContainersRun(Interface):
 
             # Temporary kludge to give a more helpful message
             if callspec.startswith("["):
-                import json
                 try:
                     json.loads(callspec)
                 except json.JSONDecodeError:
@@ -114,6 +114,7 @@ class ContainersRun(Interface):
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,
+                    img_dir=op.dirname(image_path),
                 )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:
@@ -131,6 +132,26 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
+        try:
+            extra_inputs = json.loads(container.get("extra-inputs","[]") or "[]")
+        except json.JSONDecodeError as e:
+            lgr.error((
+                "extra-inputs of container ({!r}) is not JSON. "
+                "Error: {}. Continuing without it."
+            ).format(container.get("extra-inputs"),e))
+            extra_inputs = []
+
+        if not isinstance(extra_inputs, (str,list,tuple)):
+            lgr.warning((
+                "extra-inputs of container ({!r}) is not a JSON array or string "
+                "but a {} ({!r}). "
+                "This might result in unexpected behaviour."
+            ).format(container.get("extra-inputs"),type(extra_inputs),extra_inputs))
+        extra_inputs = list(map(str, 
+            [extra_inputs] if isinstance(extra_inputs, str) else extra_inputs
+        ))
+        lgr.debug("extra_inputs = {!r}".format(extra_inputs))
+
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
             # fire!
@@ -138,7 +159,7 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
-                    extra_inputs=[image_path],
+                    extra_inputs=[image_path] + (extra_inputs or []),
                     outputs=outputs,
                     message=message,
                     expand=expand,

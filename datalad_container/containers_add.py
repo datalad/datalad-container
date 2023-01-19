@@ -140,10 +140,21 @@ class ContainersAdd(Interface):
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
             replaced with the desired command. Additional placeholders:
-            '{img_dspath}' is relative path to the dataset containing the image.
+            '{img_dspath}' is relative path to the dataset containing the image, 
+            '{img_dir}' is the directory containing the '{img}.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
+        ),
+        extra_inputs=Parameter(
+            args=("--extra-inputs",),
+            doc="""Additional files the container invocation depends on (e.g.
+            overlays used in --call-fmt). Will be added alongside the container
+            image to the `extra_inputs` field in the run-record and thus
+            automatically be fetched when needed.
+            """,
+            nargs="+",
+            metavar="FILE",
         ),
         image=Parameter(
             args=("-i", "--image"),
@@ -168,7 +179,7 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
-                 update=False):
+                 update=False, extra_inputs=None):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -321,6 +332,12 @@ class ContainersAdd(Interface):
                 "{}.cmdexec".format(cfgbasevar),
                 call_fmt,
                 force=True)
+        if extra_inputs:
+            ds.config.set(
+                "{}.extra-inputs".format(cfgbasevar),
+                json.dumps(extra_inputs),
+                force=True,
+            )
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
