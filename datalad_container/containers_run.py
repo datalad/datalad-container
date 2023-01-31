@@ -114,7 +114,7 @@ class ContainersRun(Interface):
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,
-                    img_dir=op.dirname(image_path) or ".",
+                    img_dirpath=op.dirname(image_path) or ".",
                 )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:

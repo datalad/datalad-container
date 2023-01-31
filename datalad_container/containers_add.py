@@ -142,7 +142,7 @@ class ContainersAdd(Interface):
             is a placeholder for the path to the container image and '{cmd}' is
             replaced with the desired command. Additional placeholders:
             '{img_dspath}' is relative path to the dataset containing the image, 
-            '{img_dir}' is the directory containing the '{img}'.
+            '{img_dirpath}' is the directory containing the '{img}'.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
