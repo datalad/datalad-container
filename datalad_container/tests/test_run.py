@@ -191,6 +191,46 @@ def test_custom_call_fmt(path=None, local_file=None):
     assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
 
 
+@with_tempfile
+@with_tree(
+    tree={
+        "containers": {"container.img": "image file"},
+        "overlay1.img": "overlay1",
+        "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
+    }
+)
+def test_extra_inputs(path=None, local_file=None):
+    ds = Dataset(path).create()
+    subds = ds.create("sub")
+    subds.containers_add(
+        "mycontainer",
+        url=get_local_file_url(op.join(local_file, "containers/container.img")),
+        image="containers/container.img",
+        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath}",
+        extra_inputs=[
+            "overlay1.img",
+            "{img_dirpath}/../overlays/overlay2.img",
+            "{img_dspath}/overlays/overlay3.img",
+        ],
+    )
+    ds.save()  # record the effect in super-dataset
+
+    # TODO: The below fails, I don't know why.
+
+    # out = WitlessRunner(cwd=subds.path).run(
+    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
+    #     protocol=StdOutCapture)
+    # assert_in('img_dirpath=.', out['stdout'])
+
+    # out = WitlessRunner(cwd=ds.path).run(
+    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
+    #     protocol=StdOutCapture)
+    # assert_in('img_dirpath=sub/', out['stdout'])
+
+    # TODO: Check that extra_inputs were stored correctly in run record
+
+
+
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path=None):

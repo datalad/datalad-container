@@ -132,11 +132,11 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
-        extra_inputs_ = container.get("extra-input",[],get_all=True)
+        extra_inputs_ = container.get("extra-input",[])
         # TODO: Can't use EnsureListOf(str) yet as it handles strings as iterables.
         # See this PR: https://github.com/datalad/datalad/pull/7267
         # get_all=True still returns a string for a single value
-        extra_inputs_ = [extra_inputs_] if isinstance(extra_inputs_, str) else extra_inputs
+        extra_inputs_ = [extra_inputs_] if isinstance(extra_inputs_, str) else extra_inputs_
         extra_inputs = []
         for extra_input in extra_inputs_:
             try:
