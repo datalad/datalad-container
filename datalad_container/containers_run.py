@@ -132,7 +132,7 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
-        extra_inputs = container.get("extra-inputs",[],get_all=True)
+        extra_inputs = container.get("extra-input",[],get_all=True)
 
         # TODO: Can't use EnsureListOf(str) yet as it handles strings as interables...
         # See this PR: https://github.com/datalad/datalad/pull/7267

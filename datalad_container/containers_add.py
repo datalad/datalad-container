@@ -148,7 +148,7 @@ class ContainersAdd(Interface):
             constraints=EnsureStr() | EnsureNone(),
         ),
         extra_inputs=Parameter(
-            args=("--extra-inputs",),
+            args=("--extra-input",),
             doc="""Additional files the container invocation depends on (e.g.
             overlays used in --call-fmt). Will be stored in the dataset config
             and later added alongside the container image to the `extra_inputs`
@@ -339,10 +339,7 @@ class ContainersAdd(Interface):
                 call_fmt,
                 force=True)
         for extra_input in (extra_inputs or []):
-            ds.config.add(
-                "{}.extra-inputs".format(cfgbasevar),
-                extra_input
-            )
+            ds.config.add("{}.extra-input".format(cfgbasevar), extra_input)
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
