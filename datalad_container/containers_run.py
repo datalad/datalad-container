@@ -132,14 +132,7 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
-        try:
-            extra_inputs = json.loads(container.get("extra-inputs","[]") or "[]")
-        except json.JSONDecodeError as e:
-            lgr.error((
-                "extra-inputs of container ({!r}) is not JSON. "
-                "Error: {}. Continuing without it."
-            ).format(container.get("extra-inputs"),e))
-            extra_inputs = []
+        extra_inputs = container.get("extra-inputs",[],get_all=True)
 
         if not isinstance(extra_inputs, (str,list,tuple)):
             lgr.warning((

@@ -1,4 +1,3 @@
-import json
 import os.path as op
 
 from datalad.api import (
@@ -169,8 +168,8 @@ def test_extra_inputs(ds_path=None):
     assert_result_count(res, 3)
 
     assert_equal(ds.config.get("datalad.containers.container.extra-inputs"), None)
-    assert_equal(json.loads(ds.config.get("datalad.containers.container-with-overlay.extra-inputs")), ["overlay1.img"])
-    assert_equal(json.loads(ds.config.get("datalad.containers.container-with-two-overlays.extra-inputs")), ["overlay1.img", "overlay2.img"])
+    assert_equal(ds.config.get("datalad.containers.container-with-overlay.extra-inputs",get_all=True), "overlay1.img")
+    assert_equal(ds.config.get("datalad.containers.container-with-two-overlays.extra-inputs",get_all=True), ("overlay1.img", "overlay2.img"))
 
 
 @with_tempfile

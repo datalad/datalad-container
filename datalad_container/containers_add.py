@@ -150,13 +150,15 @@ class ContainersAdd(Interface):
         extra_inputs=Parameter(
             args=("--extra-inputs",),
             doc="""Additional files the container invocation depends on (e.g.
-            overlays used in --call-fmt). Will be added alongside the container
-            image to the `extra_inputs` field in the run-record and thus
-            automatically be fetched when needed.
+            overlays used in --call-fmt). Will be stored in the dataset config
+            and later added alongside the container image to the `extra_inputs`
+            field in the run-record and thus automatically be fetched when
+            needed.
             """,
-            nargs="+",
+            action="append",
+            default=[],
             metavar="FILE",
-            # Can't use EnsureListOf(str) as it handles strings as interables...
+            # Can't use EnsureListOf(str) yet as it handles strings as interables...
             # See this PR: https://github.com/datalad/datalad/pull/7267
             # constraints=EnsureListOf(str) | EnsureNone(),
         ),
@@ -336,11 +338,10 @@ class ContainersAdd(Interface):
                 "{}.cmdexec".format(cfgbasevar),
                 call_fmt,
                 force=True)
-        if extra_inputs:
-            ds.config.set(
+        for extra_input in (extra_inputs or []):
+            ds.config.add(
                 "{}.extra-inputs".format(cfgbasevar),
-                json.dumps(extra_inputs),
-                force=True,
+                extra_input
             )
         # store changes
         to_save.append(op.join(".datalad", "config"))
