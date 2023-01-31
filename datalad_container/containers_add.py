@@ -149,10 +149,12 @@ class ContainersAdd(Interface):
         extra_inputs=Parameter(
             args=("--extra-input",),
             doc="""Additional file the container invocation depends on (e.g.
-            overlays used in --call-fmt). Can be specified multiple times. Will
-            be stored in the dataset config and later added alongside the
-            container image to the `extra_inputs` field in the run-record and
-            thus automatically be fetched when needed.
+            overlays used in --call-fmt). Can be specified multiple times.
+            Similar to --call-fmt, the placeholders {img_dspath} and
+            {img_dirpath} are available. Will be stored in the dataset config and
+            later added alongside the container image to the `extra_inputs`
+            field in the run-record and thus automatically be fetched when
+            needed.
             """,
             action="append",
             default=[],
