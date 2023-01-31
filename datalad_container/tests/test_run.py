@@ -207,7 +207,7 @@ def test_extra_inputs(path=None, local_file=None):
         url=get_local_file_url(op.join(local_file, "containers/container.img")),
         image="containers/container.img",
         call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath}",
-        extra_inputs=[
+        extra_input=[
             "overlay1.img",
             "{img_dirpath}/../overlays/overlay2.img",
             "{img_dspath}/overlays/overlay3.img",
@@ -227,7 +227,7 @@ def test_extra_inputs(path=None, local_file=None):
     #     protocol=StdOutCapture)
     # assert_in('img_dirpath=sub/', out['stdout'])
 
-    # TODO: Check that extra_inputs were stored correctly in run record
+    # TODO: Check that extra_input were stored correctly in run record
 
 
 

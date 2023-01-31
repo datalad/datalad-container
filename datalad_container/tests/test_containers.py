@@ -155,13 +155,13 @@ def test_extra_inputs(ds_path=None):
         name="container-with-overlay",
         image=container_file,
         call_fmt="apptainer exec --overlay {img_dirpath}/overlay1.img {img} {cmd}",
-        extra_inputs=[overlay1_file]
+        extra_input=[overlay1_file]
     )
     ds.containers_add(
         name="container-with-two-overlays",
         image=container_file,
         call_fmt="apptainer exec --overlay {img_dirpath}/overlay1.img --overlay {img_dirpath}/overlay2.img:ro {img} {cmd}",
-        extra_inputs=[overlay1_file, overlay2_file]
+        extra_input=[overlay1_file, overlay2_file]
     )
 
     res = ds.containers_list(**RAW_KWDS)

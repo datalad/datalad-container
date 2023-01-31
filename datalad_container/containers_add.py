@@ -146,7 +146,7 @@ class ContainersAdd(Interface):
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
         ),
-        extra_inputs=Parameter(
+        extra_input=Parameter(
             args=("--extra-input",),
             doc="""Additional file the container invocation depends on (e.g.
             overlays used in --call-fmt). Can be specified multiple times.
@@ -186,7 +186,7 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
-                 update=False, extra_inputs=None):
+                 update=False, extra_input=None):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -339,8 +339,25 @@ class ContainersAdd(Interface):
                 "{}.cmdexec".format(cfgbasevar),
                 call_fmt,
                 force=True)
-        for extra_input in (extra_inputs or []):
-            ds.config.add("{}.extra-input".format(cfgbasevar), extra_input)
+        # --extra-input sanity check
+        # TODO: might also want to do that for --call-fmt above?
+        extra_input_placeholders = dict(img_dirpath="", img_dspath="")
+        for xi in (extra_input or []):
+            try:
+                xi.format(**extra_input_placeholders)
+            except KeyError as exc:
+                yield get_status_dict(
+                    action="containers_add", ds=ds, logger=lgr,
+                    status="error",
+                    message=("--extra-input %r contains unknown placeholder %s. "
+                             "Available placeholders: %s",
+                             repr(xi), exc, ', '.join(extra_input_placeholders)))
+                return
+        # actually setting --extra-input config
+        if ds.config.get("{}.extra-input".format(cfgbasevar)) is not None:
+            ds.config.unset("{}.extra-input".format(cfgbasevar))
+        for xi in (extra_input or []):
+            ds.config.add("{}.extra-input".format(cfgbasevar), xi)
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(

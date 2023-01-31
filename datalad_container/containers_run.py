@@ -138,7 +138,7 @@ class ContainersRun(Interface):
         # get_all=True still returns a string for a single value
         extra_inputs_ = [extra_inputs_] if isinstance(extra_inputs_, str) else extra_inputs_
         extra_inputs = []
-        for extra_input in extra_inputs_:
+        for extra_input in set(extra_inputs_):
             try:
                 xi_kwargs = dict(
                     img_dspath=image_dspath,
