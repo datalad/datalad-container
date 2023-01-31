@@ -134,12 +134,8 @@ class ContainersRun(Interface):
 
         extra_inputs = container.get("extra-inputs",[],get_all=True)
 
-        if not isinstance(extra_inputs, (str,list,tuple)):
-            lgr.warning((
-                "extra-inputs of container ({!r}) is not a JSON array or string "
-                "but a {} ({!r}). "
-                "This might result in unexpected behaviour."
-            ).format(container.get("extra-inputs"),type(extra_inputs),extra_inputs))
+        # TODO: Can't use EnsureListOf(str) yet as it handles strings as interables...
+        # See this PR: https://github.com/datalad/datalad/pull/7267
         extra_inputs = list(map(str, 
             [extra_inputs] if isinstance(extra_inputs, str) else extra_inputs
         ))
