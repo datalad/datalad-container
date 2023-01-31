@@ -3,7 +3,6 @@
 __docformat__ = 'restructuredtext'
 
 import logging
-import json
 import os.path as op
 
 from datalad.interface.base import Interface
@@ -101,6 +100,7 @@ class ContainersRun(Interface):
 
             # Temporary kludge to give a more helpful message
             if callspec.startswith("["):
+                import json
                 try:
                     json.loads(callspec)
                 except json.JSONDecodeError:
@@ -134,9 +134,9 @@ class ContainersRun(Interface):
 
         extra_inputs = container.get("extra-input",[],get_all=True)
 
-        # TODO: Can't use EnsureListOf(str) yet as it handles strings as interables...
+        # TODO: Can't use EnsureListOf(str) yet as it handles strings as iterables...
         # See this PR: https://github.com/datalad/datalad/pull/7267
-        extra_inputs = list(map(str, 
+        extra_inputs = list(map(str,
             [extra_inputs] if isinstance(extra_inputs, str) else extra_inputs
         ))
         lgr.debug("extra_inputs = {!r}".format(extra_inputs))
