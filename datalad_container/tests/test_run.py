@@ -191,20 +191,20 @@ def test_custom_call_fmt(path=None, local_file=None):
     assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
 
 
-@with_tempfile
 @with_tree(
     tree={
-        "containers": {"container.img": "image file"},
-        "overlay1.img": "overlay1",
-        "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
+        "sub": {
+            "containers": {"container.img": "image file"},
+            "overlay1.img": "overlay1",
+            "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
+        }
     }
 )
-def test_extra_inputs(path=None, local_file=None):
-    ds = Dataset(path).create()
-    subds = ds.create("sub")
+def test_extra_inputs(path=None):
+    ds = Dataset(path).create(force=True)
+    subds = ds.create("sub", force=True)
     subds.containers_add(
         "mycontainer",
-        url=get_local_file_url(op.join(local_file, "containers/container.img")),
         image="containers/container.img",
         call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath}",
         extra_input=[
@@ -213,19 +213,17 @@ def test_extra_inputs(path=None, local_file=None):
             "{img_dspath}/overlays/overlay3.img",
         ],
     )
-    ds.save()  # record the effect in super-dataset
+    ds.save(recursive=True)  # record the entire tree of files etc
 
-    # TODO: The below fails, I don't know why.
+    out = WitlessRunner(cwd=subds.path).run(
+        ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('img_dirpath=containers', out['stdout'])
 
-    # out = WitlessRunner(cwd=subds.path).run(
-    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
-    #     protocol=StdOutCapture)
-    # assert_in('img_dirpath=.', out['stdout'])
-
-    # out = WitlessRunner(cwd=ds.path).run(
-    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
-    #     protocol=StdOutCapture)
-    # assert_in('img_dirpath=sub/', out['stdout'])
+    out = WitlessRunner(cwd=ds.path).run(
+        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('img_dirpath=sub/containers', out['stdout'])
 
     # TODO: Check that extra_input were stored correctly in run record
 
