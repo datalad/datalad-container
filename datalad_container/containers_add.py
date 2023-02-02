@@ -353,11 +353,14 @@ class ContainersAdd(Interface):
                              "Available placeholders: %s",
                              repr(xi), exc, ', '.join(extra_input_placeholders)))
                 return
+
         # actually setting --extra-input config
-        if ds.config.get("{}.extra-input".format(cfgbasevar)) is not None:
-            ds.config.unset("{}.extra-input".format(cfgbasevar))
+        cfgextravar = "{}.extra-input".format(cfgbasevar)
+        if ds.config.get(cfgextravar) is not None:
+            ds.config.unset(cfgextravar)
         for xi in (extra_input or []):
-            ds.config.add("{}.extra-input".format(cfgbasevar), xi)
+            ds.config.add(cfgextravar, xi)
+
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(
