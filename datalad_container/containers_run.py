@@ -10,7 +10,7 @@ from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import eval_results
+from datalad.interface.base import eval_results
 
 from datalad.interface.results import get_status_dict
 from datalad.core.local.run import (
