@@ -16,7 +16,7 @@ from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset
 from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import eval_results
+from datalad.interface.base import eval_results
 from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError

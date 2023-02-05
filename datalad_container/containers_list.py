@@ -12,7 +12,7 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.utils import default_result_renderer
-from datalad.interface.utils import eval_results
+from datalad.interface.base import eval_results
 from datalad.support.constraints import EnsureNone
 import datalad.support.ansi_colors as ac
 from datalad.interface.results import get_status_dict
