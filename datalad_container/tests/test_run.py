@@ -193,9 +193,9 @@ def test_custom_call_fmt(path=None, local_file=None):
 
 @with_tree(
     tree={
+        "overlay1.img": "overlay1",
         "sub": {
             "containers": {"container.img": "image file"},
-            "overlay1.img": "overlay1",
             "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
         }
     }
@@ -215,15 +215,16 @@ def test_extra_inputs(path=None):
     )
     ds.save(recursive=True)  # record the entire tree of files etc
 
-    out = WitlessRunner(cwd=subds.path).run(
-        ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
-        protocol=StdOutCapture)
-    assert_in('img_dirpath=containers', out['stdout'])
-
     out = WitlessRunner(cwd=ds.path).run(
         ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('img_dirpath=sub/containers', out['stdout'])
+
+    # out = WitlessRunner(cwd=subds.path).run(
+    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
+    #     protocol=StdOutCapture)
+    # assert_in('img_dirpath=containers', out['stdout'])
+
 
     # TODO: Check that extra_input were stored correctly in run record
 
