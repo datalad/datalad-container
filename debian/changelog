@@ -1,3 +1,10 @@
+datalad-container (1.1.9-1) unstable; urgency=medium
+
+  * Fresh upstream release
+    - accounts for the move of @eval_results (Closes: #1030466)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Sun, 05 Feb 2023 20:26:19 -0500
+
 datalad-container (1.1.7-1) unstable; urgency=medium
 
   * Fresh upstream release
