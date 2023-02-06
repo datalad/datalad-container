@@ -13,7 +13,7 @@ OLD_PWD=$PWD
 # ***************
 #
 # The Datalad container extension provides a few commands to register
-# containers with a dataset and use them for execution of arbitray
+# containers with a dataset and use them for execution of arbitrary
 # commands. In order to get going quickly, we only need a dataset
 # and a ready-made container. For this demo we will start with a
 # fresh dataset and a demo container from Singularity-Hub.
@@ -41,7 +41,7 @@ datalad containers-run cp /etc/debian_version proof.txt
 
 #%
 # If there is more than one container registered, the desired container needs
-# to be specifed via the ``--name`` option. Containers do not need to come from
+# to be specified via the ``--name`` option. Containers do not need to come from
 # Singularity-Hub, but can be local images too. Via the ``containers-add
 # --call-fmt`` option it is possible to configure how exactly a container
 # is being executed, or which local directories shall be made available to

@@ -1,5 +1,6 @@
 # vim ft=yaml
 # travis-ci.org definition for DataLad build
+dist: jammy
 language: python
 
 services:
@@ -10,8 +11,11 @@ git:
   submodules: false
 
 python:
-  - 3.7
-  - 3.8
+  - '3.7'
+  - '3.8'
+  - '3.9'
+  - '3.10'
+  - '3.11'
 
 cache:
   - apt
@@ -42,8 +46,9 @@ before_install:
   # no recommends to avoid inheriting the entire multimedia stack
   - travis_retry sudo eatmydata apt-get install --no-install-recommends git-annex-standalone aria2 git-remote-gcrypt lsof gnupg nocache
   # chroot/container stuff
-  - travis_retry sudo eatmydata apt-get install xz-utils singularity-container
-  - pip install --upgrade pip
+  - travis_retry sudo eatmydata apt-get install xz-utils jq
+  - pip install --upgrade pip setuptools
+  - tools/ci/install-singularity.sh
 
 
 install:
@@ -56,8 +61,6 @@ install:
   - pip install -r requirements-devel.txt
 
 script:
-  # Verify that setup.py build doesn't puke
-  - python setup.py build
   # Test installation system-wide
   - sudo `which pip` install .
   # Run tests

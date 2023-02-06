@@ -2,13 +2,13 @@
 
 __docformat__ = 'restructuredtext'
 
-import re
+import json
 import logging
 import os
 import os.path as op
+import re
 import sys
 from shutil import copyfile
-from simplejson import loads
 
 from datalad.cmd import WitlessRunner
 from datalad.interface.base import Interface
@@ -16,7 +16,7 @@ from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod, EnsureDataset
 from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import eval_results
+from datalad.interface.base import eval_results
 from datalad.support.constraints import EnsureStr
 from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
@@ -48,7 +48,7 @@ def _resolve_img_url(url):
         req = requests.get(
             'https://www.singularity-hub.org/api/container/{}'.format(
                 url[7:]))
-        shub_info = loads(req.text)
+        shub_info = json.loads(req.text)
         url = shub_info['image']
     return url
 
