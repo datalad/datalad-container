@@ -1,3 +1,18 @@
+
+<a id='changelog-1.1.9'></a>
+# 1.1.9 (2023-02-06)
+
+## 🏠 Internal
+
+- Fix the "bump" level for breaking changes in .datalad-release-action.yaml.  [PR #186](https://github.com/datalad/datalad-container/pull/186) (by [@jwodder](https://github.com/jwodder))
+
+- Account for move of @eval_results in datalad core.  [PR #192](https://github.com/datalad/datalad-container/pull/192) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- scriv.ini: Provide full relative path to the templates.  [PR #193](https://github.com/datalad/datalad-container/pull/193) (by [@yarikoptic](https://github.com/yarikoptic))
+
+## 🧪 Tests
+
+- Install Singularity 3 from an official .deb, use newer ubuntu (jammy) on travis.  [PR #188](https://github.com/datalad/datalad-container/pull/188) (by [@bpoldrack](https://github.com/bpoldrack))
 # 1.1.8 (Mon Oct 10 2022)
 
 #### 🐛 Bug Fix
