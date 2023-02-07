@@ -9,6 +9,7 @@ from datalad.api import (
     containers_run,
     create,
 )
+from datalad.local.rerun import get_run_info
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
@@ -197,7 +198,7 @@ def test_custom_call_fmt(path=None, local_file=None):
         "sub": {
             "containers": {"container.img": "image file"},
             "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
-        }
+        },
     }
 )
 def test_extra_inputs(path=None):
@@ -206,7 +207,7 @@ def test_extra_inputs(path=None):
     subds.containers_add(
         "mycontainer",
         image="containers/container.img",
-        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath}",
+        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath} > out.log",
         extra_input=[
             "overlay1.img",
             "{img_dirpath}/../overlays/overlay2.img",
@@ -214,21 +215,26 @@ def test_extra_inputs(path=None):
         ],
     )
     ds.save(recursive=True)  # record the entire tree of files etc
-
-    out = WitlessRunner(cwd=ds.path).run(
-        ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
-        protocol=StdOutCapture)
-    assert_in('img_dirpath=sub/containers', out['stdout'])
-
-    # out = WitlessRunner(cwd=subds.path).run(
-    #     ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
-    #     protocol=StdOutCapture)
-    # assert_in('img_dirpath=containers', out['stdout'])
-
-
-    # TODO: Check that extra_input were stored correctly in run record
-
-
+    ds.containers_run("XXX", container_name="sub/mycontainer")
+    # print(ds.repo.call_git(["ls-files"]))
+    ok_file_has_content(
+        os.path.join(ds.repo.path, "out.log"),
+        "image=sub/containers/container.img",
+        re_=True,
+    )
+    # print(ds.repo.call_git(["log"]))
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    # print(f"{commit_msg = }")
+    cmd, runinfo = get_run_info(ds, commit_msg)
+    # print(f"{runinfo = }")
+    assert set(
+        [
+            "sub/containers/container.img",
+            "overlay1.img",
+            "sub/containers/../overlays/overlay2.img",
+            "sub/overlays/overlay3.img",
+        ]
+    ) == set(runinfo.get("extra_inputs", set()))
 
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
