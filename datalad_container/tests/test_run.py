@@ -236,6 +236,7 @@ def test_extra_inputs(path=None):
         ]
     ) == set(runinfo.get("extra_inputs", set()))
 
+
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path=None):
