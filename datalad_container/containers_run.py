@@ -166,7 +166,7 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
-                    extra_inputs=[image_path] + (extra_inputs or []),
+                    extra_inputs=[image_path] + extra_inputs,
                     outputs=outputs,
                     message=message,
                     expand=expand,
