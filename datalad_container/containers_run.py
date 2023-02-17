@@ -11,6 +11,7 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.base import eval_results
+from datalad.utils import ensure_iter
 
 from datalad.interface.results import get_status_dict
 from datalad.core.local.run import (
@@ -132,13 +133,8 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
-        extra_inputs_ = container.get("extra-input",[])
-        # TODO: Can't use EnsureListOf(str) yet as it handles strings as iterables.
-        # See this PR: https://github.com/datalad/datalad/pull/7267
-        # get_all=True still returns a string for a single value
-        extra_inputs_ = [extra_inputs_] if isinstance(extra_inputs_, str) else extra_inputs_
         extra_inputs = []
-        for extra_input in set(extra_inputs_):
+        for extra_input in ensure_iter(container.get("extra-input",[]), set):
             try:
                 xi_kwargs = dict(
                     img_dspath=image_dspath,
