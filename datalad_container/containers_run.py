@@ -157,7 +157,7 @@ class ContainersRun(Interface):
                         ", ".join(xi_kwargs)))
                 return
 
-        lgr.debug("extra_inputs = {!r}".format(extra_inputs))
+        lgr.debug("extra_inputs = %r", extra_inputs)
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
