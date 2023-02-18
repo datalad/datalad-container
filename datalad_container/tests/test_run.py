@@ -216,17 +216,13 @@ def test_extra_inputs(path=None):
     )
     ds.save(recursive=True)  # record the entire tree of files etc
     ds.containers_run("XXX", container_name="sub/mycontainer")
-    # print(ds.repo.call_git(["ls-files"]))
     ok_file_has_content(
         os.path.join(ds.repo.path, "out.log"),
         "image=sub/containers/container.img",
         re_=True,
     )
-    # print(ds.repo.call_git(["log"]))
     commit_msg = ds.repo.call_git(["show", "--format=%B"])
-    # print(f"{commit_msg = }")
     cmd, runinfo = get_run_info(ds, commit_msg)
-    # print(f"{runinfo = }")
     assert set(
         [
             "sub/containers/container.img",
