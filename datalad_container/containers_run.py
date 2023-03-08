@@ -103,11 +103,10 @@ class ContainersRun(Interface):
                     exc,
                     ", ".join(['cont_dspath'])))
             return
-        image_path = op.relpath(image_path, pwd)
-
         # container definition might point to an image in some nested dataset.
         # it might be useful to be distinguish between the two in such cases
-        image_dspath = get_dataset_root(image_path)
+        image_dspath = op.relpath(get_dataset_root(image_path), pwd)
+        image_path = op.relpath(image_path, pwd)
         # sure we could check whether the container image is present,
         # but it might live in a subdataset that isn't even installed yet
         # let's leave all this business to `get` that is called by `run`
