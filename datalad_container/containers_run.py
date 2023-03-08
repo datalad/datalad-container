@@ -11,6 +11,7 @@ from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
 from datalad.interface.base import eval_results
+from datalad.utils import ensure_iter
 
 from datalad.interface.results import get_status_dict
 from datalad.core.local.run import (
@@ -114,6 +115,7 @@ class ContainersRun(Interface):
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,
+                    img_dirpath=op.dirname(image_path) or ".",
                 )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:
@@ -131,6 +133,28 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
+        extra_inputs = []
+        for extra_input in ensure_iter(container.get("extra-input",[]), set):
+            try:
+                xi_kwargs = dict(
+                    img_dspath=image_dspath,
+                    img_dirpath=op.dirname(image_path) or ".",
+                )
+                extra_inputs.append(extra_input.format(**xi_kwargs))
+            except KeyError as exc:
+                yield get_status_dict(
+                    'run',
+                    ds=ds,
+                    status='error',
+                    message=(
+                        'Unrecognized extra_input placeholder: %s. '
+                        'See containers-add for information on known ones: %s',
+                        exc,
+                        ", ".join(xi_kwargs)))
+                return
+
+        lgr.debug("extra_inputs = %r", extra_inputs)
+
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
             # fire!
@@ -138,7 +162,7 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
-                    extra_inputs=[image_path],
+                    extra_inputs=[image_path] + extra_inputs,
                     outputs=outputs,
                     message=message,
                     expand=expand,

@@ -9,6 +9,7 @@ from datalad.api import (
     containers_run,
     create,
 )
+from datalad.local.rerun import get_run_info
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
@@ -189,6 +190,47 @@ def test_custom_call_fmt(path=None, local_file=None):
         ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
+
+
+@with_tree(
+    tree={
+        "overlay1.img": "overlay1",
+        "sub": {
+            "containers": {"container.img": "image file"},
+            "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
+        },
+    }
+)
+def test_extra_inputs(path=None):
+    ds = Dataset(path).create(force=True)
+    subds = ds.create("sub", force=True)
+    subds.containers_add(
+        "mycontainer",
+        image="containers/container.img",
+        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath} > out.log",
+        extra_input=[
+            "overlay1.img",
+            "{img_dirpath}/../overlays/overlay2.img",
+            "{img_dspath}/overlays/overlay3.img",
+        ],
+    )
+    ds.save(recursive=True)  # record the entire tree of files etc
+    ds.containers_run("XXX", container_name="sub/mycontainer")
+    ok_file_has_content(
+        os.path.join(ds.repo.path, "out.log"),
+        "image=sub/containers/container.img",
+        re_=True,
+    )
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    cmd, runinfo = get_run_info(ds, commit_msg)
+    assert set(
+        [
+            "sub/containers/container.img",
+            "overlay1.img",
+            "sub/containers/../overlays/overlay2.img",
+            "sub/overlays/overlay3.img",
+        ]
+    ) == set(runinfo.get("extra_inputs", set()))
 
 
 @skip_if_no_network
