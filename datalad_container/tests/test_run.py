@@ -223,14 +223,12 @@ def test_extra_inputs(path=None):
     )
     commit_msg = ds.repo.call_git(["show", "--format=%B"])
     cmd, runinfo = get_run_info(ds, commit_msg)
-    assert set(
-        [
-            "sub/containers/container.img",
-            "overlay1.img",
-            "sub/containers/../overlays/overlay2.img",
-            "sub/overlays/overlay3.img",
-        ]
-    ) == set(runinfo.get("extra_inputs", set()))
+    assert {
+        "sub/containers/container.img",
+        "overlay1.img",
+        "sub/containers/../overlays/overlay2.img",
+        "sub/overlays/overlay3.img",
+    } == set(runinfo.get("extra_inputs", set()))
 
 
 @skip_if_no_network
