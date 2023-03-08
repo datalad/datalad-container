@@ -9,7 +9,7 @@ from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
-from datalad.distribution.dataset import require_dataset
+from datalad.distribution.dataset import require_dataset, get_dataset_root
 from datalad.interface.base import eval_results
 from datalad.utils import ensure_iter
 
@@ -88,11 +88,18 @@ class ContainersRun(Interface):
         image_path = op.relpath(container["path"], pwd)
         # container record would contain path to the (sub)dataset containing
         # it.  If not - take current dataset, as it must be coming from it
-        image_dspath = op.relpath(container.get('parentds', ds.path), pwd)
-
+        cont_dspath = op.relpath(container.get('parentds', ds.path), pwd)
+        # container definition might point to an image in some nested dataset.
+        # it might be useful to be distinguish between the two in such cases
+        image_dspath = get_dataset_root(image_path)
         # sure we could check whether the container image is present,
         # but it might live in a subdataset that isn't even installed yet
         # let's leave all this business to `get` that is called by `run`
+        common_kwargs = dict(
+            cont_dspath=cont_dspath,
+            img_dspath=image_dspath,
+            img_dirpath=op.dirname(image_path) or ".",
+        )
 
         cmd = normalize_command(cmd)
         # expand the command with container execution
@@ -114,8 +121,7 @@ class ContainersRun(Interface):
                 cmd_kwargs = dict(
                     img=image_path,
                     cmd=cmd,
-                    img_dspath=image_dspath,
-                    img_dirpath=op.dirname(image_path) or ".",
+                    **common_kwargs,
                 )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:
@@ -136,11 +142,7 @@ class ContainersRun(Interface):
         extra_inputs = []
         for extra_input in ensure_iter(container.get("extra-input",[]), set):
             try:
-                xi_kwargs = dict(
-                    img_dspath=image_dspath,
-                    img_dirpath=op.dirname(image_path) or ".",
-                )
-                extra_inputs.append(extra_input.format(**xi_kwargs))
+                extra_inputs.append(extra_input.format(**common_kwargs))
             except KeyError as exc:
                 yield get_status_dict(
                     'run',
