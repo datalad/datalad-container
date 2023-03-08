@@ -140,6 +140,8 @@ class ContainersAdd(Interface):
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
             replaced with the desired command. Additional placeholders:
+            '{cont_dspath}' is relative path to the dataset containing container
+            specification in its config,
             '{img_dspath}' is relative path to the dataset containing the image,
             '{img_dirpath}' is the directory containing the '{img}'.
             """,
@@ -150,7 +152,7 @@ class ContainersAdd(Interface):
             args=("--extra-input",),
             doc="""Additional file the container invocation depends on (e.g.
             overlays used in --call-fmt). Can be specified multiple times.
-            Similar to --call-fmt, the placeholders {img_dspath} and
+            Similar to --call-fmt, the placeholders {cont_dspath}, {img_dspath} and
             {img_dirpath} are available. Will be stored in the dataset config and
             later added alongside the container image to the `extra_inputs`
             field in the run-record and thus automatically be fetched when

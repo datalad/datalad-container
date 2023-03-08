@@ -85,10 +85,26 @@ class ContainersRun(Interface):
                 yield res
         assert container, "bug: container should always be defined here"
 
-        image_path = op.relpath(container["path"], pwd)
         # container record would contain path to the (sub)dataset containing
         # it.  If not - take current dataset, as it must be coming from it
         cont_dspath = op.relpath(container.get('parentds', ds.path), pwd)
+
+        image_path = container["path"]
+        try:
+            image_path = image_path.format(cont_dspath=cont_dspath)
+        except KeyError as exc:
+            yield get_status_dict(
+                'run',
+                ds=ds,
+                status='error',
+                message=(
+                    'Unrecognized path placeholder: %s. '
+                    'See containers-add for information on known ones: %s',
+                    exc,
+                    ", ".join(['cont_dspath'])))
+            return
+        image_path = op.relpath(image_path, pwd)
+
         # container definition might point to an image in some nested dataset.
         # it might be useful to be distinguish between the two in such cases
         image_dspath = get_dataset_root(image_path)
@@ -117,12 +133,13 @@ class ContainersRun(Interface):
                     raise ValueError(
                         'cmdexe {!r} is in an old, unsupported format. '
                         'Convert it to a plain string.'.format(callspec))
+
+            cmd_kwargs = dict(
+                img=image_path,
+                cmd=cmd,
+                **common_kwargs,
+            )
             try:
-                cmd_kwargs = dict(
-                    img=image_path,
-                    cmd=cmd,
-                    **common_kwargs,
-                )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:
                 yield get_status_dict(
@@ -140,7 +157,7 @@ class ContainersRun(Interface):
             cmd = container['path'] + ' ' + cmd
 
         extra_inputs = []
-        for extra_input in ensure_iter(container.get("extra-input",[]), set):
+        for extra_input in ensure_iter(container.get("extra-input", []), set):
             try:
                 extra_inputs.append(extra_input.format(**common_kwargs))
             except KeyError as exc:
@@ -152,7 +169,7 @@ class ContainersRun(Interface):
                         'Unrecognized extra_input placeholder: %s. '
                         'See containers-add for information on known ones: %s',
                         exc,
-                        ", ".join(xi_kwargs)))
+                        ", ".join(common_kwargs)))
                 return
 
         lgr.debug("extra_inputs = %r", extra_inputs)
