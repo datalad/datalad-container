@@ -90,19 +90,6 @@ class ContainersRun(Interface):
         cont_dspath = op.relpath(container.get('parentds', ds.path), pwd)
 
         image_path = container["path"]
-        try:
-            image_path = image_path.format(cont_dspath=cont_dspath)
-        except KeyError as exc:
-            yield get_status_dict(
-                'run',
-                ds=ds,
-                status='error',
-                message=(
-                    'Unrecognized path placeholder: %s. '
-                    'See containers-add for information on known ones: %s',
-                    exc,
-                    ", ".join(['cont_dspath'])))
-            return
         # container definition might point to an image in some nested dataset.
         # it might be useful to be distinguish between the two in such cases
         image_dspath = op.relpath(get_dataset_root(image_path), pwd)
