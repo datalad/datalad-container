@@ -166,6 +166,7 @@ def test_custom_call_fmt(path=None, local_file=None):
         url=get_local_file_url(op.join(local_file, 'some_container.img')),
         image='righthere',
         call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath} '
+                 'cont_dspath={cont_dspath} '
                  # and environment variable being set/propagated by default
                  'name=$DATALAD_CONTAINER_NAME'
     )
@@ -175,13 +176,13 @@ def test_custom_call_fmt(path=None, local_file=None):
     out = WitlessRunner(cwd=subds.path).run(
         ['datalad', 'containers-run', '-n', 'mycontainer', 'XXX'],
         protocol=StdOutCapture)
-    assert_in('image=righthere cmd=XXX img_dspath=. name=mycontainer',
+    assert_in('image=righthere cmd=XXX img_dspath=. cont_dspath=. name=mycontainer',
               out['stdout'])
 
     out = WitlessRunner(cwd=ds.path).run(
         ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
-    assert_in('image=sub/righthere cmd=XXX img_dspath=sub', out['stdout'])
+    assert_in('image=sub/righthere cmd=XXX img_dspath=sub cont_dspath=sub', out['stdout'])
 
     # Test within subdirectory of the super-dataset
     subdir = op.join(ds.path, 'subdir')
@@ -189,7 +190,20 @@ def test_custom_call_fmt(path=None, local_file=None):
     out = WitlessRunner(cwd=subdir).run(
         ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
-    assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
+    assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub cont_dspath=../sub',
+              out['stdout'])
+
+    # Add to super a container definition pointing to the image within sub
+    ds.containers_add(
+        'sub-mycontainer',
+        # we point into subdataset
+        image='sub/righthere',
+        call_fmt=subds.config.get('datalad.containers.mycontainer.cmdexec')
+    )
+    out = WitlessRunner(cwd=ds.path).run(
+        ['datalad', 'containers-run', '-n', 'sub-mycontainer', 'XXX'],
+        protocol=StdOutCapture)
+    assert_in('image=sub/righthere cmd=XXX img_dspath=sub cont_dspath=.', out['stdout'])
 
 
 @with_tree(
