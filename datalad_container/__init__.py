@@ -4,6 +4,9 @@ __docformat__ = 'restructuredtext'
 
 from .version import __version__
 
+# Imported to set singularity/apptainer version commands at init
+import datalad_container.extractors._load_singularity_versions # noqa
+
 # defines a datalad command suite
 # this symbold must be identified as a setuptools entrypoint
 # to be found by datalad
