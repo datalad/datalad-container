@@ -2,6 +2,7 @@ import os.path as op
 import sys
 from distutils.spawn import find_executable
 
+import pytest
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
@@ -112,3 +113,12 @@ class TestAdapterBusyBox(object):
                 protocol=StdOutCapture,
                 stdin=ifh)
         assert_in("content", out["stdout"])
+
+
+def test_load_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "3.17"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    call(["save", "alpine", str(tmp_path)])
+    with pytest.raises(CommandError):
+        call(["run", str(tmp_path), "ls"])
+    call(["run", "--repo-tag", "alpine:3.16", str(tmp_path), "ls"])
