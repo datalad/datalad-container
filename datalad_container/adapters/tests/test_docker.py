@@ -1,6 +1,6 @@
 import os.path as op
+from shutil import which
 import sys
-from distutils.spawn import find_executable
 
 from datalad.cmd import (
     StdOutCapture,
@@ -19,7 +19,7 @@ from datalad.tests.utils_pytest import (
 
 import datalad_container.adapters.docker as da
 
-if not find_executable("docker"):
+if not which("docker"):
     raise SkipTest("'docker' not found on path")
 
 
