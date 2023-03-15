@@ -63,6 +63,8 @@ install:
 script:
   # Test installation system-wide
   - sudo `which pip` install .
+  # For container metadata extraction
+  - pip install datalad-metalad
   # Run tests
   - http_proxy=
     PATH=$PWD/tools/coverage-bin:$PATH
