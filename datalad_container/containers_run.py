@@ -194,9 +194,12 @@ class ContainersRun(Interface):
 
         lgr.debug("extra_inputs = %r", extra_inputs)
 
-        # we can assume "both" with params choices and filtering above
-        if len(assume_ready) > 1:
-            assume_ready='both'
+        if len(assume_ready) == 0:
+            assume_ready = None
+        elif len(assume_ready) == 1:
+            assume_ready = assume_ready[0]
+        elif  "inputs" in assume_ready and "outputs" in assume_ready:
+            assume_ready = "both"
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
