@@ -41,6 +41,7 @@ def __get_singularity_version():
 
     return None
 
+
 # Load external_versions and patch with "cmd:singularity" and "cmd:apptainer"
 external_versions.add("cmd:apptainer", func=__get_apptainer_version)
 external_versions.add("cmd:singularity", func=__get_singularity_version)

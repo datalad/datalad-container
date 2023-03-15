@@ -15,6 +15,7 @@ from datalad.cmd import (
     WitlessRunner,
 )
 from datalad.support.exceptions import CommandError
+from datalad.support.external_versions import external_versions, UnknownVersion
 from datalad.tests.utils_pytest import (
     SkipTest,
     assert_in,
@@ -25,9 +26,11 @@ from datalad.tests.utils_pytest import (
     with_tree,
 )
 
-from datalad_container.extractors.metalad_container import MetaladSingularityInspect
+if not external_versions["datalad_metalad"]:
+    raise SkipTest("skipping metalad tests")
 
-test_img_url = 'shub://datalad/datalad-container:testhelper'
+# Must come after skiptest or imports will not work
+from datalad_container.extractors.metalad_container import MetaladSingularityInspect
 
 
 class TestMetaladSingularityInspect:
@@ -38,15 +41,11 @@ class TestMetaladSingularityInspect:
         with pytest.raises(subprocess.CalledProcessError):
             result = MetaladSingularityInspect._singularity_inspect(path)
 
-    # TODO this fixture is 2Gb, lets find a smaller one.
     def test__singularity_inspect_valid(self, pull_image):
         """Call inspect on a valid singularity container image."""
-        # TODO using test_img_url, create a session fixture
-    #     path = op.join(Path(__file__).resolve().parent, "fixtures", "singularity.img")
         result = MetaladSingularityInspect._singularity_inspect(pull_image)
 
         assert result['type'] == 'container'
-        # Do I need to catch this?
         labels = result['data']['attributes']['labels']
         assert_in_labels = [
             'org.label-schema.usage.singularity.version',
