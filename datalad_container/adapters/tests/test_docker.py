@@ -1,5 +1,6 @@
+import json
 import os.path as op
-from shutil import which
+from shutil import unpack_archive, which
 import sys
 
 import pytest
@@ -118,7 +119,18 @@ class TestAdapterBusyBox(object):
 def test_load_multi_image(tmp_path):
     for v in ["3.15", "3.16", "3.17"]:
         WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
-    call(["save", "alpine", str(tmp_path)])
+    WitlessRunner().run(["docker", "save", "alpine", "-o", str(tmp_path / "alpine.tar")])
+    unpack_archive(tmp_path / "alpine.tar", tmp_path / "alpine")
     with pytest.raises(CommandError):
-        call(["run", str(tmp_path), "ls"])
-    call(["run", "--repo-tag", "alpine:3.16", str(tmp_path), "ls"])
+        call(["run", str(tmp_path / "alpine"), "ls"])
+    call(["run", "--repo-tag", "alpine:3.16", str(tmp_path / "alpine"), "ls"])
+
+
+def test_save_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "latest"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    call(["save", "alpine", str(tmp_path)])
+    with (tmp_path / "manifest.json").open() as fp:
+        manifest = json.load(fp)
+    assert len(manifest) == 1
+    assert manifest[0]["RepoTags"] == ["alpine:latest"]

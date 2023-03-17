@@ -47,6 +47,8 @@ def save(image, path):
     """
     # Use a temporary file because docker save (or actually tar underneath)
     # complains that stdout needs to be redirected if we use Popen and PIPE.
+    if ":" not in image:
+        image = f"{image}:latest"
     with tempfile.NamedTemporaryFile() as stream:
         # Windows can't write to an already opened file
         stream.close()
