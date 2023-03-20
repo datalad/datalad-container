@@ -178,7 +178,6 @@ install:
 build_script:
   - python -m pip install -q -r requirements-devel.txt
   - python -m pip install .
-  - python -m pip install datalad-metalad
 
 
 #after_build:
