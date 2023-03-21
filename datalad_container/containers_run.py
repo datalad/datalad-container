@@ -167,7 +167,7 @@ class ContainersRun(Interface):
 
         assume_ready = assume_ready or []
         extra_inputs = []
-        if not "extra-inputs" in assume_ready:
+        if "extra-inputs" not in assume_ready:
             for extra_input in ensure_iter(container.get("extra-input",[]), set):
                 try:
                     xi_kwargs = dict(
