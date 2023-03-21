@@ -186,11 +186,14 @@ class ContainersRun(Interface):
                             exc,
                             ", ".join(xi_kwargs)))
                     return
-        assume_ready = [ar for ar in assume_ready if ar != 'extra-inputs']
+        else:
+            # filter the whole list as .remove only removes first instance
+            assume_ready = [ar for ar in assume_ready if ar != 'extra-inputs']
 
-        if not "image" in assume_ready:
+        if "image" not in assume_ready:
             extra_inputs.append(image_path)
-        assume_ready = [ar for ar in assume_ready if ar != 'image']
+        else:
+            assume_ready = [ar for ar in assume_ready if ar != 'image']
 
         lgr.debug("extra_inputs = %r", extra_inputs)
 
