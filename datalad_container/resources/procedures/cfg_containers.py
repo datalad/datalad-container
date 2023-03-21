@@ -16,8 +16,8 @@ ds = require_dataset(
 # will get its own .gitattributes entry to keep it out of the annex
 # give relative path to dataset root (use platform notation)
 force_in_git = [
-    op.join('environments','**','*.json'),
-    op.join('environments','*','image','repositories'),
+    'environments/**/*.json',
+    'environments/*/image/repositories',
 ]
 # make an attempt to discover the prospective change in .gitattributes
 # to decide what needs to be done, and make this procedure idempotent
