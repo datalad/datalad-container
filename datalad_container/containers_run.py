@@ -197,12 +197,14 @@ class ContainersRun(Interface):
 
         lgr.debug("extra_inputs = %r", extra_inputs)
 
-        if len(assume_ready) == 0:
+        if not assume_ready:
             assume_ready = None
         elif len(assume_ready) == 1:
             assume_ready = assume_ready[0]
         elif  "inputs" in assume_ready and "outputs" in assume_ready:
             assume_ready = "both"
+        else:
+            raise ValueError(f"Ended up with assume_ready={assume_ready!r} which must have not happened")
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
