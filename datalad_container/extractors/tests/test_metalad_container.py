@@ -7,8 +7,9 @@ from shutil import which
 from unittest.mock import patch
 
 from datalad.api import (
-    Dataset,
     clone,
+    Dataset,
+    meta_extract,
 )
 from datalad.cmd import (
     StdOutCapture,
@@ -39,9 +40,12 @@ def test__container_inspect_nofile(path=None):
     with pytest.raises(subprocess.CalledProcessError):
         result = MetaladContainerInspect._container_inspect("apptainer", path)
 
-def test__container_inspect_valid(pull_image):
+def test__container_inspect_valid(singularity_test_image):
     """Call inspect on a valid singularity container image."""
-    result = MetaladContainerInspect._container_inspect("apptainer", pull_image)
+    result = MetaladContainerInspect._container_inspect(
+        "apptainer",
+        singularity_test_image["img_path"],
+    )
     expected_result = {
         'data': {
             'attributes': {
@@ -60,4 +64,12 @@ def test__container_inspect_valid(pull_image):
     }
     assert result == expected_result
 
+def test_extract(singularity_test_image):
+    ds = singularity_test_image["ds"]
+    path = singularity_test_image["img_path"]
+    result = meta_extract(dataset=ds, extractorname="container_inspect", path=path)
+    assert len(result) == 1
 
+    assert "extracted_metadata" in result[0]["metadata_record"]
+    assert result[0]["metadata_record"]["extractor_name"] == 'container_inspect'
+    assert result[0]["metadata_record"]["extractor_version"] == MetaladContainerInspect.get_version()

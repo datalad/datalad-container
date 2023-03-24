@@ -9,7 +9,7 @@ from datalad_container.tests.utils import add_pyscript_image
 TEST_IMG_URL = 'shub://datalad/datalad-container:testhelper'
 
 @pytest.fixture(scope="session")
-def pull_image(tmp_path_factory: pytest.TempPathFactory) -> str:
+def singularity_test_image(tmp_path_factory: pytest.TempPathFactory) -> str:
     fixture_file_name = "fixture.sing"
     ds = Dataset(tmp_path_factory.mktemp("singularity_image"))
     ds.create(force=True)
@@ -20,4 +20,4 @@ def pull_image(tmp_path_factory: pytest.TempPathFactory) -> str:
     )
     img_path = ds.pathobj / fixture_file_name
     ds.get(img_path)
-    return img_path
+    return {"ds": ds, "img_path": img_path}

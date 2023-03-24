@@ -38,7 +38,8 @@ class MetaladContainerInspect(FileMetadataExtractor):
         # Nothing special, made this up - asmacdo
         return UUID('3a28cca6-b7a1-11ed-b106-fc3497650c92')
 
-    def get_version(self) -> str:
+    @staticmethod
+    def get_version() -> str:
         return CURRENT_VERSION
 
     def extract(self, _=None) -> ExtractorResult:

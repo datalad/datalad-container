@@ -1,1 +1,1 @@
-from .singularity_image import pull_image
+from .singularity_image import singularity_test_image
