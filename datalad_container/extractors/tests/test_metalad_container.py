@@ -30,33 +30,34 @@ if not external_versions["datalad_metalad"]:
     raise SkipTest("skipping metalad tests")
 
 # Must come after skiptest or imports will not work
-from datalad_container.extractors.metalad_container import MetaladSingularityInspect
+from datalad_container.extractors.metalad_container import MetaladContainerInspect
 
 
-class TestMetaladSingularityInspect:
+@with_tempfile
+def test__container_inspect_nofile(path=None):
+    """Singularity causes CalledProcessErorr if path DNE."""
+    with pytest.raises(subprocess.CalledProcessError):
+        result = MetaladContainerInspect._container_inspect("apptainer", path)
 
-    @with_tempfile
-    def test__singularity_inspect_nofile(self, path=None):
-        """Singularity causes CalledProcessErorr if path DNE."""
-        with pytest.raises(subprocess.CalledProcessError):
-            result = MetaladSingularityInspect._singularity_inspect(path)
+def test__container_inspect_valid(pull_image):
+    """Call inspect on a valid singularity container image."""
+    result = MetaladContainerInspect._container_inspect("apptainer", pull_image)
+    expected_result = {
+        'data': {
+            'attributes': {
+                'labels':{
+                    'org.label-schema.build-date': 'Sat,_19_May_2018_07:06:48_+0000',
+                    'org.label-schema.build-size': '62MB',
+                    'org.label-schema.schema-version': '1.0',
+                    'org.label-schema.usage.singularity.deffile': 'Singularity.testhelper',
+                    'org.label-schema.usage.singularity.deffile.bootstrap': 'docker',
+                    'org.label-schema.usage.singularity.deffile.from': 'debian:stable-slim', 'org.label-schema.usage.singularity.version':
+                    '2.5.0-feature-squashbuild-secbuild-2.5.0.gddf62fb5'
+                }
+            }
+        },
+        'type': 'container'
+    }
+    assert result == expected_result
 
-    def test__singularity_inspect_valid(self, pull_image):
-        """Call inspect on a valid singularity container image."""
-        result = MetaladSingularityInspect._singularity_inspect(pull_image)
 
-        assert result['type'] == 'container'
-        labels = result['data']['attributes']['labels']
-        assert_in_labels = [
-            'org.label-schema.usage.singularity.version',
-            'org.label-schema.build-date',
-            'org.label-schema.build-size',
-            'org.label-schema.usage.singularity.deffile',
-            'org.label-schema.usage.singularity.deffile.from',
-            'org.label-schema.usage.singularity.deffile.bootstrap',
-            'org.label-schema.usage.singularity.version',
-        ]
-        for label in assert_in_labels:
-            assert label in assert_in_labels
-        assert labels['org.label-schema.schema-version'] == '1.0'
-        assert result['type'] == 'container'
