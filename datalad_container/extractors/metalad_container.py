@@ -23,7 +23,7 @@ CURRENT_VERSION = "0.0.1"
 lgr = logging.getLogger('datalad.metadata.extractors.metalad_container')
 
 
-class MetaladSingularityInspect(FileMetadataExtractor):
+class MetaladContainerInspect(FileMetadataExtractor):
     """
     Populates metadata singularity/apptainer version and `inspect` output.
     """
@@ -38,22 +38,17 @@ class MetaladSingularityInspect(FileMetadataExtractor):
         # Nothing special, made this up - asmacdo
         return UUID('3a28cca6-b7a1-11ed-b106-fc3497650c92')
 
-
     def get_version(self) -> str:
         return CURRENT_VERSION
 
     def extract(self, _=None) -> ExtractorResult:
-        singularity_version = external_versions["cmd:singularity"]
-        apptainer_version = external_versions["cmd:apptainer"]
-
-        if not isinstance(singularity_version, UnknownVersion):
-            singularity_version = singularity_version.vstring
+        for command in ["apptainer", "singularity"]:
+            container_system_version = external_versions[f"cmd:{command}"]
+            if container_system_version:
+                container_command = command
+                break
         else:
-            singularity_version = str(singularity_version)
-        if not isinstance(apptainer_version, UnknownVersion):
-            apptainer_version = apptainer_version.vstring
-        else:
-            apptainer_version = str(apptainer_version)
+            raise RuntimeError("Did not find apptainer or singularity")
 
         return ExtractorResult(
             extractor_version=self.get_version(),
@@ -71,15 +66,15 @@ class MetaladSingularityInspect(FileMetadataExtractor):
                 "path": self.file_info.intra_dataset_path,
                 "content_byte_size": self.file_info.byte_size,
                 "comment": f"SingularityInspect extractor executed at {time.time()}",
-                "singularity_version": singularity_version,
-                "apptainer_version": apptainer_version,
-                "container_inspect": self._singularity_inspect(self.file_info.path),
+                "container_system": container_command,
+                "container_system_version": str(container_system_version),
+                "container_inspect": self._container_inspect(container_command, self.file_info.path),
             })
 
     @staticmethod
-    def _singularity_inspect(path) -> str:
+    def _container_inspect(command, path) -> str:
         data = subprocess.run(
-            ["singularity", "inspect", "--json", path],
+            [command, "inspect", "--json", path],
             check=True,
             stdout=subprocess.PIPE).stdout.decode()
         return json.loads(data)
