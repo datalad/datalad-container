@@ -17,19 +17,18 @@ For example:
 
 (From the ReproNim/containers repository)
 
-`datalad meta-extract -d . singularity_inspect images/bids/bids-pymvpa--1.0.2.sing | jq`
+`datalad meta-extract -d . container_inspect images/bids/bids-pymvpa--1.0.2.sing  | jq`
 
 .. code-block:: 
-
   {
     "type": "file",
     "dataset_id": "b02e63c2-62c1-11e9-82b0-52540040489c",
     "dataset_version": "9ed0a39406e518f0309bb665a99b64dec719fb08",
     "path": "images/bids/bids-pymvpa--1.0.2.sing",
-    "extractor_name": "singularity_inspect",
+    "extractor_name": "container_inspect",
     "extractor_version": "0.0.1",
     "extraction_parameter": {},
-    "extraction_time": 1678897280.0087736,
+    "extraction_time": 1680097317.7093463,
     "agent_name": "Austin Macdonald",
     "agent_email": "austin@dartmouth.edu",
     "extracted_metadata": {
@@ -37,9 +36,9 @@ For example:
       "type": "file",
       "path": "images/bids/bids-pymvpa--1.0.2.sing",
       "content_byte_size": 0,
-      "comment": "SingularityInspect extractor executed at 1678897279.908783",
-      "singularity_version": "UNKNOWN",
-      "apptainer_version": "1.1.5-1.fc37",
+      "comment": "SingularityInspect extractor executed at 1680097317.6012993",
+      "container_system": "apptainer",
+      "container_system_version": "1.1.6-1.fc37",
       "container_inspect": {
         "data": {
           "attributes": {
