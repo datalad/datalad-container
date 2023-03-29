@@ -30,6 +30,13 @@ from datalad.tests.utils_pytest import (
 if not external_versions["datalad_metalad"]:
     raise SkipTest("skipping metalad tests")
 
+from datalad_container.utils import get_container_command
+
+try:
+    container_command = get_container_command()
+except RuntimeError:
+    raise SkipTest("skipping singularity/apptainer tests")
+
 # Must come after skiptest or imports will not work
 from datalad_container.extractors.metalad_container import MetaladContainerInspect
 
@@ -38,12 +45,12 @@ from datalad_container.extractors.metalad_container import MetaladContainerInspe
 def test__container_inspect_nofile(path=None):
     """Singularity causes CalledProcessErorr if path DNE."""
     with pytest.raises(subprocess.CalledProcessError):
-        result = MetaladContainerInspect._container_inspect("apptainer", path)
+        result = MetaladContainerInspect._container_inspect(container_command, path)
 
 def test__container_inspect_valid(singularity_test_image):
     """Call inspect on a valid singularity container image."""
     result = MetaladContainerInspect._container_inspect(
-        "apptainer",
+        container_command,
         singularity_test_image["img_path"],
     )
     expected_result = {

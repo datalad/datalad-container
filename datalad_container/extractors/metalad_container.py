@@ -14,9 +14,11 @@ import time
 from uuid import UUID
 
 from datalad.support.external_versions import external_versions, UnknownVersion
-
 from datalad_metalad.extractors.base import DataOutputCategory, ExtractorResult, FileMetadataExtractor
 from datalad_metalad import get_file_id
+
+from datalad_container.utils import get_container_command
+
 
 CURRENT_VERSION = "0.0.1"
 
@@ -43,14 +45,7 @@ class MetaladContainerInspect(FileMetadataExtractor):
         return CURRENT_VERSION
 
     def extract(self, _=None) -> ExtractorResult:
-        for command in ["apptainer", "singularity"]:
-            container_system_version = external_versions[f"cmd:{command}"]
-            if container_system_version:
-                container_command = command
-                break
-        else:
-            raise RuntimeError("Did not find apptainer or singularity")
-
+        container_command = get_container_command()
         return ExtractorResult(
             extractor_version=self.get_version(),
             extraction_parameter=self.parameter or {},
@@ -68,7 +63,7 @@ class MetaladContainerInspect(FileMetadataExtractor):
                 "content_byte_size": self.file_info.byte_size,
                 "comment": f"SingularityInspect extractor executed at {time.time()}",
                 "container_system": container_command,
-                "container_system_version": str(container_system_version),
+                "container_system_version": str(external_versions[container_command]),
                 "container_inspect": self._container_inspect(container_command, self.file_info.path),
             })
 
