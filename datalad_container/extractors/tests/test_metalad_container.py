@@ -43,7 +43,7 @@ from datalad_container.extractors.metalad_container import MetaladContainerInspe
 
 @with_tempfile
 def test__container_inspect_nofile(path=None):
-    """Singularity causes CalledProcessErorr if path DNE."""
+    """Singularity causes CalledProcessError if path DNE."""
     with pytest.raises(subprocess.CalledProcessError):
         result = MetaladContainerInspect._container_inspect(container_command, path)
 
