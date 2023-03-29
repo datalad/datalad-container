@@ -20,6 +20,7 @@ For example:
 `datalad meta-extract -d . container_inspect images/bids/bids-pymvpa--1.0.2.sing  | jq`
 
 .. code-block:: 
+
   {
     "type": "file",
     "dataset_id": "b02e63c2-62c1-11e9-82b0-52540040489c",
