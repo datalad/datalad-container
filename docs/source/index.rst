@@ -18,6 +18,7 @@ Documentation
 
    changelog
    acknowledgements
+   metadata-extraction
 
 
 API Reference
