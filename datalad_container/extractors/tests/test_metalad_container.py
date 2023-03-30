@@ -77,6 +77,6 @@ def test_extract(singularity_test_image):
     result = meta_extract(dataset=ds, extractorname="container_inspect", path=path)
     assert len(result) == 1
 
-    assert "extracted_metadata" in result[0]["metadata_record"]
+    assert  result[0]["metadata_record"]["extracted_metadata"]
     assert result[0]["metadata_record"]["extractor_name"] == 'container_inspect'
     assert result[0]["metadata_record"]["extractor_version"] == MetaladContainerInspect.get_version()
