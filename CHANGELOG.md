@@ -1,4 +1,25 @@
 
+<a id='changelog-1.2.0'></a>
+# 1.2.0 (2023-05-25)
+
+## 🚀 Enhancements and New Features
+
+- Add metalad extractor using `singularity inspect`.
+  Fixes https://github.com/datalad/datalad-container/issues/198 via
+  https://github.com/datalad/datalad-container/pull/200 (by @asmacdo )
+
+- Add `--extra-inputs` to `containers-add`.  Fixes [#189](https://github.com/datalad/datalad-container/issues/189) via [PR #190](https://github.com/datalad/datalad-container/pull/190) (by [@nobodyinperson](https://github.com/nobodyinperson))
+
+## 🐛 Bug Fixes
+
+- Make `datalad_container.adapters.docker save` assume `latest` if no image version given.  Fixes [#105](https://github.com/datalad/datalad-container/issues/105) via [PR #206](https://github.com/datalad/datalad-container/pull/206) (by [@jwodder](https://github.com/jwodder))
+
+## 🏠 Internal
+
+- Eliminate use of distutils.  [PR #203](https://github.com/datalad/datalad-container/pull/203) (by [@jwodder](https://github.com/jwodder))
+
+- Add codespell action,config and fix 1 typo.  [PR #207](https://github.com/datalad/datalad-container/pull/207) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.1.9'></a>
 # 1.1.9 (2023-02-06)
 
