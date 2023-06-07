@@ -14,12 +14,14 @@ from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
+from datalad.support.exceptions import IncompleteResultsError
 from datalad.support.network import get_local_file_url
 from datalad.tests.utils_pytest import (
     assert_false,
     assert_in,
     assert_not_in_results,
     assert_raises,
+    assert_repo_status,
     assert_result_count,
     ok_,
     ok_clean_git,
@@ -34,6 +36,7 @@ from datalad.utils import (
     on_windows,
 )
 
+import pytest
 from datalad_container.tests.utils import add_pyscript_image
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
@@ -152,6 +155,40 @@ def test_container_files(path=None, super_path=None):
         res, 1, action='get', status='ok',
         path=op.join(super_ds.path, 'sub', 'righthere'), type='file')
     assert_no_change(res, super_ds.path)
+
+
+@with_tempfile
+@with_tree(tree={'some_container.img': "doesn't matter"})
+def test_non0_exit(path=None, local_file=None):
+    ds = Dataset(path).create()
+
+    # plug in a proper singularity image
+    ds.containers_add(
+        'mycontainer',
+        url=get_local_file_url(op.join(local_file, 'some_container.img')),
+        image='righthere',
+        call_fmt="sh -c '{cmd}'"
+    )
+    ds.save()  # record the effect in super-dataset
+    ok_clean_git(path)
+
+    # now we can run stuff in the container
+    # and because there is just one, we don't even have to name the container
+    ds.containers_run(['touch okfile'])
+    assert_repo_status(path)
+
+    # Test that regular 'run' behaves as expected -- it does not proceed to save upon error
+    with pytest.raises(IncompleteResultsError):
+        ds.run(['sh', '-c', 'touch nokfile && exit 1'])
+    assert_repo_status(path, untracked=['nokfile'])
+    (ds.pathobj / "nokfile").unlink()  # remove for the next test
+    assert_repo_status(path)
+
+    # Now test with containers-run which should behave similarly -- not save in case of error
+    with pytest.raises(IncompleteResultsError):
+        ds.containers_run(['touch nokfile && exit 1'])
+    # check - must have created the file but not saved anything since failed to run!
+    assert_repo_status(path, untracked=['nokfile'])
 
 
 @with_tempfile
