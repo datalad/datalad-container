@@ -1,4 +1,13 @@
 
+<a id='changelog-1.2.1'></a>
+# 1.2.1 (2023-06-09)
+
+## 🐛 Bug Fixes
+
+- Capture stderr as well while trying for singularity or apptainer to avoid spurious stderr display.  [PR #208](https://github.com/datalad/datalad-container/pull/208) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- BF: by default stop containers-run on error, to not proceed to save.  [PR #209](https://github.com/datalad/datalad-container/pull/209) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.2.0'></a>
 # 1.2.0 (2023-05-25)
 
