@@ -66,6 +66,9 @@ class ContainersRun(Interface):
 
     _params_ = _run_params
 
+    # Analogous to 'run' command - stop on first error
+    on_failure = 'stop'
+
     @staticmethod
     @datasetmethod(name='containers_run')
     @eval_results
