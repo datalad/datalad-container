@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -ex -o pipefail
 release="$(curl -fsSL https://api.github.com/repos/sylabs/singularity/releases/latest | jq -r .tag_name)"
 codename="$(lsb_release -cs)"
 arch="$(dpkg --print-architecture)"
