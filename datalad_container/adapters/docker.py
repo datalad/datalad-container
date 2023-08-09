@@ -95,7 +95,7 @@ def get_image(path, repo_tag=None, config=None):
     with open(manifest_path) as fp:
         manifest = json.load(fp)
     if repo_tag is not None:
-        manifest = [img for img in manifest if repo_tag in img.get("RepoTags", [])]
+        manifest = [img for img in manifest if repo_tag in (img.get("RepoTags") or [])]
     if config is not None:
         manifest = [img for img in manifest if img["Config"].startswith(config)]
     if len(manifest) == 0:
