@@ -1,4 +1,11 @@
 
+<a id='changelog-1.2.2'></a>
+# 1.2.2 (2023-08-09)
+
+## 🐛 Bug Fixes
+
+- BF: make it [] in case of None being returned.  [PR #217](https://github.com/datalad/datalad-container/pull/217) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.2.1'></a>
 # 1.2.1 (2023-06-09)
 
