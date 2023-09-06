@@ -138,6 +138,8 @@ init:
 install:
   # place a debug setup helper at a convenient location
   - cmd: copy tools\ci\appveyor_env_setup.bat C:\\datalad_debug.bat
+  # Missing system software
+  - sh: "[ -n \"$INSTALL_SYSPKGS\" ] && ( [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ] && brew install -q ${INSTALL_SYSPKGS} || { sudo apt-get update -y && sudo apt-get install --no-install-recommends -y ${INSTALL_SYSPKGS}; } ) || true"
   # If a particular Python version is requested, use env setup (using the
   # appveyor provided environments/installation). Note, these are broken
   # on the ubuntu images
@@ -153,7 +155,7 @@ install:
       ) ELSE (
       python -m pip install -q datalad-installer
       )
-  - sh: python -m pip install -q datalad-installer${DATALAD_INSTALLER_VERSION:-}
+  - sh: python -m pip install datalad-installer${DATALAD_INSTALLER_VERSION:-}
   # setup neurodebian, needs update of sources.list when base release changes
   - sh: "[ \"$ID\"x = \"Ubu20x\" ] && wget -O- http://neuro.debian.net/lists/focal.us-nh.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list && ( sudo apt-key adv --recv-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -; } )"
   # Missing system software
