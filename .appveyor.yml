@@ -187,6 +187,8 @@ build_script:
 before_test:
   # simple call to see if datalad and git-annex are installed properly
   - datalad wtf
+  # remove  busybox:latest so tests could fetch/drop it as needed
+  - docker rmi busybox:latest
 
 
 test_script:
