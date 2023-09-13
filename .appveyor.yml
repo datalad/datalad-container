@@ -56,18 +56,30 @@ environment:
   # what tests run on which platform
   # The ID variable had no impact, but sorts first in the CI run overview
   # an intelligible name can help to locate a specific test run
+
+  # All of these are common to all matrix runs ATM, so pre-defined here and to be overloaded if needed
+  DTS: datalad_container
+  APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
+  INSTALL_SYSPKGS: python3-venv xz-utils jq
+  # system git-annex is way too old, use better one
+  INSTALL_GITANNEX: git-annex -m deb-url --url http://snapshot.debian.org/archive/debian/20210906T204127Z/pool/main/g/git-annex/git-annex_8.20210903-1_amd64.deb
+  CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
+
   matrix:
     # List a CI run for each platform first, to have immediate access when there
     # is a need for debugging
 
     # Ubuntu core tests
-    - ID: Ubu20
-      DTS: datalad_container
-      APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
-      INSTALL_SYSPKGS: python3-venv xz-utils jq
-      # system git-annex is way too old, use better one
-      INSTALL_GITANNEX: git-annex -m deb-url --url http://snapshot.debian.org/archive/debian/20210906T204127Z/pool/main/g/git-annex/git-annex_8.20210903-1_amd64.deb
-      CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
+    - ID: Ubu
+    
+    # The same but with the oldest supported Python.
+    - ID: Ubu-3.8
+      PY: '3.8'
+    
+    # The same but removing busybox first - triggers different code paths in the tests
+    - ID: Ubu-nobusybox
+      BEFORE_CMD: docker rmi busybox:latest
+
     # Windows core tests
     #- ID: WinP39core
     #  # ~35 min
@@ -190,7 +202,7 @@ before_test:
   # simple call to see if datalad and git-annex are installed properly
   - datalad wtf
   # remove  busybox:latest so tests could fetch/drop it as needed
-  - docker rmi busybox:latest
+  - sh: "[ -n \"${BEFORE_CMD}\" ] && ${BEFORE_CMD}"
 
 
 test_script:
