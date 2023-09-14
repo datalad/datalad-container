@@ -169,7 +169,7 @@ install:
       )
   - sh: python -m pip install datalad-installer${DATALAD_INSTALLER_VERSION:-}
   # setup neurodebian, needs update of sources.list when base release changes
-  - sh: "[ \"$ID\"x = \"Ubu20x\" ] && wget -O- http://neuro.debian.net/lists/focal.us-nh.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list && ( sudo apt-key adv --recv-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -; } )"
+  - sh: "echo $ID | grep -q '^Ubu' && wget -O- http://neuro.debian.net/lists/focal.us-nh.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list && ( sudo apt-key adv --recv-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -; } )"
   # Missing system software
   - sh: "[ -z \"$INSTALL_SYSPKGS\" ] || { if [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ]; then brew install -q ${INSTALL_SYSPKGS}; else sudo apt-get update -y -qq --allow-releaseinfo-change && sudo apt-get install -qq --no-install-recommends -y ${INSTALL_SYSPKGS}; fi }"
   # Install singularity
