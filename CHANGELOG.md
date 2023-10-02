@@ -1,4 +1,13 @@
 
+<a id='changelog-1.2.3'></a>
+# 1.2.3 (2023-10-02)
+
+## 🏠 Internal
+
+- Add [extras] extras_require with datalad-metalad and add all those extras to [devel].  [PR #215](https://github.com/datalad/datalad-container/pull/215) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- Robustify installation of singularity (install libfuse2).  [PR #221](https://github.com/datalad/datalad-container/pull/221) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.2.2'></a>
 # 1.2.2 (2023-08-09)
 
