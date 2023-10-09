@@ -145,6 +145,8 @@ init:
   - cmd: "set TMP=C:\\DLTMP"
   - cmd: "set TEMP=C:\\DLTMP"
   - sh: export TMPDIR=~/DLTMP
+  # docker login to get "personalized" rate limit (rather than IP-based)
+  - sh: docker login -p "$DOCKERHUB_TOKEN" -u "$DOCKERHUB_USERNAME"
 
 
 install:
