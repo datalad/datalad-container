@@ -118,9 +118,10 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is one recognized by Singularity ('shub://' or
-            'docker://'), a command format string for Singularity-based
-            execution will be auto-configured when
+            the URL scheme is one recognized by Singularity (e.g.,
+            'shub://neurodebian/dcm2niix:latest' or
+            'docker://debian:stable-slim'), a command format string for
+            Singularity-based execution will be auto-configured when
             [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.
             For Docker-based container execution with the URL scheme 'dhub://',
             the rest of the URL will be interpreted as the argument to
