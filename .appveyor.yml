@@ -155,9 +155,7 @@ install:
   # Missing system software
   - sh: "[ -n \"$INSTALL_SYSPKGS\" ] && ( [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ] && brew install -q ${INSTALL_SYSPKGS} || { sudo apt-get update -y && sudo apt-get install --no-install-recommends -y ${INSTALL_SYSPKGS}; } ) || true"
   # If a particular Python version is requested, use env setup (using the
-  # appveyor provided environments/installation). Note, these are broken
-  # on the ubuntu images
-  # https://help.appveyor.com/discussions/problems/28217-appveyor-ubunu-image-with-python3-lzma-module
+  # appveyor provided environments/installation).
   # Otherwise create a venv using the default Python 3, to enable uniform
   # use of python/pip executables below
   - sh: "[ \"x$PY\" != x ] && . ${HOME}/venv${PY}/bin/activate || python3 -m venv ${HOME}/dlvenv && . ${HOME}/dlvenv/bin/activate; ln -s \"$VIRTUAL_ENV\" \"${HOME}/VENV\""
