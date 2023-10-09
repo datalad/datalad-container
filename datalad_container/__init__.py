@@ -2,8 +2,6 @@
 
 __docformat__ = 'restructuredtext'
 
-from .version import __version__
-
 # Imported to set singularity/apptainer version commands at init
 import datalad_container.extractors._load_singularity_versions # noqa
 
@@ -48,3 +46,6 @@ command_suite = (
         )
     ]
 )
+
+from . import _version
+__version__ = _version.get_versions()['version']
