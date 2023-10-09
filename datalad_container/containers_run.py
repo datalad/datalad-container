@@ -4,6 +4,7 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
+import sys
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -115,6 +116,10 @@ class ContainersRun(Interface):
                         'Convert it to a plain string.'.format(callspec))
             try:
                 cmd_kwargs = dict(
+                    # point to the python installation that runs *this* code
+                    # we know that it would have things like the docker
+                    # adaptor installed with this extension package
+                    python=sys.executable,
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,

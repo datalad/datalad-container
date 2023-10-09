@@ -65,7 +65,8 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
-        return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+        # {python} is replaced with sys.executable on *execute*
+        return '{python} -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 def _ensure_datalad_remote(repo):
@@ -143,6 +144,9 @@ class ContainersAdd(Interface):
             replaced with the desired command. Additional placeholders:
             '{img_dspath}' is relative path to the dataset containing the image,
             '{img_dirpath}' is the directory containing the '{img}'.
+            '{python}' expands to the path of the Python executable that is
+            running the respective DataLad session, for example a
+            'datalad containers-run' command.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
