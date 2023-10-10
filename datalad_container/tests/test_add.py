@@ -15,8 +15,27 @@ from datalad.utils import Path
 
 from datalad_container.containers_add import _ensure_datalad_remote
 
-# NOTE: At the moment, testing of the containers-add itself happens implicitly
-# via use in other tests.
+# NOTE: At the moment, most testing of the containers-add itself happens implicitly
+# this via use in other tests.
+
+common_kwargs = {'result_renderer': 'disabled'}
+
+
+def test_add_invalid_imgpath(tmp_path):
+    ds = Dataset(tmp_path).create(**common_kwargs)
+    # path spec must be relative
+    with pytest.raises(ValueError):
+        ds.containers_add(
+            'dummy',
+            image=tmp_path,
+            **common_kwargs
+        )
+    with pytest.raises(ValueError):
+        ds.containers_add(
+            'dummy',
+            image=Path('..', 'sneaky'),
+            **common_kwargs
+        )
 
 
 @with_tempfile

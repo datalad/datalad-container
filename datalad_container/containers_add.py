@@ -199,6 +199,16 @@ class ContainersAdd(Interface):
                              purpose='add container')
         runner = WitlessRunner()
 
+        if image is not None:
+            if op.isabs(image):
+                raise ValueError(
+                    f'image must be a relative path, got {image!r}')
+            if ds.pathobj.resolve() \
+                    not in (ds.pathobj / image).resolve().parents:
+                raise ValueError(
+                    'image must be a relative path pointing inside'
+                    f'the dataset, got {image!r}')
+
         # prevent madness in the config file
         if not re.match(r'^[0-9a-zA-Z-]+$', name):
             raise ValueError(
