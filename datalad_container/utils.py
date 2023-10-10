@@ -47,20 +47,24 @@ def get_container_configuration(
       If not (matching) container configuration exists, and empty dictionary
       is returned.
     """
-    # all info is in the dataset config!
     var_prefix = 'datalad.containers.'
+
     containers = {}
+    # all info is in the dataset config!
     for var, value in ds.config.items():
         if not var.startswith(var_prefix):
             # not an interesting variable
             continue
-        var_comps = var[len(var_prefix):].split('.')
-        cname = var_comps[0]
+        var_comps = var.split('.')
+        # container name is the 3rd after 'datalad'.'container'.
+        cname = var_comps[2]
         if name and name != cname:
             # we are looking for a specific container's configuration
             # and this is not it
             continue
-        ccfgname = '.'.join(var_comps[1:])
+        # reconstruct config item name, anything after
+        # datalad.containers.<name>.
+        ccfgname = '.'.join(var_comps[3:])
         if not ccfgname:
             continue
 
