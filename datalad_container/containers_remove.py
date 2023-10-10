@@ -14,6 +14,7 @@ from datalad.interface.base import eval_results
 from datalad.support.constraints import EnsureNone
 from datalad.support.constraints import EnsureStr
 from datalad.interface.results import get_status_dict
+from datalad.utils import rmtree
 
 from datalad_container.utils import get_container_configuration
 
@@ -76,19 +77,14 @@ class ContainersRemove(Interface):
 
         to_save = []
         if remove_image and 'image' in container_cfg:
-            imagepath = container_cfg['image']
-            if op.lexists(op.join(ds.path, imagepath)):
-                for r in ds.remove(
-                        path=imagepath,
-                        # XXX shortcoming: this is the only way to say:
-                        # don't drop
-                        check=False,
-                        # config setting might be outdated and image no longer
-                        # there -> no reason to fail, just report
-                        on_failure='ignore',
-                        save=False):
-                    yield r
-                to_save.append(imagepath)
+            imagepath = ds.pathobj / container_cfg['image']
+            # we use rmtree() and not .unlink(), because
+            # the image could be more than a single file underneath
+            # this location (e.g., docker image dumps)
+            rmtree(imagepath)
+            # at the very end, save() will take care of committing
+            # any removal that just occurred
+            to_save.append(imagepath)
 
         if container_cfg:
             ds.config.remove_section(
