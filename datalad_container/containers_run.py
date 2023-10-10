@@ -4,10 +4,12 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
+from pathlib import Path
 import sys
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
+from datalad.support.exceptions import CapturedException
 from datalad.support.param import Parameter
 from datalad.distribution.dataset import datasetmethod
 from datalad.distribution.dataset import require_dataset
@@ -162,6 +164,33 @@ class ContainersRun(Interface):
                 return
 
         lgr.debug("extra_inputs = %r", extra_inputs)
+
+        if '-m datalad_container.adapters.docker run' in cmd:
+            # this will use the docker adapter to execute the container.
+            # below we let the adaptor have a first look at the image
+            # it will run. The adaptor might query a local docker service,
+            # and try to populate missing image parts -- possibly avoiding
+            # a download (via the `get()` that `run()` would perform), whenever
+            # the local service already has the respective images.
+            # this is a scenario that would occur frequently in short-lived
+            # clones that are repeatedly generated on the same machine.
+            from datalad_container.adapters.docker import repopulate_from_daemon
+            contds = require_dataset(
+                container['parentds'], check_installed=True,
+                purpose='check for docker images')
+            try:
+                repopulate_from_daemon(
+                    contds,
+                    # we use the container report here too, and not any of the
+                    # processed variants from above to stay internally
+                    # consistent
+                    imgpath=Path(container['path']),
+                )
+            except Exception as e:
+                # get basic logging of a failure, but overall consider this
+                # a "best effort". if anything fails, we will silently fall
+                # back on a standard "get" via the `extra_inputs` below
+                CapturedException(e)
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
