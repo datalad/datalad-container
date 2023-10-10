@@ -70,6 +70,10 @@ def test_add_local_path(path=None, local_file=None):
     foo_target = op.join(path, ".datalad", "environments", "foobert", "image")
     assert_result_count(res, 1, status="ok", type="file", path=foo_target,
                         action="containers_add")
+    # the image path configuration is always in POSIX format
+    assert ds.config.get('datalad.containers.foobert.image') \
+           == '.datalad/environments/foobert/image'
+
     # We've just copied and added the file.
     assert_not_in(ds.repo.WEB_UUID, ds.repo.whereis(foo_target))
 
@@ -219,6 +223,9 @@ def test_container_update(ds_path=None, local_file=None, url=None):
     assert_in_results(res, action="remove", status="ok")
     assert_in_results(res, action="save", status="ok")
     ok_file_has_content(op.join(ds.path, img), "bar")
+    # the image path configuration is (still) always in POSIX format
+    assert ds.config.get('datalad.containers.foo.image') \
+           == '.datalad/environments/foo/image'
 
     # Test commit message
     # In the above case it was updating existing image so should have "Update "
