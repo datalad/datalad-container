@@ -47,5 +47,19 @@ command_suite = (
     ]
 )
 
+from datalad.support.extensions import register_config
+from os.path import join as opj
+from datalad.support.constraints import EnsureStr
+
+register_config(
+    'datalad.containers.location',
+    'Container location',
+    description='path within the dataset where to store containers',
+    type=EnsureStr(),
+    default=opj(".datalad", "environments"),
+    dialog='question',
+    scope='dataset',
+)
+
 from . import _version
 __version__ = _version.get_versions()['version']
