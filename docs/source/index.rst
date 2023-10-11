@@ -51,4 +51,6 @@ Python API
    containers_list
    containers_run
 
+   utils
+
 .. |---| unicode:: U+02014 .. em dash

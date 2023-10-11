@@ -22,6 +22,7 @@ from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
 
+from .utils import get_container_configuration
 from .definitions import definitions
 
 lgr = logging.getLogger("datalad.containers.containers_add")
@@ -205,8 +206,8 @@ class ContainersAdd(Interface):
                 "Container names can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(name))
 
-        cfgbasevar = "datalad.containers.{}".format(name)
-        if cfgbasevar + ".image" in ds.config:
+        container_cfg = get_container_configuration(ds, name)
+        if 'image' in container_cfg:
             if not update:
                 yield get_status_dict(
                     action="containers_add", ds=ds, logger=lgr,
@@ -219,7 +220,7 @@ class ContainersAdd(Interface):
             if not (url or image or call_fmt):
                 # No updated values were provided. See if an update url is
                 # configured (currently relevant only for Singularity Hub).
-                url = ds.config.get(cfgbasevar + ".updateurl")
+                url = container_cfg.get("updateurl")
                 if not url:
                     yield get_status_dict(
                         action="containers_add", ds=ds, logger=lgr,
@@ -227,8 +228,8 @@ class ContainersAdd(Interface):
                         message="No values to update specified")
                     return
 
-            call_fmt = call_fmt or ds.config.get(cfgbasevar + ".cmdexec")
-            image = image or ds.config.get(cfgbasevar + ".image")
+            call_fmt = call_fmt or container_cfg.get("cmdexec")
+            image = image or container_cfg.get("image")
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
@@ -329,6 +330,7 @@ class ContainersAdd(Interface):
             return
 
         # store configs
+        cfgbasevar = "datalad.containers.{}".format(name)
         if imgurl != url:
             # store originally given URL, as it resolves to something
             # different and maybe can be used to update the container
