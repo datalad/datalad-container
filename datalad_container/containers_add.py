@@ -206,7 +206,7 @@ class ContainersAdd(Interface):
             if ds.pathobj.resolve() \
                     not in (ds.pathobj / image).resolve().parents:
                 raise ValueError(
-                    'image must be a relative path pointing inside'
+                    'image must be a relative path pointing inside '
                     f'the dataset, got {image!r}')
 
         # prevent madness in the config file
