@@ -75,8 +75,9 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
-        # {python} is replaced with sys.executable on *execute*
-        return '{python} -m datalad_container.adapters.docker run {img} {cmd}'
+        # {{python}} is eventually substituted with something like
+        # `sys.executable` on *execute* by datalad-run
+        return '{{python}} -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 def _ensure_datalad_remote(repo):
