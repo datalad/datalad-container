@@ -129,7 +129,7 @@ def _normalize_image_path(path: str, ds: Dataset) -> PurePath:
     if '\\' not in path:
         # no windows pathsep, no problem
         pathobj = PurePosixPath(path)
-    elif path.startswith('.datalad\\environments\\'):
+    elif path.startswith(r'.datalad\\environments\\'):
         # this is the default location setup in windows conventions
         pathobj = PureWindowsPath(path)
     else:
