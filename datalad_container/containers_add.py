@@ -108,7 +108,82 @@ class ContainersAdd(Interface):
     # first docstring line is used a short description in the cmdline help
     # the rest is put in the verbose help and manpage
     """Add a container to a dataset
+
+    Adding a container is primarily placing container-related configuration in
+    the committed dataset configuration at ``.datalad/config``. At minimum,
+    only two bits of information are required:
+
+    - location of the container image
+    - specification of how the images is to be executed
+
+    The command assists with assembling this configuration for a range of use
+    cases, for example:
+
+    - build and configure Singularity images
+    - retrieve and configure Docker images from Docker hub
+    - register arbitrary images with custom call specifications
+
+    Moreover, there is limited support for updating registered container
+    images from remote sources.
+
+    Call format specification
+    -------------------------
+
+    While this command handles the container call specification for standard
+    use cases automatically, fully custom configurations are supported too.
+    This is done via the [PY: ``call_fmt`` PY][CMD: ``--call-fmt`` CMD]
+    parameter.
+
+    Like command specification for ``datalad run``, placeholder substitution
+    is supported. More precisely, call specifications with placeholders are
+    configured with ``datalad containers-add``, but they are only substituted by
+    ``datalad containers-run``, i.e., when the container is executed with a
+    particular command. The following placeholders are supported:
+
+    - ``{cmd}``: command given to ``containers-run``
+    - ``{img}``: the path to the container image
+    - ``{img_dspath}``: the path to the container image, relative to the dataset
+      containing it (the container may be in a subdataset)
+    - ``{img_dirpath}``: path to the directory that contains the container image
+
+    In addition to these built-in placeholders, it is possible to pass
+    additional placeholders on to ``datalad run``, which is responsible for
+    performing the actual container execution. In order to do this, such
+    placeholder have to be "double-braced". For example, in order to pass the
+    ``tmpdir`` placeholder on to ``datalad run``, it must be declared as
+    ``{{tmpdir}}``. It will pass through ``datalad containers-runs`` and reach
+    ``datalad run`` as ``{tmpdir}``, where it will be substituted with the path
+    to a temporary directory.
+
+    In this fashion, it is also possible to define custom placeholders that can
+    also be (re)defined when (re-)executing a run-record. For example, using a
+    ``{{python}}`` placeholder will require a definition for a ``{python}``
+    placeholder to exist at runtime (even with ``datalad rerun``).  A
+    (re)definition is possible by (temporarily) setting a matching
+    configuration items::
+
+      datalad -c datalad.run.substitutions.python=python3.12 rerun submitted-rev2
+
+    This can be particularly useful when certain aspects of a (re)execution
+    shall remain configurable, for example to aid portability. Substitutions
+    for placeholders are read from configuration. This means that a default
+    value can be added to the committed dataset configuration, even for
+    placeholders that neither ``datalad containers-run`` nor ``datalad run``
+    have built-in support for.
+
     """
+    _examples_ = [
+        dict(
+            text="Register a 'busybox' container from Docker-Hub under the name 'busy'",
+            code_cmd="datalad containers-add --url dhub://busybox:latest busy",
+        ),
+        dict(
+            text="Register a custom container for executing with custom Python code",
+            code_cmd=\
+            'datalad containers-add\n\t-i container/image\n'
+            '\t--call-fmt "{{python}} -m mypkg.container_handler {img} {cmd}"',
+        )
+    ]
 
     # parameters of the command, must be exhaustive
     _params_ = dict(
@@ -151,14 +226,8 @@ class ContainersAdd(Interface):
         call_fmt=Parameter(
             args=("--call-fmt",),
             doc="""Command format string indicating how to execute a command in
-            this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
-            is a placeholder for the path to the container image and '{cmd}' is
-            replaced with the desired command. Additional placeholders:
-            '{img_dspath}' is relative path to the dataset containing the image,
-            '{img_dirpath}' is the directory containing the '{img}'.
-            '{python}' expands to the path of the Python executable that is
-            running the respective DataLad session, for example a
-            'datalad containers-run' command.
+            this container, e.g. "singularity exec {img} {cmd}". For details
+            see the "Call format specification" in the command documentation.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
