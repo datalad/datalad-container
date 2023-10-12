@@ -380,3 +380,48 @@ def test_run_subdataset_install(path=None):
     # There's no install record if subdataset is already present.
     res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2", **common_kwargs)
     assert_not_in_results(res, action="install")
+
+
+@skip_if_no_network
+def test_nonPOSIX_imagepath(tmp_path):
+    ds = Dataset(tmp_path).create(**common_kwargs)
+
+    # plug in a proper singularity image
+    ds.containers_add(
+        'mycontainer',
+        url=testimg_url,
+        **common_kwargs
+    )
+    assert_result_count(
+        ds.containers_list(**common_kwargs), 1,
+        # we get a report in platform conventions
+        path=str(ds.pathobj / '.datalad' / 'environments' /
+                 'mycontainer' / 'image'),
+        name='mycontainer')
+    assert_repo_status(tmp_path)
+
+    # now reconfigure the image path to look as if a version <= 1.2.4
+    # configured it on windows
+    # this must still run across all platforms
+    ds.config.set(
+        'datalad.containers.mycontainer.image',
+        '.datalad\\environments\\mycontainer\\image',
+        scope='branch',
+        reload=True,
+    )
+    ds.save(**common_kwargs)
+    assert_repo_status(tmp_path)
+
+    assert_result_count(
+        ds.containers_list(**common_kwargs), 1,
+        # we still get a report in platform conventions
+        path=str(ds.pathobj / '.datalad' / 'environments' /
+                 'mycontainer' / 'image'),
+        name='mycontainer')
+
+    res = ds.containers_run(['ls'], **common_kwargs)
+    assert_result_count(
+        res, 1,
+        action='run',
+        status='ok',
+    )

@@ -6,8 +6,11 @@ import json
 import logging
 import os
 import os.path as op
+from pathlib import (
+    Path,
+    PurePosixPath,
+)
 import re
-import sys
 from shutil import copyfile
 
 from datalad.cmd import WitlessRunner
@@ -339,7 +342,8 @@ class ContainersAdd(Interface):
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
-            op.relpath(image, start=ds.path),
+            # always store a POSIX path, relative to dataset root
+            str(PurePosixPath(Path(image).relative_to(ds.pathobj))),
             force=True)
         if call_fmt:
             ds.config.set(
