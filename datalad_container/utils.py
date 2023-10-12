@@ -92,7 +92,7 @@ def get_container_configuration(
     return containers if name is None else containers.get(name, {})
 
 
-def _normalize_image_path(path: str, ds: Dataset) -> str:
+def _normalize_image_path(path: str, ds: Dataset) -> PurePath:
     """Helper to standardize container image path handling
 
     Previously, container configuration would contain platform-paths
@@ -102,7 +102,7 @@ def _normalize_image_path(path: str, ds: Dataset) -> str:
     are out there in unknown numbers.
 
     This helper inspects an image path READ FROM CONFIG(!) and ensures
-    that is matches platform conventions (because all other arguments)
+    that it matches platform conventions (because all other arguments)
     also come in platform conventions. This enables standardizing
     the storage conventions to be POSIX-only (for the future).
 
@@ -111,7 +111,7 @@ def _normalize_image_path(path: str, ds: Dataset) -> str:
     path: str
       A str-path, as read from the configuration, matching its conventions
       (relative path, pointing to a container image relative to the
-      dataset's root.
+      dataset's root).
     ds: Dataset
       This dataset's base path is used as a reference for resolving
       the relative image path to an absolute location on the file system.
