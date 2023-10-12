@@ -26,7 +26,6 @@ from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
 
 from .utils import get_container_configuration
-from .definitions import definitions
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -236,20 +235,12 @@ class ContainersAdd(Interface):
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
-            # TODO: We should provide an entry point (or sth similar) for extensions
-            # to get config definitions into the ConfigManager. In other words an
-            # easy way to extend definitions in datalad's common_cfgs.py.
             container_loc = \
                 ds.config.obtain(
                     loc_cfg_var,
-                    where=definitions[loc_cfg_var]['destination'],
                     # if not False it would actually modify the
                     # dataset config file -- undesirable
                     store=False,
-                    default=definitions[loc_cfg_var]['default'],
-                    dialog_type=definitions[loc_cfg_var]['ui'][0],
-                    valtype=definitions[loc_cfg_var]['type'],
-                    **definitions[loc_cfg_var]['ui'][1]
                 )
             image = op.join(ds.path, container_loc, name, 'image')
         else:
