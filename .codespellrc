@@ -1,0 +1,4 @@
+[codespell]
+skip = .venv,venvs,.git,build,*.egg-info,*.lock,.asv,.mypy_cache,.tox,fixtures,_version.py,*.pem
+# ignore-words-list = 
+# exclude-file = 

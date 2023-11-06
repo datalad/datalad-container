@@ -69,6 +69,7 @@ extensions = [
     'sphinx.ext.inheritance_diagram',
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
+    'sphinx_copybutton',
 ]
 
 # for the module reference
