@@ -8,3 +8,5 @@
 docs/build
 docs/source/generated
 build  # manpage
+.idea/
+venvs/
