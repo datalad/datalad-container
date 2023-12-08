@@ -13,6 +13,7 @@ import hashlib
 import json
 import os
 import os.path as op
+from pathlib import Path
 import subprocess as sp
 import sys
 import tarfile
@@ -88,6 +89,14 @@ def _list_images():
     return out.decode().splitlines()
 
 
+def _get_repotag_from_image_sha256(sha):
+    out = sp.check_output(
+        ['docker', 'image', 'inspect', '--format',
+         '{{range $v := .RepoTags}}{{$v}} {{end}}',
+         sha])
+    return out.decode().splitlines()[0].strip()
+
+
 def get_image(path, repo_tag=None, config=None):
     """Return the image ID of the image extracted at `path`.
     """
@@ -151,6 +160,87 @@ def load(path, repo_tag, config):
         raise RuntimeError(
             "docker image {} was not successfully loaded".format(image_id))
     return image_id
+
+
+def repopulate_from_daemon(contds, imgpath: Path) -> None:
+    # crude check whether anything at the image location is not
+    # locally present
+    contrepo = contds.repo
+    if not contrepo.call_annex(
+        ['find', '--not', '--in', 'here'],
+        files=str(imgpath),
+    ):
+        # nothing is missing, we have nothing to do here
+        return
+
+    # a docker image is a collection of files in a directory
+    assert imgpath.is_dir()
+    # we could look into `manifest.json`, but it might also be
+    # annexed and not around. instead look for the config filename
+    imgcfg = [
+        p.name for p in imgpath.iterdir()
+        # a sha256 is 64 chars plus '.json'
+        if len(p.name) == 69 and p.name.endswith('.json')
+    ]
+    # there is only one
+    assert len(imgcfg) == 1
+
+    # look for the employed annex backend, we need it for key reinject below
+    backends = set(contrepo.call_annex_oneline([
+        'find',
+        f'--branch=HEAD:{imgpath.relative_to(contds.pathobj)}',
+        # this needs git-annex 10.20230126 or later
+        '--anything',
+        # the trailing space is not a mistake!
+        '--format=${backend} ',
+    ]).split())
+    # we can only deal with a single homogeneous backend here
+    assert len(backends) == 1
+
+    # ID is filename, minus .json extension
+    img_id = imgcfg[0][:-5]
+
+    # make an effort to get the repotags matching the image sha256
+    # from docker. This is needed, because the query tag will end up
+    # in manifest.json, and the original addition was likely via a tag
+    # and not a sha256
+    repo_tag = None
+    try:
+        repo_tag = _get_repotag_from_image_sha256(img_id)
+    except Exception:
+        # however, we will go on without a tag. In the worst case, it
+        # would trigger a download of manifest.json (tiny file), but
+        # the large `layer.tar` will still be successfully extracted
+        # and reinject via a query by ID/sha256
+        pass
+
+    # let docker dump into a TMPDIR inside the dataset
+    # this place is likely to have sufficient space
+    with tempfile.TemporaryDirectory(dir=imgpath) as tmpdir:
+        # try to export the image from a local docker instance
+        save(
+            # prefer the tag, but continue with ID (see above)
+            repo_tag or f'sha256:{img_id}',
+            tmpdir,
+        )
+        # the line above will raise an exception when
+        # - this docker does not have the image.
+        # - or there is not docker running at all.
+        # this is fine, we will just not proceed.
+
+        # now let git-annex reinject any file that matches a known
+        # key (given the backend determined above). This will populate
+        # as much as we can. This approach has built-in content verification.
+        # this means that even if this docker instance has different metadata
+        # we will be able to harvest any image piece that fits, and ignore
+        # anything else
+        contrepo.call_annex(
+            ['reinject', '--known', '--backend', backends.pop()],
+            files=[
+                str(p) for p in Path(tmpdir).glob('**/*')
+                if p.is_file()
+            ],
+        )
 
 
 # Command-line
