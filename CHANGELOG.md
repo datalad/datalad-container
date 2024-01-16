@@ -1,4 +1,50 @@
 
+<a id='changelog-1.2.3'></a>
+# 1.2.3 (2023-10-02)
+
+## 🏠 Internal
+
+- Add [extras] extras_require with datalad-metalad and add all those extras to [devel].  [PR #215](https://github.com/datalad/datalad-container/pull/215) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- Robustify installation of singularity (install libfuse2).  [PR #221](https://github.com/datalad/datalad-container/pull/221) (by [@yarikoptic](https://github.com/yarikoptic))
+
+<a id='changelog-1.2.2'></a>
+# 1.2.2 (2023-08-09)
+
+## 🐛 Bug Fixes
+
+- BF: make it [] in case of None being returned.  [PR #217](https://github.com/datalad/datalad-container/pull/217) (by [@yarikoptic](https://github.com/yarikoptic))
+
+<a id='changelog-1.2.1'></a>
+# 1.2.1 (2023-06-09)
+
+## 🐛 Bug Fixes
+
+- Capture stderr as well while trying for singularity or apptainer to avoid spurious stderr display.  [PR #208](https://github.com/datalad/datalad-container/pull/208) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- BF: by default stop containers-run on error, to not proceed to save.  [PR #209](https://github.com/datalad/datalad-container/pull/209) (by [@yarikoptic](https://github.com/yarikoptic))
+
+<a id='changelog-1.2.0'></a>
+# 1.2.0 (2023-05-25)
+
+## 🚀 Enhancements and New Features
+
+- Add metalad extractor using `singularity inspect`.
+  Fixes https://github.com/datalad/datalad-container/issues/198 via
+  https://github.com/datalad/datalad-container/pull/200 (by @asmacdo )
+
+- Add `--extra-inputs` to `containers-add`.  Fixes [#189](https://github.com/datalad/datalad-container/issues/189) via [PR #190](https://github.com/datalad/datalad-container/pull/190) (by [@nobodyinperson](https://github.com/nobodyinperson))
+
+## 🐛 Bug Fixes
+
+- Make `datalad_container.adapters.docker save` assume `latest` if no image version given.  Fixes [#105](https://github.com/datalad/datalad-container/issues/105) via [PR #206](https://github.com/datalad/datalad-container/pull/206) (by [@jwodder](https://github.com/jwodder))
+
+## 🏠 Internal
+
+- Eliminate use of distutils.  [PR #203](https://github.com/datalad/datalad-container/pull/203) (by [@jwodder](https://github.com/jwodder))
+
+- Add codespell action,config and fix 1 typo.  [PR #207](https://github.com/datalad/datalad-container/pull/207) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.1.9'></a>
 # 1.1.9 (2023-02-06)
 

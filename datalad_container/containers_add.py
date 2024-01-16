@@ -140,10 +140,28 @@ class ContainersAdd(Interface):
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
             replaced with the desired command. Additional placeholders:
-            '{img_dspath}' is relative path to the dataset containing the image.
+            '{img_dspath}' is relative path to the dataset containing the image,
+            '{img_dirpath}' is the directory containing the '{img}'.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
+        ),
+        extra_input=Parameter(
+            args=("--extra-input",),
+            doc="""Additional file the container invocation depends on (e.g.
+            overlays used in --call-fmt). Can be specified multiple times.
+            Similar to --call-fmt, the placeholders {img_dspath} and
+            {img_dirpath} are available. Will be stored in the dataset config and
+            later added alongside the container image to the `extra_inputs`
+            field in the run-record and thus automatically be fetched when
+            needed.
+            """,
+            action="append",
+            default=[],
+            metavar="FILE",
+            # Can't use EnsureListOf(str) yet as it handles strings as iterables...
+            # See this PR: https://github.com/datalad/datalad/pull/7267
+            # constraints=EnsureListOf(str) | EnsureNone(),
         ),
         image=Parameter(
             args=("-i", "--image"),
@@ -168,7 +186,7 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
-                 update=False):
+                 update=False, extra_input=None):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -321,6 +339,28 @@ class ContainersAdd(Interface):
                 "{}.cmdexec".format(cfgbasevar),
                 call_fmt,
                 force=True)
+        # --extra-input sanity check
+        # TODO: might also want to do that for --call-fmt above?
+        extra_input_placeholders = dict(img_dirpath="", img_dspath="")
+        for xi in (extra_input or []):
+            try:
+                xi.format(**extra_input_placeholders)
+            except KeyError as exc:
+                yield get_status_dict(
+                    action="containers_add", ds=ds, logger=lgr,
+                    status="error",
+                    message=("--extra-input %r contains unknown placeholder %s. "
+                             "Available placeholders: %s",
+                             repr(xi), exc, ', '.join(extra_input_placeholders)))
+                return
+
+        # actually setting --extra-input config
+        cfgextravar = "{}.extra-input".format(cfgbasevar)
+        if ds.config.get(cfgextravar) is not None:
+            ds.config.unset(cfgextravar)
+        for xi in (extra_input or []):
+            ds.config.add(cfgextravar, xi)
+
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(

@@ -3,7 +3,7 @@
 # to create a "native" platform experience, using as few cross-platform
 # helper tools as possible.
 #
-# On Linux/Mac a virtualenv is used for testing. The effective virtual env
+# On Linux/Mac a venv is used for testing. The effective virtual env
 # is available under ~/VENV.
 #
 # All workers support remote login. Login details are shown at the top of each
@@ -56,18 +56,30 @@ environment:
   # what tests run on which platform
   # The ID variable had no impact, but sorts first in the CI run overview
   # an intelligible name can help to locate a specific test run
+
+  # All of these are common to all matrix runs ATM, so pre-defined here and to be overloaded if needed
+  DTS: datalad_container
+  APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
+  INSTALL_SYSPKGS: python3-venv xz-utils jq
+  # system git-annex is way too old, use better one
+  INSTALL_GITANNEX: git-annex -m deb-url --url http://snapshot.debian.org/archive/debian/20210906T204127Z/pool/main/g/git-annex/git-annex_8.20210903-1_amd64.deb
+  CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
+
   matrix:
     # List a CI run for each platform first, to have immediate access when there
     # is a need for debugging
 
     # Ubuntu core tests
-    - ID: Ubu20
-      DTS: datalad_container
-      APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
-      INSTALL_SYSPKGS: python3-virtualenv xz-utils jq
-      # system git-annex is way too old, use better one
-      INSTALL_GITANNEX: git-annex -m deb-url --url http://snapshot.debian.org/archive/debian/20210906T204127Z/pool/main/g/git-annex/git-annex_8.20210903-1_amd64.deb
-      CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
+    - ID: Ubu
+    
+    # The same but with the oldest supported Python.
+    - ID: Ubu-3.8
+      PY: '3.8'
+    
+    # The same but removing busybox first - triggers different code paths in the tests
+    - ID: Ubu-nobusybox
+      BEFORE_CMD: docker rmi busybox:latest
+
     # Windows core tests
     #- ID: WinP39core
     #  # ~35 min
@@ -138,13 +150,15 @@ init:
 install:
   # place a debug setup helper at a convenient location
   - cmd: copy tools\ci\appveyor_env_setup.bat C:\\datalad_debug.bat
+  # Missing system software
+  - sh: "[ -n \"$INSTALL_SYSPKGS\" ] && ( [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ] && brew install -q ${INSTALL_SYSPKGS} || { sudo apt-get update -y && sudo apt-get install --no-install-recommends -y ${INSTALL_SYSPKGS}; } ) || true"
   # If a particular Python version is requested, use env setup (using the
   # appveyor provided environments/installation). Note, these are broken
   # on the ubuntu images
   # https://help.appveyor.com/discussions/problems/28217-appveyor-ubunu-image-with-python3-lzma-module
-  # Otherwise create a virtualenv using the default Python 3, to enable uniform
+  # Otherwise create a venv using the default Python 3, to enable uniform
   # use of python/pip executables below
-  - sh: "[ \"x$PY\" != x ] && . ${HOME}/venv${PY}/bin/activate || virtualenv -p 3 ${HOME}/dlvenv && . ${HOME}/dlvenv/bin/activate; ln -s \"$VIRTUAL_ENV\" \"${HOME}/VENV\""
+  - sh: "[ \"x$PY\" != x ] && . ${HOME}/venv${PY}/bin/activate || python3 -m venv ${HOME}/dlvenv && . ${HOME}/dlvenv/bin/activate; ln -s \"$VIRTUAL_ENV\" \"${HOME}/VENV\""
   - cmd: "set PATH=C:\\Python%PY%;C:\\Python%PY%\\Scripts;%PATH%"
   # deploy the datalad installer, override version via DATALAD_INSTALLER_VERSION
   - cmd:
@@ -153,11 +167,12 @@ install:
       ) ELSE (
       python -m pip install -q datalad-installer
       )
-  - sh: python -m pip install -q datalad-installer${DATALAD_INSTALLER_VERSION:-}
+  - sh: python -m pip install datalad-installer${DATALAD_INSTALLER_VERSION:-}
+  - pip install wheel
   # setup neurodebian, needs update of sources.list when base release changes
-  - sh: "[ \"$ID\"x = \"Ubu20x\" ] && wget -O- http://neuro.debian.net/lists/focal.us-nh.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list && ( sudo apt-key adv --recv-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -; } )"
+  - sh: "echo $ID | grep -q '^Ubu' && wget -O- http://neuro.debian.net/lists/focal.us-nh.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list && ( sudo apt-key adv --recv-keys --keyserver hkps://keyserver.ubuntu.com 0xA5D32F012649A5A9 || { wget -q -O- http://neuro.debian.net/_static/neuro.debian.net.asc | sudo apt-key add -; } )"
   # Missing system software
-  - sh: "[ -n \"$INSTALL_SYSPKGS\" ] && ( [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ] && brew install -q ${INSTALL_SYSPKGS} || { sudo apt-get update -y -qq && sudo apt-get install -qq --no-install-recommends -y ${INSTALL_SYSPKGS}; } ) || true"
+  - sh: "[ -z \"$INSTALL_SYSPKGS\" ] || { if [ \"x${APPVEYOR_BUILD_WORKER_IMAGE}\" = \"xmacOS\" ]; then brew install -q ${INSTALL_SYSPKGS}; else sudo apt-get update -y -qq --allow-releaseinfo-change && sudo apt-get install -qq --no-install-recommends -y ${INSTALL_SYSPKGS}; fi }"
   # Install singularity
   - sh: tools/ci/install-singularity.sh
   # Install git-annex on windows, otherwise INSTALL_SYSPKGS can be used
@@ -187,6 +202,8 @@ build_script:
 before_test:
   # simple call to see if datalad and git-annex are installed properly
   - datalad wtf
+  # remove  busybox:latest so tests could fetch/drop it as needed
+  - sh: "[ -n \"${BEFORE_CMD}\" ] && ${BEFORE_CMD} || :"
 
 
 test_script:

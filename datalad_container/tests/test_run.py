@@ -9,16 +9,19 @@ from datalad.api import (
     containers_run,
     create,
 )
+from datalad.local.rerun import get_run_info
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
+from datalad.support.exceptions import IncompleteResultsError
 from datalad.support.network import get_local_file_url
 from datalad.tests.utils_pytest import (
     assert_false,
     assert_in,
     assert_not_in_results,
     assert_raises,
+    assert_repo_status,
     assert_result_count,
     ok_,
     ok_clean_git,
@@ -33,6 +36,7 @@ from datalad.utils import (
     on_windows,
 )
 
+import pytest
 from datalad_container.tests.utils import add_pyscript_image
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
@@ -155,6 +159,40 @@ def test_container_files(path=None, super_path=None):
 
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
+def test_non0_exit(path=None, local_file=None):
+    ds = Dataset(path).create()
+
+    # plug in a proper singularity image
+    ds.containers_add(
+        'mycontainer',
+        url=get_local_file_url(op.join(local_file, 'some_container.img')),
+        image='righthere',
+        call_fmt="sh -c '{cmd}'"
+    )
+    ds.save()  # record the effect in super-dataset
+    ok_clean_git(path)
+
+    # now we can run stuff in the container
+    # and because there is just one, we don't even have to name the container
+    ds.containers_run(['touch okfile'])
+    assert_repo_status(path)
+
+    # Test that regular 'run' behaves as expected -- it does not proceed to save upon error
+    with pytest.raises(IncompleteResultsError):
+        ds.run(['sh', '-c', 'touch nokfile && exit 1'])
+    assert_repo_status(path, untracked=['nokfile'])
+    (ds.pathobj / "nokfile").unlink()  # remove for the next test
+    assert_repo_status(path)
+
+    # Now test with containers-run which should behave similarly -- not save in case of error
+    with pytest.raises(IncompleteResultsError):
+        ds.containers_run(['touch nokfile && exit 1'])
+    # check - must have created the file but not saved anything since failed to run!
+    assert_repo_status(path, untracked=['nokfile'])
+
+
+@with_tempfile
+@with_tree(tree={'some_container.img': "doesn't matter"})
 def test_custom_call_fmt(path=None, local_file=None):
     ds = Dataset(path).create()
     subds = ds.create('sub')
@@ -189,6 +227,47 @@ def test_custom_call_fmt(path=None, local_file=None):
         ['datalad', 'containers-run', '-n', 'sub/mycontainer', 'XXX'],
         protocol=StdOutCapture)
     assert_in('image=../sub/righthere cmd=XXX img_dspath=../sub', out['stdout'])
+
+
+@with_tree(
+    tree={
+        "overlay1.img": "overlay1",
+        "sub": {
+            "containers": {"container.img": "image file"},
+            "overlays": {"overlay2.img": "overlay2", "overlay3.img": "overlay3"},
+        },
+    }
+)
+def test_extra_inputs(path=None):
+    ds = Dataset(path).create(force=True)
+    subds = ds.create("sub", force=True)
+    subds.containers_add(
+        "mycontainer",
+        image="containers/container.img",
+        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath} > out.log",
+        extra_input=[
+            "overlay1.img",
+            "{img_dirpath}/../overlays/overlay2.img",
+            "{img_dspath}/overlays/overlay3.img",
+        ],
+    )
+    ds.save(recursive=True)  # record the entire tree of files etc
+    ds.containers_run("XXX", container_name="sub/mycontainer")
+    ok_file_has_content(
+        os.path.join(ds.repo.path, "out.log"),
+        "image=sub/containers/container.img",
+        re_=True,
+    )
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    cmd, runinfo = get_run_info(ds, commit_msg)
+    assert set(
+        [
+            "sub/containers/container.img",
+            "overlay1.img",
+            "sub/containers/../overlays/overlay2.img",
+            "sub/overlays/overlay3.img",
+        ]
+    ) == set(runinfo.get("extra_inputs", set()))
 
 
 @skip_if_no_network

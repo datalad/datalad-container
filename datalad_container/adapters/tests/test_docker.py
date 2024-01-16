@@ -1,7 +1,9 @@
+import json
 import os.path as op
+from shutil import unpack_archive, which
 import sys
-from distutils.spawn import find_executable
 
+import pytest
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
@@ -19,7 +21,7 @@ from datalad.tests.utils_pytest import (
 
 import datalad_container.adapters.docker as da
 
-if not find_executable("docker"):
+if not which("docker"):
     raise SkipTest("'docker' not found on path")
 
 
@@ -112,3 +114,23 @@ class TestAdapterBusyBox(object):
                 protocol=StdOutCapture,
                 stdin=ifh)
         assert_in("content", out["stdout"])
+
+
+def test_load_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "3.17"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    WitlessRunner().run(["docker", "save", "alpine", "-o", str(tmp_path / "alpine.tar")])
+    unpack_archive(tmp_path / "alpine.tar", tmp_path / "alpine")
+    with pytest.raises(CommandError):
+        call(["run", str(tmp_path / "alpine"), "ls"])
+    call(["run", "--repo-tag", "alpine:3.16", str(tmp_path / "alpine"), "ls"])
+
+
+def test_save_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "latest"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    call(["save", "alpine", str(tmp_path)])
+    with (tmp_path / "manifest.json").open() as fp:
+        manifest = json.load(fp)
+    assert len(manifest) == 1
+    assert manifest[0]["RepoTags"] == ["alpine:latest"]

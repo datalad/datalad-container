@@ -5,3 +5,8 @@ requires = ["setuptools >= 43.0.0", "wheel"]
 force_grid_wrap = 2
 include_trailing_comma = true
 multi_line_output = 3
+
+[tool.codespell]
+skip = '.git,*.pdf,*.svg,venvs,versioneer.py,venvs'
+# DNE - do not exist
+ignore-words-list = 'dne'
