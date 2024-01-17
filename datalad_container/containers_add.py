@@ -6,8 +6,11 @@ import json
 import logging
 import os
 import os.path as op
+from pathlib import (
+    Path,
+    PurePosixPath,
+)
 import re
-import sys
 from shutil import copyfile
 
 from datalad.cmd import WitlessRunner
@@ -22,7 +25,7 @@ from datalad.support.constraints import EnsureNone
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.interface.results import get_status_dict
 
-from .definitions import definitions
+from .utils import get_container_configuration
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -65,7 +68,8 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
-        return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+        # {python} is replaced with sys.executable on *execute*
+        return '{python} -m datalad_container.adapters.docker run {img} {cmd}'
 
 
 def _ensure_datalad_remote(repo):
@@ -118,9 +122,10 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is one recognized by Singularity ('shub://' or
-            'docker://'), a command format string for Singularity-based
-            execution will be auto-configured when
+            the URL scheme is one recognized by Singularity (e.g.,
+            'shub://neurodebian/dcm2niix:latest' or
+            'docker://debian:stable-slim'), a command format string for
+            Singularity-based execution will be auto-configured when
             [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.
             For Docker-based container execution with the URL scheme 'dhub://',
             the rest of the URL will be interpreted as the argument to
@@ -142,6 +147,9 @@ class ContainersAdd(Interface):
             replaced with the desired command. Additional placeholders:
             '{img_dspath}' is relative path to the dataset containing the image,
             '{img_dirpath}' is the directory containing the '{img}'.
+            '{python}' expands to the path of the Python executable that is
+            running the respective DataLad session, for example a
+            'datalad containers-run' command.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
@@ -200,8 +208,8 @@ class ContainersAdd(Interface):
                 "Container names can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(name))
 
-        cfgbasevar = "datalad.containers.{}".format(name)
-        if cfgbasevar + ".image" in ds.config:
+        container_cfg = get_container_configuration(ds, name)
+        if 'image' in container_cfg:
             if not update:
                 yield get_status_dict(
                     action="containers_add", ds=ds, logger=lgr,
@@ -214,7 +222,7 @@ class ContainersAdd(Interface):
             if not (url or image or call_fmt):
                 # No updated values were provided. See if an update url is
                 # configured (currently relevant only for Singularity Hub).
-                url = ds.config.get(cfgbasevar + ".updateurl")
+                url = container_cfg.get("updateurl")
                 if not url:
                     yield get_status_dict(
                         action="containers_add", ds=ds, logger=lgr,
@@ -222,25 +230,17 @@ class ContainersAdd(Interface):
                         message="No values to update specified")
                     return
 
-            call_fmt = call_fmt or ds.config.get(cfgbasevar + ".cmdexec")
-            image = image or ds.config.get(cfgbasevar + ".image")
+            call_fmt = call_fmt or container_cfg.get("cmdexec")
+            image = image or container_cfg.get("image")
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
-            # TODO: We should provide an entry point (or sth similar) for extensions
-            # to get config definitions into the ConfigManager. In other words an
-            # easy way to extend definitions in datalad's common_cfgs.py.
             container_loc = \
                 ds.config.obtain(
                     loc_cfg_var,
-                    where=definitions[loc_cfg_var]['destination'],
                     # if not False it would actually modify the
                     # dataset config file -- undesirable
                     store=False,
-                    default=definitions[loc_cfg_var]['default'],
-                    dialog_type=definitions[loc_cfg_var]['ui'][0],
-                    valtype=definitions[loc_cfg_var]['type'],
-                    **definitions[loc_cfg_var]['ui'][1]
                 )
             image = op.join(ds.path, container_loc, name, 'image')
         else:
@@ -324,6 +324,7 @@ class ContainersAdd(Interface):
             return
 
         # store configs
+        cfgbasevar = "datalad.containers.{}".format(name)
         if imgurl != url:
             # store originally given URL, as it resolves to something
             # different and maybe can be used to update the container
@@ -332,7 +333,8 @@ class ContainersAdd(Interface):
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
-            op.relpath(image, start=ds.path),
+            # always store a POSIX path, relative to dataset root
+            str(PurePosixPath(Path(image).relative_to(ds.pathobj))),
             force=True)
         if call_fmt:
             ds.config.set(

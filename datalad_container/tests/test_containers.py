@@ -29,27 +29,32 @@ from datalad.utils import swallow_outputs
 
 from datalad_container.tests.utils import add_pyscript_image
 
+common_kwargs = {'result_renderer': 'disabled'}
+
 
 @with_tempfile
 def test_add_noop(path=None):
-    ds = Dataset(path).create()
+    ds = Dataset(path).create(**common_kwargs)
     ok_clean_git(ds.path)
     assert_raises(TypeError, ds.containers_add)
     # fails when there is no image
-    assert_status('error', ds.containers_add('name', on_failure='ignore'))
+    assert_status(
+        'error',
+        ds.containers_add('name', on_failure='ignore', **common_kwargs))
     # no config change
     ok_clean_git(ds.path)
     # place a dummy "image" file
     with open(op.join(ds.path, 'dummy'), 'w') as f:
         f.write('some')
-    ds.save('dummy')
+    ds.save('dummy', **common_kwargs)
     ok_clean_git(ds.path)
     # config will be added, as long as there is a file, even when URL access
     # fails
     res = ds.containers_add(
         'broken',
         url='bogus-protocol://bogus-server', image='dummy',
-        on_failure='ignore'
+        on_failure='ignore',
+        **common_kwargs
     )
     assert_status('ok', res)
     assert_result_count(res, 1, action='save', status='ok')
@@ -59,12 +64,16 @@ def test_add_noop(path=None):
 @with_tree(tree={"foo.img": "doesn't matter 0",
                  "bar.img": "doesn't matter 1"})
 def test_add_local_path(path=None, local_file=None):
-    ds = Dataset(path).create()
+    ds = Dataset(path).create(**common_kwargs)
     res = ds.containers_add(name="foobert",
                             url=op.join(local_file, "foo.img"))
     foo_target = op.join(path, ".datalad", "environments", "foobert", "image")
     assert_result_count(res, 1, status="ok", type="file", path=foo_target,
                         action="containers_add")
+    # the image path configuration is always in POSIX format
+    assert ds.config.get('datalad.containers.foobert.image') \
+           == '.datalad/environments/foobert/image'
+
     # We've just copied and added the file.
     assert_not_in(ds.repo.WEB_UUID, ds.repo.whereis(foo_target))
 
@@ -94,12 +103,12 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     local_file = get_local_file_url(op.join(local_file, 'some_container.img'))
 
     # prepare dataset:
-    ds = Dataset(ds_path).create()
+    ds = Dataset(ds_path).create(**common_kwargs)
     # non-default location:
     ds.config.add("datalad.containers.location",
                   value=op.join(".datalad", "test-environments"),
                   where='dataset')
-    ds.save(message="Configure container mountpoint")
+    ds.save(message="Configure container mountpoint", **common_kwargs)
 
     # no containers yet:
     res = ds.containers_list(**RAW_KWDS)
@@ -108,7 +117,7 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     # add first "image": must end up at the configured default location
     target_path = op.join(
         ds.path, ".datalad", "test-environments", "first", "image")
-    res = ds.containers_add(name="first", url=local_file)
+    res = ds.containers_add(name="first", url=local_file, **common_kwargs)
     ok_clean_git(ds.repo)
 
     assert_result_count(res, 1, status="ok", type="file", path=target_path,
@@ -125,7 +134,7 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     # and kill it again
     # but needs name
     assert_raises(TypeError, ds.containers_remove)
-    res = ds.containers_remove('first', remove_image=True)
+    res = ds.containers_remove('first', remove_image=True, **common_kwargs)
     assert_status('ok', res)
     assert_result_count(ds.containers_list(**RAW_KWDS), 0)
     # image removed
@@ -143,25 +152,28 @@ def test_extra_inputs(ds_path=None):
     overlay2_file  = 'overlay2.img'
 
     # prepare dataset:
-    ds = Dataset(ds_path).create(force=True)
-    ds.save()
+    ds = Dataset(ds_path).create(force=True, **common_kwargs)
+    ds.save(**common_kwargs)
 
     ds.containers_add(
         name="container",
         image=container_file,
         call_fmt="apptainer exec {img} {cmd}",
+        **common_kwargs
     )
     ds.containers_add(
         name="container-with-overlay",
         image=container_file,
         call_fmt="apptainer exec --overlay {img_dirpath}/overlay1.img {img} {cmd}",
-        extra_input=[overlay1_file]
+        extra_input=[overlay1_file],
+        **common_kwargs
     )
     ds.containers_add(
         name="container-with-two-overlays",
         image=container_file,
         call_fmt="apptainer exec --overlay {img_dirpath}/overlay1.img --overlay {img_dirpath}/overlay2.img:ro {img} {cmd}",
-        extra_input=[overlay1_file, overlay2_file]
+        extra_input=[overlay1_file, overlay2_file],
+        **common_kwargs
     )
 
     res = ds.containers_list(**RAW_KWDS)
@@ -181,31 +193,39 @@ def test_container_update(ds_path=None, local_file=None, url=None):
     url_bar = get_local_file_url(op.join(local_file, 'bar.img'))
     img = op.join(".datalad", "environments", "foo", "image")
 
-    ds = Dataset(ds_path).create()
+    ds = Dataset(ds_path).create(**common_kwargs)
 
-    ds.containers_add(name="foo", call_fmt="call-fmt1", url=url_foo)
+    ds.containers_add(name="foo", call_fmt="call-fmt1", url=url_foo,
+                      **common_kwargs)
 
     # Abort without --update flag.
-    res = ds.containers_add(name="foo", on_failure="ignore")
+    res = ds.containers_add(name="foo", on_failure="ignore",
+                            **common_kwargs)
     assert_result_count(res, 1, action="containers_add", status="impossible")
 
     # Abort if nothing to update is specified.
-    res = ds.containers_add(name="foo", update=True, on_failure="ignore")
+    res = ds.containers_add(name="foo", update=True, on_failure="ignore",
+                            **common_kwargs)
     assert_result_count(res, 1, action="containers_add", status="impossible",
                         message="No values to update specified")
 
     # Update call format.
-    ds.containers_add(name="foo", update=True, call_fmt="call-fmt2")
+    ds.containers_add(name="foo", update=True, call_fmt="call-fmt2",
+                      **common_kwargs)
     assert_equal(ds.config.get("datalad.containers.foo.cmdexec"),
                  "call-fmt2")
     ok_file_has_content(op.join(ds.path, img), "foo")
 
     # Update URL/image.
-    ds.drop(img)  # Make sure it works even with absent content.
-    res = ds.containers_add(name="foo", update=True, url=url_bar)
+    ds.drop(img, **common_kwargs)  # Make sure it works even with absent content.
+    res = ds.containers_add(name="foo", update=True, url=url_bar,
+                            **common_kwargs)
     assert_in_results(res, action="remove", status="ok")
     assert_in_results(res, action="save", status="ok")
     ok_file_has_content(op.join(ds.path, img), "bar")
+    # the image path configuration is (still) always in POSIX format
+    assert ds.config.get('datalad.containers.foo.image') \
+           == '.datalad/environments/foo/image'
 
     # Test commit message
     # In the above case it was updating existing image so should have "Update "
@@ -213,7 +233,8 @@ def test_container_update(ds_path=None, local_file=None, url=None):
     assert_in("Update ", get_commit_msg())
 
     # If we add a new image with update=True should say Configure
-    res = ds.containers_add(name="foo2", update=True, url=url_bar)
+    res = ds.containers_add(name="foo2", update=True, url=url_bar,
+                            **common_kwargs)
     assert_in("Configure ", get_commit_msg())
 
 
@@ -223,16 +244,17 @@ def test_container_update(ds_path=None, local_file=None, url=None):
 def test_container_from_subdataset(ds_path=None, src_subds_path=None, local_file=None):
 
     # prepare a to-be subdataset with a registered container
-    src_subds = Dataset(src_subds_path).create()
-    src_subds.containers_add(name="first",
-                         url=get_local_file_url(op.join(local_file,
-                                                        'some_container.img'))
-                         )
+    src_subds = Dataset(src_subds_path).create(**common_kwargs)
+    src_subds.containers_add(
+        name="first",
+        url=get_local_file_url(op.join(local_file, 'some_container.img')),
+        **common_kwargs
+    )
     # add it as subdataset to a super ds:
-    ds = Dataset(ds_path).create()
-    subds = ds.install("sub", source=src_subds_path)
+    ds = Dataset(ds_path).create(**common_kwargs)
+    subds = ds.install("sub", source=src_subds_path, **common_kwargs)
     # add it again one level down to see actual recursion:
-    subds.install("subsub", source=src_subds_path)
+    subds.install("subsub", source=src_subds_path, **common_kwargs)
 
     # We come up empty without recursive:
     res = ds.containers_list(recursive=False, **RAW_KWDS)
@@ -254,9 +276,9 @@ def test_container_from_subdataset(ds_path=None, src_subds_path=None, local_file
     )
 
     # not installed subdataset doesn't pose an issue:
-    sub2 = ds.create("sub2")
-    assert_result_count(ds.subdatasets(), 2, type="dataset")
-    ds.uninstall("sub2", check=False)
+    sub2 = ds.create("sub2", **common_kwargs)
+    assert_result_count(ds.subdatasets(**common_kwargs), 2, type="dataset")
+    ds.uninstall("sub2", check=False, **common_kwargs)
     from datalad.tests.utils_pytest import assert_false
     assert_false(sub2.is_installed())
 
@@ -285,17 +307,17 @@ def test_container_from_subdataset(ds_path=None, src_subds_path=None, local_file
 
 @with_tempfile
 def test_list_contains(path=None):
-    ds = Dataset(path).create()
-    subds_a = ds.create("a")
-    subds_b = ds.create("b")
-    subds_a_c = subds_a.create("c")
+    ds = Dataset(path).create(**common_kwargs)
+    subds_a = ds.create("a", **common_kwargs)
+    subds_b = ds.create("b", **common_kwargs)
+    subds_a_c = subds_a.create("c", **common_kwargs)
 
     add_pyscript_image(subds_a_c, "in-c", "img")
     add_pyscript_image(subds_a, "in-a", "img")
     add_pyscript_image(subds_b, "in-b", "img")
     add_pyscript_image(ds, "in-top", "img")
 
-    ds.save(recursive=True)
+    ds.save(recursive=True, **common_kwargs)
 
     assert_result_count(ds.containers_list(recursive=True, **RAW_KWDS),
                         4)

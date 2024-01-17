@@ -41,40 +41,42 @@ from datalad_container.tests.utils import add_pyscript_image
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'
 
+common_kwargs = {'result_renderer': 'disabled'}
+
 
 @with_tree(tree={"dummy0.img": "doesn't matter 0",
                  "dummy1.img": "doesn't matter 1"})
 def test_run_mispecified(path=None):
-    ds = Dataset(path).create(force=True)
-    ds.save(path=["dummy0.img", "dummy1.img"])
+    ds = Dataset(path).create(force=True, **common_kwargs)
+    ds.save(path=["dummy0.img", "dummy1.img"], **common_kwargs)
     ok_clean_git(path)
 
     # Abort if no containers exist.
     with assert_raises(ValueError) as cm:
-        ds.containers_run("doesn't matter")
+        ds.containers_run("doesn't matter", **common_kwargs)
     assert_in("No known containers", str(cm.value))
 
     # Abort if more than one container exists but no container name is
     # specified.
-    ds.containers_add("d0", image="dummy0.img")
-    ds.containers_add("d1", image="dummy0.img")
+    ds.containers_add("d0", image="dummy0.img", **common_kwargs)
+    ds.containers_add("d1", image="dummy0.img", **common_kwargs)
 
     with assert_raises(ValueError) as cm:
-        ds.containers_run("doesn't matter")
+        ds.containers_run("doesn't matter", **common_kwargs)
     assert_in("explicitly specify container", str(cm.value))
 
     # Abort if unknown container is specified.
     with assert_raises(ValueError) as cm:
-        ds.containers_run("doesn't matter", container_name="ghost")
+        ds.containers_run("doesn't matter", container_name="ghost", **common_kwargs)
     assert_in("Container selection impossible", str(cm.value))
 
 
 @with_tree(tree={"i.img": "doesn't matter"})
 def test_run_unknown_cmdexec_placeholder(path=None):
     ds = Dataset(path).create(force=True)
-    ds.containers_add("i", image="i.img", call_fmt="{youdontknowme}")
+    ds.containers_add("i", image="i.img", call_fmt="{youdontknowme}", **common_kwargs)
     assert_result_count(
-        ds.containers_run("doesn't matter", on_failure="ignore"),
+        ds.containers_run("doesn't matter", on_failure="ignore", **common_kwargs),
         1,
         path=ds.path,
         action="run",
@@ -95,9 +97,10 @@ def test_container_files(path=None, super_path=None):
         image='righthere',
         # the next one is auto-guessed
         #call_fmt='singularity exec {img} {cmd}'
+        **common_kwargs
     )
     assert_result_count(
-        ds.containers_list(), 1,
+        ds.containers_list(**common_kwargs), 1,
         path=op.join(ds.path, 'righthere'),
         name='mycontainer')
     ok_clean_git(path)
@@ -113,7 +116,7 @@ def test_container_files(path=None, super_path=None):
 
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
-    res = ds.containers_run(cmd)
+    res = ds.containers_run(cmd, **common_kwargs)
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
         res, 1, action='get', status='notneeded',
@@ -122,7 +125,7 @@ def test_container_files(path=None, super_path=None):
 
     # same thing as we specify the container by its name:
     res = ds.containers_run(cmd,
-                            container_name='mycontainer')
+                            container_name='mycontainer', **common_kwargs)
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
         res, 1, action='get', status='notneeded',
@@ -131,7 +134,7 @@ def test_container_files(path=None, super_path=None):
 
     # we can also specify the container by its path:
     res = ds.containers_run(cmd,
-                            container_name=op.join(ds.path, 'righthere'))
+                            container_name=op.join(ds.path, 'righthere'), **common_kwargs)
     # container becomes an 'input' for `run` -> get request, but "notneeded"
     assert_result_count(
         res, 1, action='get', status='notneeded',
@@ -141,15 +144,15 @@ def test_container_files(path=None, super_path=None):
     # Now, test the same thing, but with this dataset being a subdataset of
     # another one:
 
-    super_ds = Dataset(super_path).create()
-    super_ds.install("sub", source=path)
+    super_ds = Dataset(super_path).create(**common_kwargs)
+    super_ds.install("sub", source=path, **common_kwargs)
 
     # When running, we don't discover containers in subdatasets
     with assert_raises(ValueError) as cm:
-        super_ds.containers_run(cmd)
+        super_ds.containers_run(cmd, **common_kwargs)
     assert_in("No known containers", str(cm.value))
     # ... unless we need to specify the name
-    res = super_ds.containers_run(cmd, container_name="sub/mycontainer")
+    res = super_ds.containers_run(cmd, container_name="sub/mycontainer", **common_kwargs)
     # container becomes an 'input' for `run` -> get request (needed this time)
     assert_result_count(
         res, 1, action='get', status='ok',
@@ -160,33 +163,34 @@ def test_container_files(path=None, super_path=None):
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 def test_non0_exit(path=None, local_file=None):
-    ds = Dataset(path).create()
+    ds = Dataset(path).create(**common_kwargs)
 
     # plug in a proper singularity image
     ds.containers_add(
         'mycontainer',
         url=get_local_file_url(op.join(local_file, 'some_container.img')),
         image='righthere',
-        call_fmt="sh -c '{cmd}'"
+        call_fmt="sh -c '{cmd}'",
+        **common_kwargs
     )
-    ds.save()  # record the effect in super-dataset
+    ds.save(**common_kwargs)  # record the effect in super-dataset
     ok_clean_git(path)
 
     # now we can run stuff in the container
     # and because there is just one, we don't even have to name the container
-    ds.containers_run(['touch okfile'])
+    ds.containers_run(['touch okfile'], **common_kwargs)
     assert_repo_status(path)
 
     # Test that regular 'run' behaves as expected -- it does not proceed to save upon error
     with pytest.raises(IncompleteResultsError):
-        ds.run(['sh', '-c', 'touch nokfile && exit 1'])
+        ds.run(['sh', '-c', 'touch nokfile && exit 1'], **common_kwargs)
     assert_repo_status(path, untracked=['nokfile'])
     (ds.pathobj / "nokfile").unlink()  # remove for the next test
     assert_repo_status(path)
 
     # Now test with containers-run which should behave similarly -- not save in case of error
     with pytest.raises(IncompleteResultsError):
-        ds.containers_run(['touch nokfile && exit 1'])
+        ds.containers_run(['touch nokfile && exit 1'], **common_kwargs)
     # check - must have created the file but not saved anything since failed to run!
     assert_repo_status(path, untracked=['nokfile'])
 
@@ -194,8 +198,8 @@ def test_non0_exit(path=None, local_file=None):
 @with_tempfile
 @with_tree(tree={'some_container.img': "doesn't matter"})
 def test_custom_call_fmt(path=None, local_file=None):
-    ds = Dataset(path).create()
-    subds = ds.create('sub')
+    ds = Dataset(path).create(**common_kwargs)
+    subds = ds.create('sub', **common_kwargs)
 
     # plug in a proper singularity image
     subds.containers_add(
@@ -204,9 +208,10 @@ def test_custom_call_fmt(path=None, local_file=None):
         image='righthere',
         call_fmt='echo image={img} cmd={cmd} img_dspath={img_dspath} '
                  # and environment variable being set/propagated by default
-                 'name=$DATALAD_CONTAINER_NAME'
+                 'name=$DATALAD_CONTAINER_NAME',
+        **common_kwargs,
     )
-    ds.save()  # record the effect in super-dataset
+    ds.save(**common_kwargs)  # record the effect in super-dataset
 
     # Running should work fine either within sub or within super
     out = WitlessRunner(cwd=subds.path).run(
@@ -239,8 +244,8 @@ def test_custom_call_fmt(path=None, local_file=None):
     }
 )
 def test_extra_inputs(path=None):
-    ds = Dataset(path).create(force=True)
-    subds = ds.create("sub", force=True)
+    ds = Dataset(path).create(force=True, **common_kwargs)
+    subds = ds.create("sub", force=True, **common_kwargs)
     subds.containers_add(
         "mycontainer",
         image="containers/container.img",
@@ -250,9 +255,10 @@ def test_extra_inputs(path=None):
             "{img_dirpath}/../overlays/overlay2.img",
             "{img_dspath}/overlays/overlay3.img",
         ],
+        **common_kwargs
     )
-    ds.save(recursive=True)  # record the entire tree of files etc
-    ds.containers_run("XXX", container_name="sub/mycontainer")
+    ds.save(recursive=True, **common_kwargs)  # record the entire tree of files etc
+    ds.containers_run("XXX", container_name="sub/mycontainer", **common_kwargs)
     ok_file_has_content(
         os.path.join(ds.repo.path, "out.log"),
         "image=sub/containers/container.img",
@@ -273,10 +279,10 @@ def test_extra_inputs(path=None):
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path=None):
-    ds = Dataset(path).create(force=True)
-    ds.save()
+    ds = Dataset(path).create(force=True, **common_kwargs)
+    ds.save(**common_kwargs)
     ds.containers_add("deb", url=testimg_url,
-                      call_fmt="singularity exec {img} {cmd}")
+                      call_fmt="singularity exec {img} {cmd}", **common_kwargs)
 
     # When no explicit dataset is given, paths are interpreted as relative to
     # the current working directory.
@@ -285,14 +291,14 @@ def test_run_no_explicit_dataset(path=None):
     with chpwd(path):
         containers_run("cat {inputs[0]} {inputs[0]} >doubled",
                        inputs=[op.join("subdir", "in")],
-                       outputs=["doubled"])
+                       outputs=["doubled"], **common_kwargs)
         ok_file_has_content(op.join(path, "doubled"), "innardsinnards")
 
     # From under a subdirectory.
     subdir = op.join(ds.path, "subdir")
     with chpwd(subdir):
         containers_run("cat {inputs[0]} {inputs[0]} >doubled",
-                       inputs=["in"], outputs=["doubled"])
+                       inputs=["in"], outputs=["doubled"], **common_kwargs)
     ok_file_has_content(op.join(subdir, "doubled"), "innardsinnards")
 
 
@@ -316,16 +322,16 @@ def test_run_subdataset_install(path=None):
     # `-- d/
     #     `-- d2/
     #         `-- img
-    ds_src_a = ds_src.create("a")
-    ds_src_a2 = ds_src_a.create("a2")
-    ds_src_b = Dataset(ds_src.pathobj / "b").create()
-    ds_src_b2 = ds_src_b.create("b2")
-    ds_src_c = ds_src.create("c")
-    ds_src_c2 = ds_src_c.create("c2")
-    ds_src_d = Dataset(ds_src.pathobj / "d").create()
-    ds_src_d2 = ds_src_d.create("d2")
+    ds_src_a = ds_src.create("a", **common_kwargs)
+    ds_src_a2 = ds_src_a.create("a2", **common_kwargs)
+    ds_src_b = Dataset(ds_src.pathobj / "b").create(**common_kwargs)
+    ds_src_b2 = ds_src_b.create("b2", **common_kwargs)
+    ds_src_c = ds_src.create("c", **common_kwargs)
+    ds_src_c2 = ds_src_c.create("c2", **common_kwargs)
+    ds_src_d = Dataset(ds_src.pathobj / "d").create(**common_kwargs)
+    ds_src_d2 = ds_src_d.create("d2", **common_kwargs)
 
-    ds_src.save()
+    ds_src.save(**common_kwargs)
 
     add_pyscript_image(ds_src_a, "in-a", "img")
     add_pyscript_image(ds_src_a2, "in-a2", "img")
@@ -333,9 +339,9 @@ def test_run_subdataset_install(path=None):
     add_pyscript_image(ds_src_c2, "in-c2", "img")
     add_pyscript_image(ds_src_d2, "in-d2", "img")
 
-    ds_src.save(recursive=True)
+    ds_src.save(recursive=True, **common_kwargs)
 
-    ds_dest = clone(ds_src.path, str(path / "dest"))
+    ds_dest = clone(ds_src.path, str(path / "dest"), **common_kwargs)
     ds_dest_a2 = Dataset(ds_dest.pathobj / "a" / "a2")
     ds_dest_b2 = Dataset(ds_dest.pathobj / "b" / "b2")
     ds_dest_c2 = Dataset(ds_dest.pathobj / "c" / "c2")
@@ -346,7 +352,7 @@ def test_run_subdataset_install(path=None):
     assert_false(ds_dest_d2.is_installed())
 
     # Needed subdatasets are installed if container name is given...
-    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2")
+    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2", **common_kwargs)
     assert_result_count(
         res, 1, action="install", status="ok", path=ds_dest_a2.path)
     assert_result_count(
@@ -354,7 +360,7 @@ def test_run_subdataset_install(path=None):
         path=str(ds_dest_a2.pathobj / "img"))
     ok_(ds_dest_a2.is_installed())
     # ... even if the name and path do not match.
-    res = ds_dest.containers_run(["arg"], container_name="b/b2/in-b2")
+    res = ds_dest.containers_run(["arg"], container_name="b/b2/in-b2", **common_kwargs)
     assert_result_count(
         res, 1, action="install", status="ok", path=ds_dest_b2.path)
     assert_result_count(
@@ -362,15 +368,60 @@ def test_run_subdataset_install(path=None):
         path=str(ds_dest_b2.pathobj / "img"))
     ok_(ds_dest_b2.is_installed())
     # Subdatasets will also be installed if given an image path...
-    res = ds_dest.containers_run(["arg"], container_name=str(Path("c/c2/img")))
+    res = ds_dest.containers_run(["arg"], container_name=str(Path("c/c2/img")), **common_kwargs)
     assert_result_count(
         res, 1, action="install", status="ok", path=ds_dest_c2.path)
     assert_result_count(
         res, 1, action="get", status="ok",
         path=str(ds_dest_c2.pathobj / "img"))
     ok_(ds_dest_c2.is_installed())
-    ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")))
+    ds_dest.containers_run(["arg"], container_name=str(Path("d/d2/img")), **common_kwargs)
 
     # There's no install record if subdataset is already present.
-    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2")
+    res = ds_dest.containers_run(["arg"], container_name="a/a2/in-a2", **common_kwargs)
     assert_not_in_results(res, action="install")
+
+
+@skip_if_no_network
+def test_nonPOSIX_imagepath(tmp_path):
+    ds = Dataset(tmp_path).create(**common_kwargs)
+
+    # plug in a proper singularity image
+    ds.containers_add(
+        'mycontainer',
+        url=testimg_url,
+        **common_kwargs
+    )
+    assert_result_count(
+        ds.containers_list(**common_kwargs), 1,
+        # we get a report in platform conventions
+        path=str(ds.pathobj / '.datalad' / 'environments' /
+                 'mycontainer' / 'image'),
+        name='mycontainer')
+    assert_repo_status(tmp_path)
+
+    # now reconfigure the image path to look as if a version <= 1.2.4
+    # configured it on windows
+    # this must still run across all platforms
+    ds.config.set(
+        'datalad.containers.mycontainer.image',
+        '.datalad\\environments\\mycontainer\\image',
+        scope='branch',
+        reload=True,
+    )
+    ds.save(**common_kwargs)
+    assert_repo_status(tmp_path)
+
+    assert_result_count(
+        ds.containers_list(**common_kwargs), 1,
+        # we still get a report in platform conventions
+        path=str(ds.pathobj / '.datalad' / 'environments' /
+                 'mycontainer' / 'image'),
+        name='mycontainer')
+
+    res = ds.containers_run(['ls'], **common_kwargs)
+    assert_result_count(
+        res, 1,
+        action='run',
+        status='ok',
+    )

@@ -19,6 +19,8 @@ from datalad.interface.results import get_status_dict
 from datalad.coreapi import subdatasets
 from datalad.ui import ui
 
+from datalad_container.utils import get_container_configuration
+
 lgr = logging.getLogger("datalad.containers.containers_list")
 
 
@@ -77,22 +79,7 @@ class ContainersList(Interface):
                         yield c
 
         # all info is in the dataset config!
-        var_prefix = 'datalad.containers.'
-        containers = {}
-        for var, value in ds.config.items():
-            if not var.startswith(var_prefix):
-                # not an interesting variable
-                continue
-            var_comps = var[len(var_prefix):].split('.')
-            cname = var_comps[0]
-            ccfgname = '.'.join(var_comps[1:])
-            if not ccfgname:
-                continue
-
-            cinfo = containers.get(cname, {})
-            cinfo[ccfgname] = value
-
-            containers[cname] = cinfo
+        containers = get_container_configuration(ds)
 
         for k, v in containers.items():
             if 'image' not in v:

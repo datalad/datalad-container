@@ -4,6 +4,7 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
+import sys
 
 from datalad.interface.base import Interface
 from datalad.interface.base import build_doc
@@ -80,6 +81,14 @@ class ContainersRun(Interface):
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
+        # this following block locates the target container. this involves a
+        # configuration look-up. This is not using
+        # get_container_configuration(), because it needs to account for a
+        # wide range of scenarios, including the installation of the dataset(s)
+        # that will eventually provide (the configuration) for the container.
+        # However, internally this is calling `containers_list()`, which is
+        # using get_container_configuration(), so any normalization of
+        # configuration on-read, get still be implemented in this helper.
         container = None
         for res in find_container_(ds, container_name):
             if res.get("action") == "containers":
@@ -115,6 +124,10 @@ class ContainersRun(Interface):
                         'Convert it to a plain string.'.format(callspec))
             try:
                 cmd_kwargs = dict(
+                    # point to the python installation that runs *this* code
+                    # we know that it would have things like the docker
+                    # adaptor installed with this extension package
+                    python=sys.executable,
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,
