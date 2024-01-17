@@ -6,6 +6,12 @@ from pathlib import Path
 from shutil import which
 from unittest.mock import patch
 
+# Early detection before we try to import meta_extract
+from datalad.tests.utils_pytest import SkipTest  # noqa: E402, isort:skip
+from datalad.support.external_versions import external_versions, UnknownVersion  # noqa: E402, isort:skip
+if not external_versions["datalad_metalad"]:
+    raise SkipTest("skipping metalad tests")
+
 from datalad.api import (
     clone,
     Dataset,
@@ -16,7 +22,6 @@ from datalad.cmd import (
     WitlessRunner,
 )
 from datalad.support.exceptions import CommandError
-from datalad.support.external_versions import external_versions, UnknownVersion
 from datalad.tests.utils_pytest import (
     SkipTest,
     assert_in,
@@ -26,9 +31,6 @@ from datalad.tests.utils_pytest import (
     with_tempfile,
     with_tree,
 )
-
-if not external_versions["datalad_metalad"]:
-    raise SkipTest("skipping metalad tests")
 
 from datalad_container.utils import get_container_command
 
