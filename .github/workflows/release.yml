@@ -27,9 +27,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           pypi-token: ${{ secrets.PYPI_TOKEN }}
           pre-tag: |
-            pip install setuptools  # needed for setup.py --version
-            pkg="$(python setup.py --name)"
-            printf '__version__ = "%s"\n' "$new_version" > "$pkg"/version.py
-            git commit -m "Update __version__ to $new_version" "$pkg"/version.py
+            version_file=datalad_container/version.py
+            printf '__version__ = "%s"\n' "$new_version" > "$version_file"
+            git commit -m "Update __version__ to $new_version" "$version_file"
 
 # vim:set et sts=2:
