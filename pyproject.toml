@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools >= 43.0.0", "wheel"]
+requires = ["setuptools >= 43.0.0", "tomli", "wheel"]
 
 [tool.isort]
 force_grid_wrap = 2
@@ -10,3 +10,14 @@ multi_line_output = 3
 skip = '.git,*.pdf,*.svg,venvs,versioneer.py,venvs'
 # DNE - do not exist
 ignore-words-list = 'dne'
+
+[tool.versioneer]
+# See the docstring in versioneer.py for instructions. Note that you must
+# re-run 'versioneer.py setup' after changing this section, and commit the
+# resulting files.
+VCS = 'git'
+style = 'pep440'
+versionfile_source = 'datalad_container/_version.py'
+versionfile_build = 'datalad_container/_version.py'
+tag_prefix = ''
+parentdir_prefix = ''
