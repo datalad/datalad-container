@@ -1,20 +1,24 @@
 import os.path as op
-import pytest
 import subprocess
 import sys
 from pathlib import Path
 from shutil import which
 from unittest.mock import patch
 
+import pytest
+from datalad.support.external_versions import (
+    UnknownVersion,
+    external_versions,
+)
 # Early detection before we try to import meta_extract
-from datalad.tests.utils_pytest import SkipTest  # noqa: E402, isort:skip
-from datalad.support.external_versions import external_versions, UnknownVersion  # noqa: E402, isort:skip
+from datalad.tests.utils_pytest import SkipTest
+
 if not external_versions["datalad_metalad"]:
     raise SkipTest("skipping metalad tests")
 
 from datalad.api import (
-    clone,
     Dataset,
+    clone,
     meta_extract,
 )
 from datalad.cmd import (
@@ -40,7 +44,9 @@ except RuntimeError:
     raise SkipTest("skipping singularity/apptainer tests")
 
 # Must come after skiptest or imports will not work
-from datalad_container.extractors.metalad_container import MetaladContainerInspect
+from datalad_container.extractors.metalad_container import (
+    MetaladContainerInspect,
+)
 
 
 @with_tempfile
