@@ -6,21 +6,25 @@ import logging
 import os.path as op
 import sys
 
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.base import eval_results
-from datalad.utils import ensure_iter
-
-from datalad.interface.results import get_status_dict
 from datalad.core.local.run import (
     Run,
     get_command_pwds,
     normalize_command,
     run_command,
 )
+from datalad.distribution.dataset import (
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
+from datalad.interface.results import get_status_dict
+from datalad.support.param import Parameter
+from datalad.utils import ensure_iter
+
 from datalad_container.find_container import find_container_
 
 lgr = logging.getLogger("datalad.containers.containers_run")
@@ -76,7 +80,8 @@ class ContainersRun(Interface):
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
                  explicit=False, sidecar=None):
-        from unittest.mock import patch  # delayed, since takes long (~600ms for yoh)
+        from unittest.mock import \
+            patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')

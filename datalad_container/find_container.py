@@ -97,6 +97,7 @@ def _get_container_by_name(_, name, containers):
 
 def _get_container_by_path(ds, name, containers):
     from datalad.distribution.dataset import resolve_path
+
     # Note: since datalad0.12.0rc6 resolve_path returns a Path object here,
     #       which then fails to equal c['path'] below as this is taken from
     #       config as a string

@@ -1,7 +1,10 @@
 import json
 import os.path as op
-from shutil import unpack_archive, which
 import sys
+from shutil import (
+    unpack_archive,
+    which,
+)
 
 import pytest
 from datalad.cmd import (

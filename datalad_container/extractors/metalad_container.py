@@ -13,12 +13,18 @@ import subprocess
 import time
 from uuid import UUID
 
-from datalad.support.external_versions import external_versions, UnknownVersion
-from datalad_metalad.extractors.base import DataOutputCategory, ExtractorResult, FileMetadataExtractor
+from datalad.support.external_versions import (
+    UnknownVersion,
+    external_versions,
+)
 from datalad_metalad import get_file_id
+from datalad_metalad.extractors.base import (
+    DataOutputCategory,
+    ExtractorResult,
+    FileMetadataExtractor,
+)
 
 from datalad_container.utils import get_container_command
-
 
 CURRENT_VERSION = "0.0.1"
 
