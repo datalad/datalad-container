@@ -1,3 +1,11 @@
+datalad-container (1.2.4-1) unstable; urgency=medium
+
+  * Fresh upstream release
+    - upgraded versioneer so should not cause troubles with recent Pythons
+      which removed SafeConfigParser (Closes: #1060979)
+
+ -- Yaroslav Halchenko <debian@onerussian.com>  Tue, 16 Jan 2024 20:49:28 -0500
+
 datalad-container (1.1.9-1) unstable; urgency=medium
 
   * Fresh upstream release
