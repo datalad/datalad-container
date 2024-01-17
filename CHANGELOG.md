@@ -1,4 +1,12 @@
 
+<a id='changelog-1.2.5'></a>
+# 1.2.5 (2024-01-17)
+
+## 🏠 Internal
+
+- Run isort across entire codebase to harmonize imports order/appearance.
+  https://github.com/datalad/datalad-container/260 (by @yarikoptic)
+
 <a id='changelog-1.2.4'></a>
 # 1.2.4 (2024-01-17)
 
