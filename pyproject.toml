@@ -5,6 +5,7 @@ requires = ["setuptools >= 43.0.0", "tomli", "wheel"]
 force_grid_wrap = 2
 include_trailing_comma = true
 multi_line_output = 3
+combine_as_imports = true
 
 [tool.codespell]
 skip = '.git,*.pdf,*.svg,venvs,versioneer.py,venvs'

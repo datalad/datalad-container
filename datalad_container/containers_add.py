@@ -6,24 +6,31 @@ import json
 import logging
 import os
 import os.path as op
+import re
 from pathlib import (
     Path,
     PurePosixPath,
 )
-import re
 from shutil import copyfile
 
 from datalad.cmd import WitlessRunner
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod, EnsureDataset
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.base import eval_results
-from datalad.support.constraints import EnsureStr
-from datalad.support.constraints import EnsureNone
-from datalad.support.exceptions import InsufficientArgumentsError
+from datalad.distribution.dataset import (
+    EnsureDataset,
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
 from datalad.interface.results import get_status_dict
+from datalad.support.constraints import (
+    EnsureNone,
+    EnsureStr,
+)
+from datalad.support.exceptions import InsufficientArgumentsError
+from datalad.support.param import Parameter
 
 from .utils import get_container_configuration
 

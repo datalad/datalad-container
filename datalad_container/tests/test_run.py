@@ -1,6 +1,7 @@
 import os
 import os.path as op
 
+import pytest
 from datalad.api import (
     Dataset,
     clone,
@@ -9,11 +10,11 @@ from datalad.api import (
     containers_run,
     create,
 )
-from datalad.local.rerun import get_run_info
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
+from datalad.local.rerun import get_run_info
 from datalad.support.exceptions import IncompleteResultsError
 from datalad.support.network import get_local_file_url
 from datalad.tests.utils_pytest import (
@@ -36,7 +37,6 @@ from datalad.utils import (
     on_windows,
 )
 
-import pytest
 from datalad_container.tests.utils import add_pyscript_image
 
 testimg_url = 'shub://datalad/datalad-container:testhelper'

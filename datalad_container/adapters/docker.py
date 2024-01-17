@@ -11,6 +11,7 @@ command-line interface.
 
 import hashlib
 import json
+import logging
 import os
 import os.path as op
 import subprocess as sp
@@ -18,11 +19,7 @@ import sys
 import tarfile
 import tempfile
 
-import logging
-
-from datalad.utils import (
-    on_windows,
-)
+from datalad.utils import on_windows
 
 lgr = logging.getLogger("datalad.containers.adapters.docker")
 

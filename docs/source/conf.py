@@ -12,17 +12,16 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys
-import os
-
 import datetime
+import os
+import sys
+from os import pardir
 from os.path import (
     abspath,
     dirname,
     exists,
     join as opj,
 )
-from os import pardir
 
 import datalad_container
 

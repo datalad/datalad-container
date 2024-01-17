@@ -4,7 +4,6 @@ from __future__ import annotations
 
 # the pathlib equivalent is only available in PY3.12
 from os.path import lexists
-
 from pathlib import (
     PurePath,
     PurePosixPath,
