@@ -5,15 +5,22 @@ __docformat__ = 'restructuredtext'
 import logging
 import os.path as op
 
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod, EnsureDataset
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.base import eval_results
-from datalad.support.constraints import EnsureNone
-from datalad.support.constraints import EnsureStr
+from datalad.distribution.dataset import (
+    EnsureDataset,
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
 from datalad.interface.results import get_status_dict
+from datalad.support.constraints import (
+    EnsureNone,
+    EnsureStr,
+)
+from datalad.support.param import Parameter
 from datalad.utils import rmtree
 
 from datalad_container.utils import get_container_configuration

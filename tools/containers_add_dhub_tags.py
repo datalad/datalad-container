@@ -16,11 +16,11 @@ The step of adding the image is skipped if the path is already present locally.
 import fileinput
 import json
 import logging
+import re
 from pathlib import Path
 from pprint import pprint
-import re
-import requests
 
+import requests
 from datalad.api import (
     containers_add,
     save,

@@ -1,11 +1,11 @@
-import pytest
 from pathlib import Path
 
+import pytest
 from datalad.api import Dataset
 from datalad.tests.utils_pytest import with_tempfile
 
-from datalad_container.utils import get_container_command
 from datalad_container.tests.utils import add_pyscript_image
+from datalad_container.utils import get_container_command
 
 TEST_IMG_URL = 'shub://datalad/datalad-container:testhelper'
 
