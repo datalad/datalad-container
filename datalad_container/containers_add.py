@@ -139,7 +139,7 @@ class ContainersAdd(Interface):
             'docker pull', the image will be saved to a location
             specified by `name`, and the call format will be auto-configured
             to run docker, unless overwritten. The auto-configured call to docker 
-            run mounts the cwd to '/tmp' and sets the working directory to '/tmp'.""",
+            run mounts the CWD to '/tmp' and sets the working directory to '/tmp'.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
