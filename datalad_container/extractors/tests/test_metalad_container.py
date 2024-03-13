@@ -50,7 +50,7 @@ def test__container_inspect_valid(singularity_test_image):
                     'org.label-schema.schema-version': '1.0',
                     'org.label-schema.usage.singularity.deffile': 'Singularity.testhelper',
                     'org.label-schema.usage.singularity.deffile.bootstrap': 'docker',
-                    'org.label-schema.usage.singularity.deffile.from': 'debian: stable-slim', 'org.label-schema.usage.singularity.version':
+                    'org.label-schema.usage.singularity.deffile.from': 'debian:stable-slim', 'org.label-schema.usage.singularity.version':
                     '2.5.0-feature-squashbuild-secbuild-2.5.0.gddf62fb5'
                 }
             }
