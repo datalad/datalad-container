@@ -107,7 +107,7 @@ def test_container_files(ds_path=None, local_file=None, url=None):
     # non-default location:
     ds.config.add("datalad.containers.location",
                   value=op.join(".datalad", "test-environments"),
-                  where='dataset')
+                  scope='branch')
     ds.save(message="Configure container mountpoint", **common_kwargs)
 
     # no containers yet:
@@ -278,7 +278,7 @@ def test_container_from_subdataset(ds_path=None, src_subds_path=None, local_file
     # not installed subdataset doesn't pose an issue:
     sub2 = ds.create("sub2", **common_kwargs)
     assert_result_count(ds.subdatasets(**common_kwargs), 2, type="dataset")
-    ds.uninstall("sub2", check=False, **common_kwargs)
+    ds.drop("sub2", reckless='availability', what='datasets', **common_kwargs)
     from datalad.tests.utils_pytest import assert_false
     assert_false(sub2.is_installed())
 
