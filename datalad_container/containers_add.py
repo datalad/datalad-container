@@ -275,7 +275,7 @@ class ContainersAdd(Interface):
                 # XXX: check=False is used to avoid dropping the image. It
                 # should use drop=False if remove() gets such an option (see
                 # DataLad's gh-2673).
-                for r in ds.remove(image, save=False, check=False,
+                for r in ds.remove(image, reckless='availability',
                                    return_type="generator"):
                     yield r
 
