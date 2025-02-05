@@ -8,7 +8,7 @@ multi_line_output = 3
 combine_as_imports = true
 
 [tool.codespell]
-skip = '.git,*.pdf,*.svg,venvs,versioneer.py,venvs'
+skip = '.git,*.pdf,*.svg,venvs,versioneer.py,venvs,.venv,build,*.egg-info,*.lock,.asv,.mypy_cache,.tox,fixtures,_version.py,*.pem'
 # DNE - do not exist
 ignore-words-list = 'dne'
 
