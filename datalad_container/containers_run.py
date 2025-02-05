@@ -39,7 +39,7 @@ _run_params = dict(
     container_name=Parameter(
         args=('-n', '--container-name',),
         metavar="NAME",
-        doc="""Specify the name of or a path to a known container to use 
+        doc="""Specify the name of or a path to a known container to use
         for execution, in case multiple containers are configured."""),
 )
 

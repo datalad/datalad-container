@@ -71,11 +71,11 @@ environment:
 
     # Ubuntu core tests
     - ID: Ubu
-    
+
     # The same but with the oldest supported Python.
     - ID: Ubu-3.8
       PY: '3.8'
-    
+
     # The same but removing busybox first - triggers different code paths in the tests
     - ID: Ubu-nobusybox
       BEFORE_CMD: docker rmi busybox:latest
