@@ -138,7 +138,8 @@ class ContainersAdd(Interface):
             the rest of the URL will be interpreted as the argument to
             'docker pull', the image will be saved to a location
             specified by `name`, and the call format will be auto-configured
-            to run docker, unless overwritten.""",
+            to run docker, unless overwritten. The auto-configured call to docker 
+            run mounts the CWD to '/tmp' and sets the working directory to '/tmp'.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -274,7 +275,7 @@ class ContainersAdd(Interface):
                 # XXX: check=False is used to avoid dropping the image. It
                 # should use drop=False if remove() gets such an option (see
                 # DataLad's gh-2673).
-                for r in ds.remove(image, save=False, check=False,
+                for r in ds.remove(image, reckless='availability',
                                    return_type="generator"):
                     yield r
 
