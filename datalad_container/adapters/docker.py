@@ -57,24 +57,24 @@ def save(image, path):
             elif os.listdir(path):
                 raise OSError("Directory {} is not empty".format(path))
             def is_within_directory(directory, target):
-                
+
                 abs_directory = os.path.abspath(directory)
                 abs_target = os.path.abspath(target)
-            
+
                 prefix = os.path.commonprefix([abs_directory, abs_target])
-                
+
                 return prefix == abs_directory
-            
+
             def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
-            
+
                 for member in tar.getmembers():
                     member_path = os.path.join(path, member.name)
                     if not is_within_directory(path, member_path):
                         raise Exception("Attempted Path Traversal in Tar File")
-            
-                tar.extractall(path, members, numeric_owner=numeric_owner) 
-                
-            
+
+                tar.extractall(path, members, numeric_owner=numeric_owner)
+
+
             safe_extract(tar, path=path)
             lgr.info("Saved %s to %s", image, path)
 
@@ -83,6 +83,12 @@ def _list_images():
     out = sp.check_output(
         ["docker", "images", "--all", "--quiet", "--no-trunc"])
     return out.decode().splitlines()
+
+
+def _get_docker_version():
+    cmd = ["docker", "version", "--format", "{{.Client.Version}}"]
+    res = sp.run(cmd, capture_output=True, text=True)
+    return res.stdout.rstrip()
 
 
 def get_image(path, repo_tag=None, config=None):
@@ -129,7 +135,14 @@ def load(path, repo_tag, config):
     # deleted (e.g., with 'docker image prune --all'). Given all three of these
     # things, loading the image from the dataset will tag the old neurodebian
     # image as the latest.
-    image_id = "sha256:" + get_image(path, repo_tag, config)
+    major_docker_version = int(_get_docker_version().split(".")[0])
+    if major_docker_version >= 27:
+        # delayed import for now because of extra dependency on -next
+        from .manifestutils import get_image_id
+        image_id = get_image_id(path, repo_tag, config)
+    else:
+        image_id = "sha256:" + get_image(path, repo_tag, config)
+
     if image_id not in _list_images():
         lgr.debug("Loading %s", image_id)
         cmd = ["docker", "load"]
