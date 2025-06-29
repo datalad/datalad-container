@@ -19,7 +19,7 @@ For example:
 
 `datalad meta-extract -d . container_inspect images/bids/bids-pymvpa--1.0.2.sing  | jq`
 
-.. code-block:: 
+.. code-block::
 
   {
     "type": "file",

@@ -15,6 +15,3 @@ ssh -v datalad-test exit
 
 # tmp: don't run the actual tests:
 # exit 1
-
-
-

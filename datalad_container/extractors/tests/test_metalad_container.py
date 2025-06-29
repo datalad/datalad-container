@@ -2,7 +2,6 @@ import subprocess
 
 import pytest
 from datalad.support.external_versions import external_versions
-
 # Early detection before we try to import meta_extract
 from datalad.tests.utils_pytest import SkipTest
 

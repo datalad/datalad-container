@@ -214,7 +214,7 @@
 - Drop use of `Runner` (to be removed in datalad 0.14.0) in favor of
   `WitlessRunner`
 
-# 1.1.0 (October 30, 2020) -- 
+# 1.1.0 (October 30, 2020) --
 
 - Datalad version 0.13.0 or later is now required.
 
@@ -229,7 +229,7 @@
   to execute a container from underneath an uninstalled subdataset.
 
 
-# 1.0.1 (June 23, 2020) -- 
+# 1.0.1 (June 23, 2020) --
 
 - Prefer `datalad.core.local.run` to `datalad.interface.run`.  The
   latter has been marked as obsolete since DataLad v0.12 (our minimum
