@@ -276,6 +276,79 @@ def test_extra_inputs(path=None):
     ) == set(runinfo.get("extra_inputs", set()))
 
 
+@with_tree(
+    tree={
+        "container.img": "image file",
+        "input.txt": "input data",
+        "overlay1.img": "overlay1",
+    }
+)
+def test_assume_ready(path=None):
+    ds = Dataset(path).create(force=True, **common_kwargs)
+    ds.containers_add(
+        "mycontainer",
+        image="container.img",
+        call_fmt="echo image={img} cmd={cmd} img_dspath={img_dspath} img_dirpath={img_dirpath} > out.log",
+        extra_input=["overlay1.img"],
+        **common_kwargs
+    )
+    ds.save(**common_kwargs)
+    # assume image is ready
+    ds.containers_run(
+        "XXX",
+        container_name="mycontainer",
+        assume_ready=['image'],
+        **common_kwargs)
+    ok_file_has_content(
+        os.path.join(ds.repo.path, "out.log"),
+        "image=container.img",
+        re_=True,
+    )
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    cmd, runinfo = get_run_info(ds, commit_msg)
+    assert "container.img"  not in runinfo.get("extra_inputs", [])
+
+    # fails if erroneous assume_ready value
+    with pytest.raises(ValueError):
+        ds.containers_run(
+            "XXX",
+            inputs=['input.txt'],
+            container_name="mycontainer",
+            assume_ready=['inputsssstypo', 'outputs'],
+            **common_kwargs)
+
+    # fail when output is assume ready but is not unlocked
+    with pytest.raises(IncompleteResultsError):
+        ds.containers_run(
+            "XXX",
+            inputs=['input.txt'],
+            outputs=['out.log'],
+            container_name="mycontainer",
+            assume_ready=['inputs', 'outputs'],
+            **common_kwargs)
+
+    # assume inputs as ready, pass to regular `run`
+    ds.containers_run(
+        "YYY",
+        inputs=['input.txt'],
+        outputs=['out.log'],
+        container_name="mycontainer",
+        assume_ready=['inputs'],
+        **common_kwargs)
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    cmd, runinfo = get_run_info(ds, commit_msg)
+
+    ds.containers_run(
+        "ZZZ",
+        container_name="mycontainer",
+        outputs=['out.log'],
+        assume_ready=['extra-inputs'],
+        **common_kwargs)
+    commit_msg = ds.repo.call_git(["show", "--format=%B"])
+    cmd, runinfo = get_run_info(ds, commit_msg)
+    assert 'overlay1.img' not in runinfo.get("extra_inputs", [])
+
+
 @skip_if_no_network
 @with_tree(tree={"subdir": {"in": "innards"}})
 def test_run_no_explicit_dataset(path=None):
