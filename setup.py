@@ -1,11 +1,9 @@
 #!/usr/bin/env python
 
 from setuptools import setup
-import versioneer
 
-from _datalad_buildsupport.setup import (
-    BuildManPage,
-)
+import versioneer
+from _datalad_buildsupport.setup import BuildManPage
 
 cmdclass = versioneer.get_cmdclass()
 cmdclass.update(build_manpage=BuildManPage)
