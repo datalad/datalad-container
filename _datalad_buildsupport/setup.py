@@ -12,6 +12,7 @@ from os.path import (
     dirname,
     join as opj,
 )
+
 from setuptools import Command
 from setuptools.config import read_configuration
 from setuptools.errors import OptionError
