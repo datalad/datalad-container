@@ -1,4 +1,11 @@
 
+<a id='changelog-1.2.6'></a>
+# 1.2.6 (2025-05-18)
+
+## 🐛 Bug Fixes
+
+- MNT: Account for a number of deprecations in core.  [PR #268](https://github.com/datalad/datalad-container/pull/268) (by [@adswa](https://github.com/adswa))
+
 <a id='changelog-1.2.5'></a>
 # 1.2.5 (2024-01-17)
 
