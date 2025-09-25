@@ -26,6 +26,7 @@ from datalad.support.param import Parameter
 from datalad.utils import ensure_iter
 
 from datalad_container.find_container import find_container_
+from datalad.support.constraints import EnsureChoice
 
 lgr = logging.getLogger("datalad.containers.containers_run")
 
@@ -41,6 +42,15 @@ _run_params = dict(
         metavar="NAME",
         doc="""Specify the name of or a path to a known container to use
         for execution, in case multiple containers are configured."""),
+    assume_ready=Parameter(
+        args=("--assume-ready",),
+        nargs="*",
+        constraints=EnsureChoice(None, "image", "inputs", "outputs", "extra-inputs"),
+        doc="""Assume that inputs do not need to be retrieved and/or outputs do not
+        need to unlocked or removed, or containers/extra-inputs to be retrieved,
+        before running the command. This option allows
+        you to avoid the expense of these preparation steps if you know that they
+        are unnecessary."""),
 )
 
 
@@ -79,7 +89,7 @@ class ContainersRun(Interface):
     @eval_results
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
-                 explicit=False, sidecar=None):
+                 explicit=False, sidecar=None, assume_ready=None):
         from unittest.mock import \
             patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
@@ -154,27 +164,46 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
+        assume_ready = assume_ready or []
         extra_inputs = []
-        for extra_input in ensure_iter(container.get("extra-input",[]), set):
-            try:
-                xi_kwargs = dict(
-                    img_dspath=image_dspath,
-                    img_dirpath=op.dirname(image_path) or ".",
-                )
-                extra_inputs.append(extra_input.format(**xi_kwargs))
-            except KeyError as exc:
-                yield get_status_dict(
-                    'run',
-                    ds=ds,
-                    status='error',
-                    message=(
-                        'Unrecognized extra_input placeholder: %s. '
-                        'See containers-add for information on known ones: %s',
-                        exc,
-                        ", ".join(xi_kwargs)))
-                return
+        if "extra-inputs" not in assume_ready:
+            for extra_input in ensure_iter(container.get("extra-input",[]), set):
+                try:
+                    xi_kwargs = dict(
+                        img_dspath=image_dspath,
+                        img_dirpath=op.dirname(image_path) or ".",
+                    )
+                    extra_inputs.append(extra_input.format(**xi_kwargs))
+                except KeyError as exc:
+                    yield get_status_dict(
+                        'run',
+                        ds=ds,
+                        status='error',
+                        message=(
+                            'Unrecognized extra_input placeholder: %s. '
+                            'See containers-add for information on known ones: %s',
+                            exc,
+                            ", ".join(xi_kwargs)))
+                    return
+        else:
+            # filter the whole list as .remove only removes first instance
+            assume_ready = [ar for ar in assume_ready if ar != 'extra-inputs']
+
+        if "image" not in assume_ready:
+            extra_inputs.append(image_path)
+        else:
+            assume_ready = [ar for ar in assume_ready if ar != 'image']
 
         lgr.debug("extra_inputs = %r", extra_inputs)
+
+        if not assume_ready:
+            assume_ready = None
+        elif len(assume_ready) == 1:
+            assume_ready = assume_ready[0]
+        elif  "inputs" in assume_ready and "outputs" in assume_ready:
+            assume_ready = "both"
+        else:
+            raise ValueError(f"Ended up with assume_ready={assume_ready!r} which must have not happened")
 
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
@@ -183,10 +212,11 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
-                    extra_inputs=[image_path] + extra_inputs,
+                    extra_inputs=extra_inputs,
                     outputs=outputs,
                     message=message,
                     expand=expand,
                     explicit=explicit,
-                    sidecar=sidecar):
+                    sidecar=sidecar,
+                    assume_ready=assume_ready):
                 yield r
