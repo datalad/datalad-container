@@ -3,7 +3,7 @@
 See datalad_container.adapters.tests.test_oci for tests that do not depend on
 this.
 """
-from distutils.spawn import find_executable
+from shutil import which
 
 from datalad.api import (
     Dataset,
@@ -34,7 +34,7 @@ from datalad.tests.utils_pytest import (
 )
 
 for dep in ["skopeo", "docker"]:
-    if not find_executable(dep):
+    if not which(dep):
         raise SkipTest("'{}' not found on path".format(dep))
 
 
