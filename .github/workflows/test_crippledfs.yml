@@ -36,6 +36,7 @@ jobs:
       run: |
         pip install -r requirements-devel.txt
         python -m pip install --upgrade pip
+        tools/ci/install-singularity.sh
     - name: Installation
       run: |
         # package install
