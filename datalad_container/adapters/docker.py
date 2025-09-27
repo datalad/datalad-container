@@ -9,8 +9,9 @@ Run `python -m datalad_container.adapters.docker --help` for details about the
 command-line interface.
 """
 
-from glob import glob
 import hashlib
+import json
+import logging
 import os
 import os.path as op
 import subprocess as sp
@@ -24,6 +25,7 @@ from datalad_container.adapters.utils import (
     docker_run,
     get_docker_image_ids,
     log_and_exit,
+    on_windows,
     setup_logger,
 )
 
@@ -50,6 +52,8 @@ def save(image, path):
     """
     # Use a temporary file because docker save (or actually tar underneath)
     # complains that stdout needs to be redirected if we use Popen and PIPE.
+    if ":" not in image:
+        image = f"{image}:latest"
     with tempfile.NamedTemporaryFile() as stream:
         # Windows can't write to an already opened file
         stream.close()
@@ -60,30 +64,62 @@ def save(image, path):
                 os.makedirs(path)
             elif os.listdir(path):
                 raise OSError("Directory {} is not empty".format(path))
-            tar.extractall(path=path)
+            def is_within_directory(directory, target):
+
+                abs_directory = os.path.abspath(directory)
+                abs_target = os.path.abspath(target)
+
+                prefix = os.path.commonprefix([abs_directory, abs_target])
+
+                return prefix == abs_directory
+
+            def safe_extract(tar, path=".", members=None, *, numeric_owner=False):
+
+                for member in tar.getmembers():
+                    member_path = os.path.join(path, member.name)
+                    if not is_within_directory(path, member_path):
+                        raise Exception("Attempted Path Traversal in Tar File")
+
+                tar.extractall(path, members, numeric_owner=numeric_owner)
+
+
+            safe_extract(tar, path=path)
             lgr.info("Saved %s to %s", image, path)
 
 
-def get_image(path):
+def get_image(path, repo_tag=None, config=None):
     """Return the image ID of the image extracted at `path`.
     """
-    jsons = [j for j in glob(op.join(path, "*.json"))
-             if not j.endswith(op.sep + "manifest.json")]
-    if len(jsons) != 1:
-        raise ValueError("Could not find a unique JSON configuration object "
-                         "in {}".format(path))
+    manifest_path = op.join(path, "manifest.json")
+    with open(manifest_path) as fp:
+        manifest = json.load(fp)
+    if repo_tag is not None:
+        manifest = [img for img in manifest if repo_tag in (img.get("RepoTags") or [])]
+    if config is not None:
+        manifest = [img for img in manifest if img["Config"].startswith(config)]
+    if len(manifest) == 0:
+        raise ValueError(f"No matching images found in {manifest_path}")
+    elif len(manifest) > 1:
+        raise ValueError(
+            f"Multiple images found in {manifest_path}; disambiguate with"
+            " --repo-tag or --config"
+        )
 
-    with open(jsons[0], "rb") as stream:
+    with open(op.join(path, manifest[0]["Config"]), "rb") as stream:
         return hashlib.sha256(stream.read()).hexdigest()
 
 
-def load(path):
+def load(path, repo_tag, config):
     """Load the Docker image from `path`.
 
     Parameters
     ----------
     path : str
         A directory with an extracted tar archive.
+    repo_tag : str or None
+        `image:tag` of image to load
+    config : str or None
+        "Config" value or prefix of image to load
 
     Returns
     -------
@@ -95,7 +131,7 @@ def load(path):
     # deleted (e.g., with 'docker image prune --all'). Given all three of these
     # things, loading the image from the dataset will tag the old neurodebian
     # image as the latest.
-    image_id = "sha256:" + get_image(path)
+    image_id = "sha256:" + get_image(path, repo_tag, config)
     if image_id not in get_docker_image_ids():
         lgr.debug("Loading %s", image_id)
         cmd = ["docker", "load"]
@@ -124,7 +160,7 @@ def cli_save(namespace):
 
 
 def cli_run(namespace):
-    image_id = load(namespace.path)
+    image_id = load(namespace.path, namespace.repo_tag, namespace.config)
     docker_run(image_id, namespace.cmd)
 
 
@@ -158,6 +194,14 @@ def main(args):
     parser_run = subparsers.add_parser(
         "run",
         help="run a command with a directory's image")
+    parser_run.add_argument(
+        "--repo-tag", metavar="IMAGE:TAG", help="Tag of image to load"
+    )
+    parser_run.add_argument(
+        "--config",
+        metavar="IDPREFIX",
+        help="Config value or prefix of image to load"
+    )
     parser_run.add_argument(
         "path", metavar="PATH",
         help="run the image in this directory")

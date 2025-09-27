@@ -3,9 +3,9 @@ import os.path as op
 import sys
 
 from datalad.api import containers_add
-from datalad.utils import chpwd
-from datalad.tests.utils import SkipTest
 from datalad.interface.common_cfg import dirs as appdirs
+from datalad.tests.utils_pytest import SkipTest
+from datalad.utils import chpwd
 
 
 def add_pyscript_image(ds, container_name, file_name):

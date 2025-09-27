@@ -1,0 +1,34 @@
+name: Auto-release on PR merge
+
+on:
+  pull_request_target:
+    branches:
+      # Create a release whenever a PR is merged into one of these branches:
+      - master
+    types:
+      - closed
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    # Only run for merged PRs with the "release" label:
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.labels.*.name, 'release')
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          # Check out all history so that the previous release tag can be
+          # found:
+          fetch-depth: 0
+
+      - name: Prepare release
+        uses: datalad/release-action/release@master
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pypi-token: ${{ secrets.PYPI_TOKEN }}
+          pre-tag: |
+            version_file=datalad_container/version.py
+            printf '__version__ = "%s"\n' "$new_version" > "$version_file"
+            git commit -m "Update __version__ to $new_version" "$version_file"
+
+# vim:set et sts=2:

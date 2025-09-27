@@ -1,18 +1,23 @@
-from datalad.api import Dataset
-from datalad.api import clone
+import pytest
+from datalad.api import (
+    Dataset,
+    clone,
+)
 from datalad.consts import DATALAD_SPECIAL_REMOTE
 from datalad.customremotes.base import init_datalad_remote
-from datalad.tests.utils import assert_false
-from datalad.tests.utils import assert_in
-from datalad.tests.utils import assert_not_in
-from datalad.tests.utils import with_tempfile
+from datalad.tests.utils_pytest import (
+    assert_false,
+    assert_in,
+    assert_not_in,
+    with_tempfile,
+)
 from datalad.utils import Path
 
 from datalad_container.utils import ensure_datalad_remote
 
 
 @with_tempfile
-def test_ensure_datalad_remote_init_and_enable_needed(path):
+def test_ensure_datalad_remote_init_and_enable_needed(path=None):
     ds = Dataset(path).create(force=True)
     repo = ds.repo
     assert_false(repo.get_remotes())
@@ -20,8 +25,9 @@ def test_ensure_datalad_remote_init_and_enable_needed(path):
     assert_in("datalad", repo.get_remotes())
 
 
+@pytest.mark.parametrize("autoenable", [False, True])
 @with_tempfile
-def check_ensure_datalad_remote_maybe_enable(autoenable, path):
+def test_ensure_datalad_remote_maybe_enable(path=None, *, autoenable):
     path = Path(path)
     ds_a = Dataset(path / "a").create(force=True)
     init_datalad_remote(ds_a.repo, DATALAD_SPECIAL_REMOTE,
@@ -33,8 +39,3 @@ def check_ensure_datalad_remote_maybe_enable(autoenable, path):
         assert_not_in("datalad", repo.get_remotes())
     ensure_datalad_remote(repo)
     assert_in("datalad", repo.get_remotes())
-
-
-def test_ensure_datalad_remote_maybe_enable():
-    yield check_ensure_datalad_remote_maybe_enable, False
-    yield check_ensure_datalad_remote_maybe_enable, True

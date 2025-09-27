@@ -1,14 +1,18 @@
-from distutils.spawn import find_executable
+import json
 import os.path as op
 import sys
+from shutil import (
+    unpack_archive,
+    which,
+)
 
-import datalad_container.adapters.docker as da
+import pytest
 from datalad.cmd import (
     StdOutCapture,
     WitlessRunner,
 )
 from datalad.support.exceptions import CommandError
-from datalad.tests.utils import (
+from datalad.tests.utils_pytest import (
     SkipTest,
     assert_in,
     assert_raises,
@@ -18,7 +22,9 @@ from datalad.tests.utils import (
     with_tree,
 )
 
-if not find_executable("docker"):
+import datalad_container.adapters.docker as da
+
+if not which("docker"):
     raise SkipTest("'docker' not found on path")
 
 
@@ -39,7 +45,7 @@ def images_exist(args):
 
 
 @with_tempfile
-def test_docker_save_doesnt_exist(path):
+def test_docker_save_doesnt_exist(path=None):
     image_name = "idonotexistsurely"
     if images_exist([image_name]):
         raise SkipTest("Image wasn't supposed to exist, but does: {}"
@@ -57,7 +63,11 @@ class TestAdapterBusyBox(object):
             cls.image_existed = True
         else:
             cls.image_existed = False
-            WitlessRunner().run(["docker", "pull", cls.image_name])
+            try:
+                WitlessRunner().run(["docker", "pull", cls.image_name])
+            except CommandError:
+                # This is probably due to rate limiting.
+                raise SkipTest("Plain `docker pull` failed; skipping")
 
     @classmethod
     def teardown_class(cls):
@@ -65,7 +75,7 @@ class TestAdapterBusyBox(object):
             WitlessRunner().run(["docker", "rmi", cls.image_name])
 
     @with_tempfile(mkdir=True)
-    def test_save_and_run(self, path):
+    def test_save_and_run(self, path=None):
         image_dir = op.join(path, "image")
         call(["save", self.image_name, image_dir])
         ok_exists(op.join(image_dir, "manifest.json"))
@@ -84,7 +94,7 @@ class TestAdapterBusyBox(object):
         assert_in("image", out["stdout"])
 
     @with_tree({"foo": "content"})
-    def test_containers_run(self, path):
+    def test_containers_run(self, path=None):
         if self.image_existed:
             raise SkipTest(
                 "Not pulling with containers-run due to existing image: {}"
@@ -107,3 +117,23 @@ class TestAdapterBusyBox(object):
                 protocol=StdOutCapture,
                 stdin=ifh)
         assert_in("content", out["stdout"])
+
+
+def test_load_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "3.17"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    WitlessRunner().run(["docker", "save", "alpine", "-o", str(tmp_path / "alpine.tar")])
+    unpack_archive(tmp_path / "alpine.tar", tmp_path / "alpine")
+    with pytest.raises(CommandError):
+        call(["run", str(tmp_path / "alpine"), "ls"])
+    call(["run", "--repo-tag", "alpine:3.16", str(tmp_path / "alpine"), "ls"])
+
+
+def test_save_multi_image(tmp_path):
+    for v in ["3.15", "3.16", "latest"]:
+        WitlessRunner().run(["docker", "pull", f"alpine:{v}"])
+    call(["save", "alpine", str(tmp_path)])
+    with (tmp_path / "manifest.json").open() as fp:
+        manifest = json.load(fp)
+    assert len(manifest) == 1
+    assert manifest[0]["RepoTags"] == ["alpine:latest"]

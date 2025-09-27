@@ -2,10 +2,11 @@
 
 __docformat__ = 'restructuredtext'
 
-from .version import __version__
+# Imported to set singularity/apptainer version commands at init
+import datalad_container.extractors._load_singularity_versions  # noqa
 
 # defines a datalad command suite
-# this symbold must be indentified as a setuptools entrypoint
+# this symbold must be identified as a setuptools entrypoint
 # to be found by datalad
 command_suite = (
     # description of the command suite, displayed in cmdline help
@@ -46,5 +47,21 @@ command_suite = (
     ]
 )
 
-from datalad import setup_package
-from datalad import teardown_package
+from os.path import join as opj
+
+from datalad.support.constraints import EnsureStr
+from datalad.support.extensions import register_config
+
+register_config(
+    'datalad.containers.location',
+    'Container location',
+    description='path within the dataset where to store containers',
+    type=EnsureStr(),
+    default=opj(".datalad", "environments"),
+    dialog='question',
+    scope='dataset',
+)
+
+from . import _version
+
+__version__ = _version.get_versions()['version']

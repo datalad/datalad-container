@@ -1,1 +1,2 @@
+# requirements for a development environment
 -e .[devel]

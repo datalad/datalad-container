@@ -2,29 +2,38 @@
 
 __docformat__ = 'restructuredtext'
 
-import re
+import json
 import logging
 import os
 import os.path as op
-import sys
+import re
+from pathlib import (
+    Path,
+    PurePosixPath,
+)
 from shutil import copyfile
-from simplejson import loads
 
 from datalad.cmd import WitlessRunner
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod, EnsureDataset
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import eval_results
-from datalad.support.constraints import EnsureStr
-from datalad.support.constraints import EnsureNone
-from datalad.support.exceptions import InsufficientArgumentsError
+from datalad.distribution.dataset import (
+    EnsureDataset,
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
 from datalad.interface.results import get_status_dict
+from datalad.support.constraints import (
+    EnsureNone,
+    EnsureStr,
+)
+from datalad.support.exceptions import InsufficientArgumentsError
+from datalad.support.param import Parameter
 from datalad.utils import Path
 
-from .definitions import definitions
-from .utils import ensure_datalad_remote
+from .utils import get_container_configuration, ensure_datalad_remote
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -50,7 +59,7 @@ def _resolve_img_url(url):
         req = requests.get(
             'https://www.singularity-hub.org/api/container/{}'.format(
                 url[7:]))
-        shub_info = loads(req.text)
+        shub_info = json.loads(req.text)
         url = shub_info['image']
     return url
 
@@ -67,9 +76,32 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('shub://') or url.startswith('docker://'):
         return 'singularity exec {img} {cmd}'
     elif url.startswith('dhub://'):
-        return op.basename(sys.executable) + ' -m datalad_container.adapters.docker run {img} {cmd}'
+        # {python} is replaced with sys.executable on *execute*
+        return '{python} -m datalad_container.adapters.docker run {img} {cmd}'
     elif url.startswith('oci:'):
-        return op.basename(sys.executable) + ' -m datalad_container.adapters.oci run {img} {cmd}'
+        return '{python} -m datalad_container.adapters.oci run {img} {cmd}'
+
+
+def _ensure_datalad_remote(repo):
+    """Initialize and enable datalad special remote if it isn't already."""
+    dl_remote = None
+    for info in repo.get_special_remotes().values():
+        if info.get("externaltype") == "datalad":
+            dl_remote = info["name"]
+            break
+
+    if not dl_remote:
+        from datalad.consts import DATALAD_SPECIAL_REMOTE
+        from datalad.customremotes.base import init_datalad_remote
+
+        init_datalad_remote(repo, DATALAD_SPECIAL_REMOTE, autoenable=True)
+    elif repo.is_special_annex_remote(dl_remote, check_if_known=False):
+        lgr.debug("datalad special remote '%s' is already enabled",
+                  dl_remote)
+    else:
+        lgr.debug("datalad special remote '%s' found. Enabling",
+                  dl_remote)
+        repo.enable_remote(dl_remote)
 
 
 @build_doc
@@ -100,15 +132,21 @@ class ContainersAdd(Interface):
         url=Parameter(
             args=("-u", "--url"),
             doc="""A URL (or local path) to get the container image from. If
-            the URL scheme is one recognized by Singularity, 'shub://' or
-            'docker://', the command format string will be auto-guessed when
-            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified. For the
-            scheme 'oci:', the rest of the URL will be interpreted as the
+            the URL scheme is one recognized by Singularity (e.g.,
+            'shub://neurodebian/dcm2niix:latest' or
+            'docker://debian:stable-slim'), a command format string for
+            Singularity-based execution will be auto-configured when
+            [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.
+            For the scheme 'oci:', the rest of the URL will be interpreted as the
             source argument to a `skopeo copy` call and the image will be saved
             as an OCI-compliant directory at location specified by `name`.
-            Similarly, there is a 'dhub://' scheme where the rest of the URL
-            will be interpreted as the argument to 'docker pull', the image
-            will be saved to the location specified by `name`. However, using
+            Similarly, there is a 'dhub://' scheme, where
+            the rest of the URL will be interpreted as the argument to
+            'docker pull', the image will be saved to a location
+            specified by `name`, and the call format will be auto-configured
+            to run docker, unless overwritten. The auto-configured call to docker
+            run mounts the CWD to '/tmp' and sets the working directory to '/tmp'.
+            However, using
             the 'oci:' scheme is recommended if you have skopeo installed. The
             call format for the 'oci:' and 'dhub://' schemes will be
             auto-guessed if not given.""",
@@ -125,10 +163,31 @@ class ContainersAdd(Interface):
             this container, e.g. "singularity exec {img} {cmd}". Where '{img}'
             is a placeholder for the path to the container image and '{cmd}' is
             replaced with the desired command. Additional placeholders:
-            '{img_dspath}' is relative path to the dataset containing the image.
+            '{img_dspath}' is relative path to the dataset containing the image,
+            '{img_dirpath}' is the directory containing the '{img}'.
+            '{python}' expands to the path of the Python executable that is
+            running the respective DataLad session, for example a
+            'datalad containers-run' command.
             """,
             metavar="FORMAT",
             constraints=EnsureStr() | EnsureNone(),
+        ),
+        extra_input=Parameter(
+            args=("--extra-input",),
+            doc="""Additional file the container invocation depends on (e.g.
+            overlays used in --call-fmt). Can be specified multiple times.
+            Similar to --call-fmt, the placeholders {img_dspath} and
+            {img_dirpath} are available. Will be stored in the dataset config and
+            later added alongside the container image to the `extra_inputs`
+            field in the run-record and thus automatically be fetched when
+            needed.
+            """,
+            action="append",
+            default=[],
+            metavar="FILE",
+            # Can't use EnsureListOf(str) yet as it handles strings as iterables...
+            # See this PR: https://github.com/datalad/datalad/pull/7267
+            # constraints=EnsureListOf(str) | EnsureNone(),
         ),
         image=Parameter(
             args=("-i", "--image"),
@@ -153,7 +212,7 @@ class ContainersAdd(Interface):
     @datasetmethod(name='containers_add')
     @eval_results
     def __call__(name, url=None, dataset=None, call_fmt=None, image=None,
-                 update=False):
+                 update=False, extra_input=None):
         if not name:
             raise InsufficientArgumentsError("`name` argument is required")
 
@@ -167,8 +226,8 @@ class ContainersAdd(Interface):
                 "Container names can only contain alphanumeric characters "
                 "and '-', got: '{}'".format(name))
 
-        cfgbasevar = "datalad.containers.{}".format(name)
-        if cfgbasevar + ".image" in ds.config:
+        container_cfg = get_container_configuration(ds, name)
+        if 'image' in container_cfg:
             if not update:
                 yield get_status_dict(
                     action="containers_add", ds=ds, logger=lgr,
@@ -181,7 +240,7 @@ class ContainersAdd(Interface):
             if not (url or image or call_fmt):
                 # No updated values were provided. See if an update url is
                 # configured (currently relevant only for Singularity Hub).
-                url = ds.config.get(cfgbasevar + ".updateurl")
+                url = container_cfg.get("updateurl")
                 if not url:
                     yield get_status_dict(
                         action="containers_add", ds=ds, logger=lgr,
@@ -189,25 +248,17 @@ class ContainersAdd(Interface):
                         message="No values to update specified")
                     return
 
-            call_fmt = call_fmt or ds.config.get(cfgbasevar + ".cmdexec")
-            image = image or ds.config.get(cfgbasevar + ".image")
+            call_fmt = call_fmt or container_cfg.get("cmdexec")
+            image = image or container_cfg.get("image")
 
         if not image:
             loc_cfg_var = "datalad.containers.location"
-            # TODO: We should provide an entry point (or sth similar) for extensions
-            # to get config definitions into the ConfigManager. In other words an
-            # easy way to extend definitions in datalad's common_cfgs.py.
             container_loc = \
                 ds.config.obtain(
                     loc_cfg_var,
-                    where=definitions[loc_cfg_var]['destination'],
                     # if not False it would actually modify the
                     # dataset config file -- undesirable
                     store=False,
-                    default=definitions[loc_cfg_var]['default'],
-                    dialog_type=definitions[loc_cfg_var]['ui'][0],
-                    valtype=definitions[loc_cfg_var]['type'],
-                    **definitions[loc_cfg_var]['ui'][1]
                 )
             image = op.join(ds.path, container_loc, name, 'image')
         else:
@@ -234,7 +285,7 @@ class ContainersAdd(Interface):
                 # XXX: check=False is used to avoid dropping the image. It
                 # should use drop=False if remove() gets such an option (see
                 # DataLad's gh-2673).
-                for r in ds.remove(image, save=False, check=False,
+                for r in ds.remove(image, reckless='availability',
                                    return_type="generator"):
                     yield r
 
@@ -294,6 +345,7 @@ class ContainersAdd(Interface):
             return
 
         # store configs
+        cfgbasevar = "datalad.containers.{}".format(name)
         if imgurl != url:
             # store originally given URL, as it resolves to something
             # different and maybe can be used to update the container
@@ -302,13 +354,36 @@ class ContainersAdd(Interface):
         # force store the image, and prevent multiple entries
         ds.config.set(
             "{}.image".format(cfgbasevar),
-            op.relpath(image, start=ds.path),
+            # always store a POSIX path, relative to dataset root
+            str(PurePosixPath(Path(image).relative_to(ds.pathobj))),
             force=True)
         if call_fmt:
             ds.config.set(
                 "{}.cmdexec".format(cfgbasevar),
                 call_fmt,
                 force=True)
+        # --extra-input sanity check
+        # TODO: might also want to do that for --call-fmt above?
+        extra_input_placeholders = dict(img_dirpath="", img_dspath="")
+        for xi in (extra_input or []):
+            try:
+                xi.format(**extra_input_placeholders)
+            except KeyError as exc:
+                yield get_status_dict(
+                    action="containers_add", ds=ds, logger=lgr,
+                    status="error",
+                    message=("--extra-input %r contains unknown placeholder %s. "
+                             "Available placeholders: %s",
+                             repr(xi), exc, ', '.join(extra_input_placeholders)))
+                return
+
+        # actually setting --extra-input config
+        cfgextravar = "{}.extra-input".format(cfgbasevar)
+        if ds.config.get(cfgextravar) is not None:
+            ds.config.unset(cfgextravar)
+        for xi in (extra_input or []):
+            ds.config.add(cfgextravar, xi)
+
         # store changes
         to_save.append(op.join(".datalad", "config"))
         for r in ds.save(

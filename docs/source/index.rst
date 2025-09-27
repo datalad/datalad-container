@@ -10,8 +10,10 @@ correct version prior execution.
 Documentation
 =============
 
+This is the technical documentation of the functionality and commands provided by this DataLad extension package.
+For an introduction to the general topic and a tutorial, please see the DataLad Handbook at https://handbook.datalad.org/r?containers.
+
 * :ref:`Documentation index <genindex>`
-* `Getting started`_
 * `API reference`_
 
 .. toctree::
@@ -19,18 +21,7 @@ Documentation
 
    changelog
    acknowledgements
-
-
-Getting started
----------------
-
-.. toctree::
-   :hidden:
-
-   generated/examples/basic_demo
-
-.. include:: generated/examples/basic_demo.rst
-   :start-after: ***************
+   metadata-extraction
 
 
 API Reference
@@ -59,5 +50,7 @@ Python API
    containers_remove
    containers_list
    containers_run
+
+   utils
 
 .. |---| unicode:: U+02014 .. em dash

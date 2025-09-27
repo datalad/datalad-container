@@ -5,19 +5,27 @@ __docformat__ = 'restructuredtext'
 import logging
 import os.path as op
 
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.interface.common_opts import recursion_flag
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod, EnsureDataset, Dataset
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import default_result_renderer
-from datalad.interface.utils import eval_results
-from datalad.support.constraints import EnsureNone
 import datalad.support.ansi_colors as ac
-from datalad.interface.results import get_status_dict
 from datalad.coreapi import subdatasets
+from datalad.distribution.dataset import (
+    Dataset,
+    EnsureDataset,
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
+from datalad.interface.common_opts import recursion_flag
+from datalad.interface.results import get_status_dict
+from datalad.interface.utils import default_result_renderer
+from datalad.support.constraints import EnsureNone
+from datalad.support.param import Parameter
 from datalad.ui import ui
+
+from datalad_container.utils import get_container_configuration
 
 lgr = logging.getLogger("datalad.containers.containers_list")
 
@@ -61,7 +69,9 @@ class ContainersList(Interface):
         if recursive:
             for sub in ds.subdatasets(
                     contains=contains,
-                    on_failure='ignore', return_type='generator'):
+                    on_failure='ignore',
+                    return_type='generator',
+                    result_renderer='disabled'):
                 subds = Dataset(sub['path'])
                 if subds.is_installed():
                     for c in subds.containers_list(recursive=recursive,
@@ -75,22 +85,7 @@ class ContainersList(Interface):
                         yield c
 
         # all info is in the dataset config!
-        var_prefix = 'datalad.containers.'
-        containers = {}
-        for var, value in ds.config.items():
-            if not var.startswith(var_prefix):
-                # not an interesting variable
-                continue
-            var_comps = var[len(var_prefix):].split('.')
-            cname = var_comps[0]
-            ccfgname = '.'.join(var_comps[1:])
-            if not ccfgname:
-                continue
-
-            cinfo = containers.get(cname, {})
-            cinfo[ccfgname] = value
-
-            containers[cname] = cinfo
+        containers = get_container_configuration(ds)
 
         for k, v in containers.items():
             if 'image' not in v:

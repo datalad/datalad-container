@@ -4,21 +4,27 @@ __docformat__ = 'restructuredtext'
 
 import logging
 import os.path as op
+import sys
 
-from datalad.interface.base import Interface
-from datalad.interface.base import build_doc
-from datalad.support.param import Parameter
-from datalad.distribution.dataset import datasetmethod
-from datalad.distribution.dataset import require_dataset
-from datalad.interface.utils import eval_results
-
-from datalad.interface.results import get_status_dict
 from datalad.core.local.run import (
     Run,
     get_command_pwds,
     normalize_command,
     run_command,
 )
+from datalad.distribution.dataset import (
+    datasetmethod,
+    require_dataset,
+)
+from datalad.interface.base import (
+    Interface,
+    build_doc,
+    eval_results,
+)
+from datalad.interface.results import get_status_dict
+from datalad.support.param import Parameter
+from datalad.utils import ensure_iter
+
 from datalad_container.find_container import find_container_
 
 lgr = logging.getLogger("datalad.containers.containers_run")
@@ -33,7 +39,7 @@ _run_params = dict(
     container_name=Parameter(
         args=('-n', '--container-name',),
         metavar="NAME",
-        doc="""Specify the name of or a path to a known container to use 
+        doc="""Specify the name of or a path to a known container to use
         for execution, in case multiple containers are configured."""),
 )
 
@@ -65,17 +71,29 @@ class ContainersRun(Interface):
 
     _params_ = _run_params
 
+    # Analogous to 'run' command - stop on first error
+    on_failure = 'stop'
+
     @staticmethod
     @datasetmethod(name='containers_run')
     @eval_results
     def __call__(cmd, container_name=None, dataset=None,
                  inputs=None, outputs=None, message=None, expand=None,
                  explicit=False, sidecar=None):
-        from mock import patch  # delayed, since takes long (~600ms for yoh)
+        from unittest.mock import \
+            patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
         ds = require_dataset(dataset, check_installed=True,
                              purpose='run a containerized command execution')
 
+        # this following block locates the target container. this involves a
+        # configuration look-up. This is not using
+        # get_container_configuration(), because it needs to account for a
+        # wide range of scenarios, including the installation of the dataset(s)
+        # that will eventually provide (the configuration) for the container.
+        # However, internally this is calling `containers_list()`, which is
+        # using get_container_configuration(), so any normalization of
+        # configuration on-read, get still be implemented in this helper.
         container = None
         for res in find_container_(ds, container_name):
             if res.get("action") == "containers":
@@ -100,10 +118,10 @@ class ContainersRun(Interface):
 
             # Temporary kludge to give a more helpful message
             if callspec.startswith("["):
-                import simplejson
+                import json
                 try:
-                    simplejson.loads(callspec)
-                except simplejson.errors.JSONDecodeError:
+                    json.loads(callspec)
+                except json.JSONDecodeError:
                     pass  # Never mind, false positive.
                 else:
                     raise ValueError(
@@ -111,9 +129,14 @@ class ContainersRun(Interface):
                         'Convert it to a plain string.'.format(callspec))
             try:
                 cmd_kwargs = dict(
+                    # point to the python installation that runs *this* code
+                    # we know that it would have things like the docker
+                    # adaptor installed with this extension package
+                    python=sys.executable,
                     img=image_path,
                     cmd=cmd,
                     img_dspath=image_dspath,
+                    img_dirpath=op.dirname(image_path) or ".",
                 )
                 cmd = callspec.format(**cmd_kwargs)
             except KeyError as exc:
@@ -131,6 +154,28 @@ class ContainersRun(Interface):
             # just prepend and pray
             cmd = container['path'] + ' ' + cmd
 
+        extra_inputs = []
+        for extra_input in ensure_iter(container.get("extra-input",[]), set):
+            try:
+                xi_kwargs = dict(
+                    img_dspath=image_dspath,
+                    img_dirpath=op.dirname(image_path) or ".",
+                )
+                extra_inputs.append(extra_input.format(**xi_kwargs))
+            except KeyError as exc:
+                yield get_status_dict(
+                    'run',
+                    ds=ds,
+                    status='error',
+                    message=(
+                        'Unrecognized extra_input placeholder: %s. '
+                        'See containers-add for information on known ones: %s',
+                        exc,
+                        ", ".join(xi_kwargs)))
+                return
+
+        lgr.debug("extra_inputs = %r", extra_inputs)
+
         with patch.dict('os.environ',
                         {CONTAINER_NAME_ENVVAR: container['name']}):
             # fire!
@@ -138,7 +183,7 @@ class ContainersRun(Interface):
                     cmd=cmd,
                     dataset=dataset or (ds if ds.path == pwd else None),
                     inputs=inputs,
-                    extra_inputs=[image_path],
+                    extra_inputs=[image_path] + extra_inputs,
                     outputs=outputs,
                     message=message,
                     expand=expand,
