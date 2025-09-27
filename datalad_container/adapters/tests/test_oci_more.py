@@ -23,7 +23,7 @@ from datalad.consts import (
 )
 from datalad_container.adapters import oci
 from datalad_container.adapters.utils import get_docker_image_ids
-from datalad.tests.utils import (
+from datalad.tests.utils_pytest import (
     assert_in,
     integration,
     ok_,
@@ -42,7 +42,7 @@ for dep in ["skopeo", "docker"]:
 @integration
 @slow  # ~13s
 @with_tempfile
-def test_oci_add_and_run(path):
+def test_oci_add_and_run(path=None):
     ds = Dataset(path).create(cfg_proc="text2git")
     ds.containers_add(url="oci:docker://busybox:1.30", name="bb")
 

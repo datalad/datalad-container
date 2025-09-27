@@ -9,7 +9,7 @@ import json
 
 from datalad.utils import Path
 from datalad_container.adapters import oci
-from datalad.tests.utils import (
+from datalad.tests.utils_pytest import (
     assert_raises,
     eq_,
     with_tempfile,
@@ -82,7 +82,7 @@ INDEX_VALUE = {
 
 
 @with_tempfile(mkdir=True)
-def test_store_and_get_annotation(path):
+def test_store_and_get_annotation(path=None):
     path = Path(path)
     with (path / "index.json").open("w") as fh:
         json.dump(INDEX_VALUE, fh)
