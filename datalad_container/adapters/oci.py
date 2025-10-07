@@ -283,7 +283,7 @@ def get_image_id(path):
 def load(path):
     """Load OCI image from `path`.
 
-    Currently the only supported load destination is the Docker daemon.
+    Currently, the only supported load destination is the Docker daemon.
 
     Parameters
     ----------
