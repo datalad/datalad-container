@@ -196,9 +196,6 @@ def save(image, path):
     _store_annotation(path, _IMAGE_SOURCE_KEY, image)
 
 
-_ENDPOINTS = {"docker.io": "https://registry-1.docker.io/v2/"}
-
-
 def link(ds, path, reference):
     """Add Docker registry URLs to annexed layer images.
 
@@ -222,10 +219,13 @@ def link(ds, path, reference):
 
     ref = parse_docker_reference(reference, normalize=True)
     registry, name = ref.name.split("/", maxsplit=1)
-    endpoint = _ENDPOINTS.get(registry)
-    if not endpoint:
-        lgr.debug("No known endpoint for %s. Skipping linking.", registry)
-        return
+
+    # Docker Hub has a special endpoint, all others follow the pattern
+    # https://{registry}/v2/
+    if registry == "docker.io":
+        endpoint = "https://registry-1.docker.io/v2/"
+    else:
+        endpoint = f"https://{registry}/v2/"
     provider = Providers.from_config_files().get_provider(
         endpoint + name, only_nondefault=True)
     if not provider:

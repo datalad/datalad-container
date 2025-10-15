@@ -32,6 +32,7 @@ from datalad.tests.utils_pytest import (
     slow,
     with_tempfile,
 )
+import pytest
 
 for dep in ["skopeo", "docker"]:
     if not which(dep):
@@ -77,3 +78,59 @@ def test_oci_add_and_run(path=None):
     dl_uuid = DATALAD_SPECIAL_REMOTES_UUIDS[DATALAD_SPECIAL_REMOTE]
     for where_res in ds.repo.whereis(list(map(str, layers))):
         assert_in(dl_uuid, where_res)
+
+
+@pytest.mark.ai_generated
+@skip_if_no_network
+@integration
+@slow
+@with_tempfile
+def test_oci_ghcr_registry(path=None):
+    """Test adding and running a container from GitHub Container Registry (ghcr.io)."""
+    ds = Dataset(path).create(cfg_proc="text2git")
+    ds.containers_add(url="oci:docker://ghcr.io/astral-sh/uv:latest", name="uv")
+
+    image_path = ds.repo.pathobj / ".datalad" / "environments" / "uv" / "image"
+    image_id = oci.get_image_id(image_path)
+    existed = image_id in get_docker_image_ids()
+
+    try:
+        out = WitlessRunner(cwd=ds.path).run(
+            ["datalad", "containers-run", "-n", "uv", "--version"],
+            protocol=StdOutErrCapture)
+    finally:
+        if not existed:
+            WitlessRunner().run(["docker", "rmi", image_id])
+
+    # uv --version should output something like "uv X.Y.Z"
+    assert_in("uv", out["stdout"])
+
+
+@pytest.mark.ai_generated
+@skip_if_no_network
+@integration
+@slow
+@with_tempfile
+def test_oci_quay_registry(path=None):
+    """Test adding and running a container from Quay.io registry."""
+    ds = Dataset(path).create(cfg_proc="text2git")
+    ds.containers_add(
+        url="oci:docker://quay.io/linuxserver.io/baseimage-alpine:3.18",
+        name="alpine"
+    )
+
+    image_path = ds.repo.pathobj / ".datalad" / "environments" / "alpine" / "image"
+    image_id = oci.get_image_id(image_path)
+    existed = image_id in get_docker_image_ids()
+
+    try:
+        out = WitlessRunner(cwd=ds.path).run(
+            ["datalad", "containers-run", "-n", "alpine",
+             "cat /etc/os-release"],
+            protocol=StdOutErrCapture)
+    finally:
+        if not existed:
+            WitlessRunner().run(["docker", "rmi", image_id])
+
+    # Should contain Alpine Linux identifier
+    assert_in("Alpine", out["stdout"])

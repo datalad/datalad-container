@@ -7,6 +7,8 @@ this.
 
 import json
 
+import pytest
+
 from datalad.utils import Path
 from datalad_container.adapters import oci
 from datalad.tests.utils_pytest import (
@@ -33,6 +35,10 @@ def test_parse_docker_reference_normalize():
 
     eq_(fn("quay.io/skopeo/stable", normalize=True).name,
         "quay.io/skopeo/stable")
+    eq_(fn("ghcr.io/astral-sh/uv", normalize=True).name,
+        "ghcr.io/astral-sh/uv")
+    eq_(fn("gcr.io/my-project/my-image", normalize=True).name,
+        "gcr.io/my-project/my-image")
 
 
 def test_parse_docker_reference_tag():
@@ -43,6 +49,24 @@ def test_parse_docker_reference_tag():
         ("docker.io/library/busybox", "1.32", None))
     eq_(fn("docker.io/library/busybox:1.32"),
         ("docker.io/library/busybox", "1.32", None))
+
+
+@pytest.mark.ai_generated
+def test_parse_docker_reference_alternative_registries():
+    """Test parsing references from alternative registries like quay.io and ghcr.io."""
+    fn = oci.parse_docker_reference
+
+    # Test quay.io with tag
+    eq_(fn("quay.io/linuxserver.io/baseimage-alpine:3.18"),
+        ("quay.io/linuxserver.io/baseimage-alpine", "3.18", None))
+
+    # Test ghcr.io with tag
+    eq_(fn("ghcr.io/astral-sh/uv:latest"),
+        ("ghcr.io/astral-sh/uv", "latest", None))
+
+    # Test gcr.io with tag
+    eq_(fn("gcr.io/my-project/my-image:v1.0"),
+        ("gcr.io/my-project/my-image", "v1.0", None))
 
 
 def test_parse_docker_reference_digest():
