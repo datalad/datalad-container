@@ -25,6 +25,7 @@ from datalad_container.adapters import oci
 from datalad_container.adapters.utils import get_docker_image_ids
 from datalad.tests.utils_pytest import (
     assert_in,
+    eq_,
     integration,
     ok_,
     skip_if_no_network,
@@ -84,53 +85,63 @@ def test_oci_add_and_run(path=None):
 @skip_if_no_network
 @integration
 @slow
+@pytest.mark.parametrize("registry,image_ref,container_name,test_cmd,expected_output", [
+    ("docker.io", "busybox:1.30", "busybox", "sh -c 'busybox | head -1'", "BusyBox v1.30"),
+    ("ghcr.io", "ghcr.io/astral-sh/uv:latest", "uv", "--version", "uv"),
+    ("quay.io", "quay.io/linuxserver.io/baseimage-alpine:3.18", "alpine",
+     "cat /etc/os-release", "Alpine"),
+])
 @with_tempfile
-def test_oci_ghcr_registry(path=None):
-    """Test adding and running a container from GitHub Container Registry (ghcr.io)."""
-    ds = Dataset(path).create(cfg_proc="text2git")
-    ds.containers_add(url="oci:docker://ghcr.io/astral-sh/uv:latest", name="uv")
+def test_oci_alternative_registries(registry, image_ref, container_name,
+                                     test_cmd, expected_output, path=None):
+    """Test adding and running containers from alternative registries.
 
-    image_path = ds.repo.pathobj / ".datalad" / "environments" / "uv" / "image"
+    Also verifies that annexed layer blobs have URLs registered either in
+    datalad or web remotes for efficient retrieval.
+
+    Parameters
+    ----------
+    registry : str
+        Registry name (for test identification)
+    image_ref : str
+        Full image reference (e.g., "ghcr.io/astral-sh/uv:latest")
+    container_name : str
+        Name to register the container under
+    test_cmd : str
+        Command to run in the container
+    expected_output : str
+        String expected to be in the command output
+    """
+    ds = Dataset(path).create(cfg_proc="text2git")
+    ds.containers_add(url=f"oci:docker://{image_ref}", name=container_name)
+
+    image_path = ds.repo.pathobj / ".datalad" / "environments" / container_name / "image"
     image_id = oci.get_image_id(image_path)
     existed = image_id in get_docker_image_ids()
 
     try:
         out = WitlessRunner(cwd=ds.path).run(
-            ["datalad", "containers-run", "-n", "uv", "--version"],
+            ["datalad", "containers-run", "-n", container_name, test_cmd],
             protocol=StdOutErrCapture)
     finally:
         if not existed:
             WitlessRunner().run(["docker", "rmi", image_id])
 
-    # uv --version should output something like "uv X.Y.Z"
-    assert_in("uv", out["stdout"])
+    assert_in(expected_output, out["stdout"])
 
+    # Check that there are annexed files in the image blobs
+    blobs_path = image_path / "blobs"
+    annexed_blobs = [r["path"]
+                     for r in ds.status(blobs_path, annex="basic",
+                                       result_renderer=None)
+                     if "key" in r]
+    ok_(annexed_blobs, f"Expected to find annexed blobs in {blobs_path}")
 
-@pytest.mark.ai_generated
-@skip_if_no_network
-@integration
-@slow
-@with_tempfile
-def test_oci_quay_registry(path=None):
-    """Test adding and running a container from Quay.io registry."""
-    ds = Dataset(path).create(cfg_proc="text2git")
-    ds.containers_add(
-        url="oci:docker://quay.io/linuxserver.io/baseimage-alpine:3.18",
-        name="alpine"
-    )
-
-    image_path = ds.repo.pathobj / ".datalad" / "environments" / "alpine" / "image"
-    image_id = oci.get_image_id(image_path)
-    existed = image_id in get_docker_image_ids()
-
-    try:
-        out = WitlessRunner(cwd=ds.path).run(
-            ["datalad", "containers-run", "-n", "alpine",
-             "cat /etc/os-release"],
-            protocol=StdOutErrCapture)
-    finally:
-        if not existed:
-            WitlessRunner().run(["docker", "rmi", image_id])
-
-    # Should contain Alpine Linux identifier
-    assert_in("Alpine", out["stdout"])
+    # Verify all annexed files are available from datalad or web remote
+    # git annex find --not --in datalad --and --not --in web should be empty
+    result = WitlessRunner(cwd=ds.path).run(
+        ["git", "annex", "find", "--not", "--in", "datalad",
+         "--and", "--not", "--in", "web"] + annexed_blobs,
+        protocol=StdOutErrCapture)
+    eq_(result["stdout"].strip(), "",
+        "All annexed blobs should be available from datalad or web remote")
