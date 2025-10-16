@@ -96,8 +96,9 @@ def test_oci_alternative_registries(registry, image_ref, container_name,
                                      test_cmd, expected_output, path=None):
     """Test adding and running containers from alternative registries.
 
-    Also verifies that annexed layer blobs have URLs registered either in
-    datalad or web remotes for efficient retrieval.
+    Also verifies that:
+    - Annexed layer blobs have URLs registered in datalad or web remotes
+    - Files can be dropped and retrieved from remotes (tests the full cycle)
 
     Parameters
     ----------
@@ -145,3 +146,14 @@ def test_oci_alternative_registries(registry, image_ref, container_name,
         protocol=StdOutErrCapture)
     eq_(result["stdout"].strip(), "",
         "All annexed blobs should be available from datalad or web remote")
+
+    # Test drop and get cycle to verify files can be retrieved from remotes
+    # Drop all annexed content in the dataset
+    drop_results = ds.drop(".", result_renderer=None, on_failure='ignore')
+    # Verify that something was actually dropped
+    ok_(drop_results, "Expected to drop some annexed files")
+
+    # Get everything back to verify it can be retrieved from remotes
+    get_results = ds.get(".", result_renderer=None)
+    # Verify that files were retrieved
+    ok_(get_results, "Expected to retrieve files from remotes")
