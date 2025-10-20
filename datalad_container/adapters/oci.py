@@ -229,9 +229,9 @@ def link(ds, path, reference):
     provider = Providers.from_config_files().get_provider(
         endpoint + name, only_nondefault=True)
     if not provider:
-        lgr.debug("Required Datalad provider configuration "
-                  "for Docker registry links not detected. Skipping linking.")
-        return
+        lgr.warning("Required Datalad provider configuration "
+                    "for Docker registry links not detected. We will enable 'datalad' "
+                    "special remote anyways but datalad might issue warnings later on.")
 
     layers = {}  # path => digest
     for layer in info["Layers"]:

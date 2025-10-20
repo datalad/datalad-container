@@ -17,6 +17,7 @@ from datalad.cmd import (
     StdOutErrCapture,
     WitlessRunner,
 )
+from datalad.support.exceptions import CommandError
 from datalad.consts import (
     DATALAD_SPECIAL_REMOTE,
     DATALAD_SPECIAL_REMOTES_UUIDS,
@@ -87,13 +88,11 @@ def test_oci_add_and_run(path=None):
 @slow
 @pytest.mark.parametrize("registry,image_ref,container_name,test_cmd,expected_output", [
     ("docker.io", "busybox:1.30", "busybox", "sh -c 'busybox | head -1'", "BusyBox v1.30"),
-    ("ghcr.io", "ghcr.io/astral-sh/uv:latest", "uv", "--version", "uv"),
-    ("quay.io", "quay.io/linuxserver.io/baseimage-alpine:3.18", "alpine",
-     "cat /etc/os-release", "Alpine"),
+    ("gcr.io", "gcr.io/google-containers/busybox:latest", "busybox-gcr", "sh -c 'busybox | head -1'", "BusyBox"),
+    ("quay.io", "quay.io/prometheus/busybox:latest", "busybox-quay", "sh -c 'busybox | head -1'", "BusyBox"),
 ])
-@with_tempfile
-def test_oci_alternative_registries(registry, image_ref, container_name,
-                                     test_cmd, expected_output, path=None):
+def test_oci_alternative_registries(tmp_path, registry, image_ref, container_name,
+                                     test_cmd, expected_output):
     """Test adding and running containers from alternative registries.
 
     Also verifies that:
@@ -113,7 +112,7 @@ def test_oci_alternative_registries(registry, image_ref, container_name,
     expected_output : str
         String expected to be in the command output
     """
-    ds = Dataset(path).create(cfg_proc="text2git")
+    ds = Dataset(str(tmp_path)).create(cfg_proc="text2git")
     ds.containers_add(url=f"oci:docker://{image_ref}", name=container_name)
 
     image_path = ds.repo.pathobj / ".datalad" / "environments" / container_name / "image"
@@ -139,6 +138,7 @@ def test_oci_alternative_registries(registry, image_ref, container_name,
     ok_(annexed_blobs, f"Expected to find annexed blobs in {blobs_path}")
 
     # Verify all annexed files are available from datalad or web remote
+    # (only check if datalad remote exists, which requires provider configuration)
     # git annex find --not --in datalad --and --not --in web should be empty
     result = WitlessRunner(cwd=ds.path).run(
         ["git", "annex", "find", "--not", "--in", "datalad",
@@ -147,13 +147,18 @@ def test_oci_alternative_registries(registry, image_ref, container_name,
     eq_(result["stdout"].strip(), "",
         "All annexed blobs should be available from datalad or web remote")
 
-    # Test drop and get cycle to verify files can be retrieved from remotes
     # Drop all annexed content in the dataset
     drop_results = ds.drop(".", result_renderer=None, on_failure='ignore')
+    print(f"Drop results for {registry}: {len(drop_results)} items")
+    for r in drop_results[:5]:  # Print first 5 results
+        print(f"  Dropped: {r.get('path', 'N/A')} - status: {r.get('status', 'N/A')}")
     # Verify that something was actually dropped
     ok_(drop_results, "Expected to drop some annexed files")
 
     # Get everything back to verify it can be retrieved from remotes
     get_results = ds.get(".", result_renderer=None)
+    print(f"Get results for {registry}: {len(get_results)} items")
+    for r in get_results[:5]:  # Print first 5 results
+        print(f"  Retrieved: {r.get('path', 'N/A')} - status: {r.get('status', 'N/A')}")
     # Verify that files were retrieved
     ok_(get_results, "Expected to retrieve files from remotes")
