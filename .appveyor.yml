@@ -60,7 +60,7 @@ environment:
   # All of these are common to all matrix runs ATM, so pre-defined here and to be overloaded if needed
   DTS: datalad_container
   APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
-  INSTALL_SYSPKGS: python3-venv xz-utils jq libffi7
+  INSTALL_SYSPKGS: python3-venv xz-utils jq libffi7 skopeo
   # system git-annex is way too old, use better one
   INSTALL_GITANNEX: git-annex -m deb-url --url http://snapshot.debian.org/archive/debian/20210906T204127Z/pool/main/g/git-annex/git-annex_8.20210903-1_amd64.deb
   CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
@@ -73,8 +73,8 @@ environment:
     - ID: Ubu
 
     # The same but with the oldest supported Python.
-    - ID: Ubu-3.8
-      PY: '3.8'
+    - ID: Ubu-3.9
+      PY: '3.9'
 
     # The same but removing busybox first - triggers different code paths in the tests
     - ID: Ubu-nobusybox
