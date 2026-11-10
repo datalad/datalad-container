@@ -14,6 +14,7 @@ import json
 import logging
 import os
 import os.path as op
+import re
 import subprocess as sp
 import sys
 import tarfile
@@ -85,8 +86,8 @@ def _list_images():
     return out.decode().splitlines()
 
 
-def get_image(path, repo_tag=None, config=None):
-    """Return the image ID of the image extracted at `path`.
+def _get_manifest_entry(path, repo_tag=None, config=None):
+    """Return the manifest.json entry of the image extracted at `path`.
     """
     manifest_path = op.join(path, "manifest.json")
     with open(manifest_path) as fp:
@@ -102,9 +103,110 @@ def get_image(path, repo_tag=None, config=None):
             f"Multiple images found in {manifest_path}; disambiguate with"
             " --repo-tag or --config"
         )
+    return manifest[0]
 
-    with open(op.join(path, manifest[0]["Config"]), "rb") as stream:
+
+def get_image(path, repo_tag=None, config=None):
+    """Return the image ID of the image extracted at `path`.
+
+    This is the digest of the image's configuration, which is the image ID
+    for Docker's classic image store.  Docker's containerd image store, the
+    default since Docker 29, identifies images differently; see
+    `_get_image_ids()`.
+    """
+    entry = _get_manifest_entry(path, repo_tag, config)
+    with open(op.join(path, entry["Config"]), "rb") as stream:
         return hashlib.sha256(stream.read()).hexdigest()
+
+
+def _has_config(path, descriptor, config_digest):
+    """Whether an OCI descriptor in `path` leads to an image with the config
+    of digest `config_digest`
+    """
+    algo, _, digest = descriptor.get("digest", "").partition(":")
+    blob = op.join(path, "blobs", algo, digest)
+    if not op.isfile(blob):
+        # e.g. an image index lists the manifests for all platforms, but
+        # only those for the local platform are saved
+        return False
+    if op.getsize(blob) > 4 * 1024 * 1024:
+        # not a manifest or an image index, which are small JSON documents
+        return False
+    with open(blob) as fp:
+        try:
+            content = json.load(fp)
+        except ValueError:
+            return False
+    if not isinstance(content, dict):
+        return False
+    if "manifests" in content:
+        # an image index
+        return any(_has_config(path, d, config_digest)
+                   for d in content["manifests"])
+    return (content.get("config") or {}).get("digest") == config_digest
+
+
+def _get_image_ids(path, repo_tag=None, config=None):
+    """Return the IDs Docker may know the image extracted at `path` by.
+
+    With Docker's classic image store, an image is identified by the digest
+    of its configuration (see `get_image()`).  With the containerd image
+    store, it is identified by the digest of its manifest or image index,
+    which `docker save` (since Docker 25) lists in the OCI layout's
+    index.json.
+
+    Returns
+    -------
+    list of str
+      Image IDs as "sha256:<hex>", the configuration's digest first.
+    """
+    entry = _get_manifest_entry(path, repo_tag, config)
+    config_digest = "sha256:" + get_image(path, repo_tag, config)
+    ids = [config_digest]
+    index_path = op.join(path, "index.json")
+    index = None
+    if op.exists(index_path):
+        with open(index_path) as fp:
+            try:
+                index = json.load(fp)
+            except ValueError:
+                # not an OCI image index; use the configuration's digest only
+                lgr.debug("Ignoring %s, which is not valid JSON", index_path)
+    if isinstance(index, dict):
+        for descriptor in index.get("manifests") or []:
+            digest = descriptor.get("digest")
+            if digest and digest not in ids \
+                    and _has_config(path, descriptor, config_digest):
+                ids.append(digest)
+    lgr.debug("Image %s in %s may have IDs %s",
+              entry.get("RepoTags") or entry["Config"], path, ids)
+    return ids
+
+
+def _find_image(image_ids):
+    present = _list_images()
+    for image_id in image_ids:
+        if image_id in present:
+            return image_id
+    return None
+
+
+def _get_loaded_image_id(load_output, entry):
+    """Return the ID of the image of manifest.json `entry` that `docker load`
+    just loaded, as reported in its `load_output`
+    """
+    loaded_tags = re.findall(r"^Loaded image: (\S+)$", load_output, re.M)
+    for tag in entry.get("RepoTags") or []:
+        if tag in loaded_tags:
+            # `docker load` tagged the loaded image with it
+            return sp.check_output(
+                ["docker", "image", "inspect", "--format", "{{.Id}}", tag]
+            ).decode().strip()
+    loaded_ids = re.findall(r"^Loaded image ID: (sha256:[0-9a-f]+)$",
+                            load_output, re.M)
+    if not loaded_tags and len(loaded_ids) == 1:
+        return loaded_ids[0]
+    return None
 
 
 def load(path, repo_tag, config):
@@ -129,24 +231,37 @@ def load(path, repo_tag, config):
     # deleted (e.g., with 'docker image prune --all'). Given all three of these
     # things, loading the image from the dataset will tag the old neurodebian
     # image as the latest.
-    image_id = "sha256:" + get_image(path, repo_tag, config)
-    if image_id not in _list_images():
-        lgr.debug("Loading %s", image_id)
-        cmd = ["docker", "load"]
-        p = sp.Popen(cmd, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-        with tarfile.open(fileobj=p.stdin, mode="w|", dereference=True) as tar:
-            tar.add(path, arcname="")
-        out, err = p.communicate()
-        return_code = p.poll()
-        if return_code:
-            lgr.warning("Running %r failed: %s", cmd, err.decode())
-            raise sp.CalledProcessError(return_code, cmd, output=out)
-    else:
+    entry = _get_manifest_entry(path, repo_tag, config)
+    image_ids = _get_image_ids(path, repo_tag, config)
+    image_id = _find_image(image_ids)
+    if image_id is not None:
         lgr.debug("Image %s is already present", image_id)
+        return image_id
 
-    if image_id not in _list_images():
+    lgr.debug("Loading %s", image_ids[0])
+    cmd = ["docker", "load"]
+    p = sp.Popen(cmd, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+    with tarfile.open(fileobj=p.stdin, mode="w|", dereference=True) as tar:
+        tar.add(path, arcname="")
+    out, err = p.communicate()
+    return_code = p.poll()
+    if return_code:
+        lgr.warning("Running %r failed: %s", cmd, err.decode())
+        raise sp.CalledProcessError(return_code, cmd, output=out)
+
+    image_id = _find_image(image_ids)
+    if image_id is None:
+        # The containerd image store identifies an image saved in the
+        # legacy format (by Docker < 25), which has no index.json, by the
+        # digest of a manifest it generates on load, so ask what was loaded.
+        # As that ID cannot be known beforehand, such an image is not found
+        # above, hence loaded again (re-pointing its RepoTags) on every call.
+        image_id = _get_loaded_image_id(out.decode(), entry)
+        if image_id is not None and image_id not in _list_images():
+            image_id = None
+    if image_id is None:
         raise RuntimeError(
-            "docker image {} was not successfully loaded".format(image_id))
+            "docker image {} was not successfully loaded".format(image_ids[0]))
     return image_id
 
 

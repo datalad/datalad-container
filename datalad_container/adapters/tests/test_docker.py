@@ -1,5 +1,8 @@
+import gzip
 import json
+import os
 import os.path as op
+import shutil
 import sys
 from shutil import (
     unpack_archive,
@@ -16,7 +19,6 @@ from datalad.tests.utils_pytest import (
     SkipTest,
     assert_in,
     assert_raises,
-    eq_,
     ok_exists,
     with_tempfile,
     with_tree,
@@ -42,6 +44,30 @@ def list_images(args):
 
 def images_exist(args):
     return bool(list_images(args))
+
+
+def make_legacy_layout(src, dst, repo_tags=None):
+    """Convert an image saved by `docker save` of Docker >= 25 (OCI layout)
+    into the layout `docker save` produced before"""
+    with open(op.join(src, "manifest.json")) as fp:
+        entry, = json.load(fp)
+    os.makedirs(dst)
+    config = op.basename(entry["Config"]) + ".json"
+    shutil.copy(op.join(src, entry["Config"]), op.join(dst, config))
+    layers = []
+    for i, layer in enumerate(entry["Layers"]):
+        os.mkdir(op.join(dst, str(i)))
+        with open(op.join(src, layer), "rb") as ifh:
+            data = ifh.read()
+        if data[:2] == b"\x1f\x8b":
+            # the containerd image store saves layers as pulled, compressed
+            data = gzip.decompress(data)
+        with open(op.join(dst, str(i), "layer.tar"), "wb") as ofh:
+            ofh.write(data)
+        layers.append("{}/layer.tar".format(i))
+    with open(op.join(dst, "manifest.json"), "w") as fp:
+        json.dump(
+            [{"Config": config, "RepoTags": repo_tags, "Layers": layers}], fp)
 
 
 @with_tempfile
@@ -81,8 +107,8 @@ class TestAdapterBusyBox(object):
         ok_exists(op.join(image_dir, "manifest.json"))
         img_ids = list_images([self.image_name])
         assert len(img_ids) == 1
-        eq_("sha256:" + da.get_image(image_dir),
-            img_ids[0])
+        # which of these is the image's ID depends on Docker's image store
+        assert_in(img_ids[0], da._get_image_ids(image_dir))
 
         if not self.image_existed:
             WitlessRunner().run(["docker", "rmi", self.image_name])
@@ -92,6 +118,31 @@ class TestAdapterBusyBox(object):
 
         assert images_exist([self.image_name])
         assert_in("image", out["stdout"])
+
+    @with_tempfile(mkdir=True)
+    def test_run_legacy_layout(self, path=None):
+        # an image saved by Docker < 25, with no index.json, which Docker's
+        # containerd image store identifies by a digest it generates on load
+        image_dir = op.join(path, "image")
+        call(["save", self.image_name, image_dir])
+        tag = "datalad-container-tests/legacy:latest"
+        images_before = set(list_images(["--all"]))
+        loaded = set()
+        try:
+            for repo_tags in (None, [tag]):
+                legacy_dir = op.join(
+                    path, "legacy-{}".format("tagged" if repo_tags else "untagged"))
+                make_legacy_layout(image_dir, legacy_dir, repo_tags)
+                loaded.add(da.load(legacy_dir, None, None))
+                out = call(["run", legacy_dir, "ls"], cwd=path,
+                           protocol=StdOutCapture)
+                assert_in("image", out["stdout"])
+        finally:
+            if images_exist([tag]):
+                WitlessRunner().run(["docker", "rmi", tag])
+            present = set(list_images(["--all"]))
+            for image_id in (loaded - images_before) & present:
+                WitlessRunner().run(["docker", "rmi", "--force", image_id])
 
     @with_tree({"foo": "content"})
     def test_containers_run(self, path=None):
