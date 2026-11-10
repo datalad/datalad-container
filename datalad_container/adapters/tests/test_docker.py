@@ -1,5 +1,6 @@
 import gzip
 import json
+import logging
 import os
 import os.path as op
 import shutil
@@ -23,6 +24,7 @@ from datalad.tests.utils_pytest import (
     with_tempfile,
     with_tree,
 )
+from datalad.utils import swallow_logs
 
 import datalad_container.adapters.docker as da
 
@@ -44,6 +46,17 @@ def list_images(args):
 
 def images_exist(args):
     return bool(list_images(args))
+
+
+def get_ref(path, **kwds):
+    """Return the reference `load()` loads the image in `path` as"""
+    return "datalad-container:" + da.get_image(path, **kwds)
+
+
+def remove_images(*refs):
+    for ref in refs:
+        if images_exist([ref]):
+            WitlessRunner().run(["docker", "rmi", ref])
 
 
 def make_legacy_layout(src, dst, repo_tags=None):
@@ -107,8 +120,8 @@ class TestAdapterBusyBox(object):
         ok_exists(op.join(image_dir, "manifest.json"))
         img_ids = list_images([self.image_name])
         assert len(img_ids) == 1
-        # which of these is the image's ID depends on Docker's image store
-        assert_in(img_ids[0], da._get_image_ids(image_dir))
+        ref = get_ref(image_dir)
+        remove_images(ref)
 
         if not self.image_existed:
             WitlessRunner().run(["docker", "rmi", self.image_name])
@@ -116,8 +129,15 @@ class TestAdapterBusyBox(object):
         out = call(["run", image_dir, "ls"], cwd=path,
                    protocol=StdOutCapture)
 
-        assert images_exist([self.image_name])
+        # loaded as `ref`, and not tagged with the name it was saved with
+        assert images_exist([ref])
+        assert images_exist([self.image_name]) == self.image_existed
         assert_in("image", out["stdout"])
+        if not self.image_existed:
+            # the other tests of this class expect the image under its name,
+            # which it was not loaded with
+            WitlessRunner().run(["docker", "tag", ref, self.image_name])
+        remove_images(ref)
 
     @with_tempfile(mkdir=True)
     def test_run_legacy_layout(self, path=None):
@@ -125,24 +145,25 @@ class TestAdapterBusyBox(object):
         # containerd image store identifies by a digest it generates on load
         image_dir = op.join(path, "image")
         call(["save", self.image_name, image_dir])
+        ref = get_ref(image_dir)
         tag = "datalad-container-tests/legacy:latest"
-        images_before = set(list_images(["--all"]))
-        loaded = set()
         try:
             for repo_tags in (None, [tag]):
                 legacy_dir = op.join(
                     path, "legacy-{}".format("tagged" if repo_tags else "untagged"))
                 make_legacy_layout(image_dir, legacy_dir, repo_tags)
-                loaded.add(da.load(legacy_dir, None, None))
+                remove_images(ref)
+                with swallow_logs(new_level=logging.DEBUG) as cml:
+                    assert da.load(legacy_dir, None, None) == ref
+                    # found by `ref`, so not loaded again
+                    assert da.load(legacy_dir, None, None) == ref
+                    assert cml.out.count("Loading ") == 1
+                assert not images_exist([tag])
                 out = call(["run", legacy_dir, "ls"], cwd=path,
                            protocol=StdOutCapture)
                 assert_in("image", out["stdout"])
         finally:
-            if images_exist([tag]):
-                WitlessRunner().run(["docker", "rmi", tag])
-            present = set(list_images(["--all"]))
-            for image_id in (loaded - images_before) & present:
-                WitlessRunner().run(["docker", "rmi", "--force", image_id])
+            remove_images(ref, tag)
 
     @with_tree({"foo": "content"})
     def test_containers_run(self, path=None):
@@ -156,18 +177,22 @@ class TestAdapterBusyBox(object):
         ds.save(path="foo")
         ds.containers_add("bb", url="dhub://" + self.image_name)
 
-        out = WitlessRunner(cwd=ds.path).run(
-            ["datalad", "containers-run", "-n", "bb", "cat foo"],
-            protocol=StdOutCapture)
-        assert_in("content", out["stdout"])
-
-        # Data can be received on stdin.
-        with (ds.pathobj / "foo").open() as ifh:
+        try:
             out = WitlessRunner(cwd=ds.path).run(
-                ["datalad", "containers-run", "-n", "bb", "cat"],
-                protocol=StdOutCapture,
-                stdin=ifh)
-        assert_in("content", out["stdout"])
+                ["datalad", "containers-run", "-n", "bb", "cat foo"],
+                protocol=StdOutCapture)
+            assert_in("content", out["stdout"])
+
+            # Data can be received on stdin.
+            with (ds.pathobj / "foo").open() as ifh:
+                out = WitlessRunner(cwd=ds.path).run(
+                    ["datalad", "containers-run", "-n", "bb", "cat"],
+                    protocol=StdOutCapture,
+                    stdin=ifh)
+            assert_in("content", out["stdout"])
+        finally:
+            remove_images(get_ref(op.join(ds.path, ".datalad", "environments",
+                                          "bb", "image")))
 
 
 def test_load_multi_image(tmp_path):
@@ -178,6 +203,7 @@ def test_load_multi_image(tmp_path):
     with pytest.raises(CommandError):
         call(["run", str(tmp_path / "alpine"), "ls"])
     call(["run", "--repo-tag", "alpine:3.16", str(tmp_path / "alpine"), "ls"])
+    remove_images(get_ref(str(tmp_path / "alpine"), repo_tag="alpine:3.16"))
 
 
 def test_save_multi_image(tmp_path):
