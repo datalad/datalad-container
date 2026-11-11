@@ -52,6 +52,31 @@ jobs:
           mkdir ~/DLTMP
           echo "TMPDIR=$HOME/DLTMP" >> "$GITHUB_ENV"
 
+      - name: Use Docker's classic image store
+        # Docker >= 29 defaults to the containerd image store, under which
+        # the docker adapter does not find the images it loads yet (their
+        # IDs differ).  Until it does, test with the classic image store,
+        # which Docker 29 still provides, and warn that this is the case.
+        run: |
+          version=$(docker version --format '{{.Server.Version}}')
+          if [ -f /etc/docker/daemon.json ]; then
+            sudo cat /etc/docker/daemon.json
+          else
+            echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+          sudo jq '.features["containerd-snapshotter"] = false' \
+            /etc/docker/daemon.json > "$RUNNER_TEMP/daemon.json"
+          sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info --format 'Docker {{.ServerVersion}}, storage driver {{.Driver}}'
+          if docker info --format '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
+            echo "::error::Docker $version still uses the containerd image store"
+            exit 1
+          fi
+          if [ "${version%%.*}" -ge 29 ]; then
+            echo "::warning::Docker $version defaults to the containerd image store, which the docker adapter does not support yet; testing with the classic image store"
+          fi
+
       - name: Log in to Docker Hub
         # to get a "personalized" rate limit (rather than IP-based); skipped
         # where the secrets are not available (e.g. PRs from forks)
