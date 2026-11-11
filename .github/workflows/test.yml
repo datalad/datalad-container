@@ -1,0 +1,166 @@
+# Run the test suite on GitHub Actions, mirroring the Ubuntu jobs of
+# .appveyor.yml (which is kept as is).  Comments name the AppVeyor phase
+# (init/install/build_script/before_test/test_script/after_test) each step
+# corresponds to.
+name: Tests
+
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.id }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # AppVeyor "Ubu": a venv of the image's default python3.
+          - id: Ubu
+          # AppVeyor "Ubu-3.8": the oldest supported Python.  ubuntu-latest
+          # has no Python older than 3.10, which is also the oldest Python
+          # current DataLad supports.
+          - id: Ubu-3.10
+            python-version: '3.10'
+          # AppVeyor "Ubu-nobusybox": the same as "Ubu" but removing
+          # busybox:latest first - triggers different code paths in the tests.
+          - id: Ubu-nobusybox
+            before-cmd: docker rmi busybox:latest
+
+    env:
+      # No test in this package needs SSH ATM; kept as in .appveyor.yml.
+      DATALAD_TESTS_SSH: 1
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          # do not make repository clone cheap: interferes with versioneer
+          fetch-depth: 0
+
+      # init
+      - name: Configure Git identity
+        run: |
+          git config --global user.email "test@github.land"
+          git config --global user.name "GitHub Almighty"
+
+      - name: Set up scratch space
+        run: |
+          mkdir ~/DLTMP
+          echo "TMPDIR=$HOME/DLTMP" >> "$GITHUB_ENV"
+
+      - name: Use Docker's classic image store
+        # Docker >= 29 defaults to the containerd image store, under which
+        # the docker adapter does not find the images it loads yet (their
+        # IDs differ).  Until it does, test with the classic image store,
+        # which Docker 29 still provides, and warn that this is the case.
+        run: |
+          version=$(docker version --format '{{.Server.Version}}')
+          if [ -f /etc/docker/daemon.json ]; then
+            sudo cat /etc/docker/daemon.json
+          else
+            echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
+          fi
+          sudo jq '.features["containerd-snapshotter"] = false' \
+            /etc/docker/daemon.json > "$RUNNER_TEMP/daemon.json"
+          sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+          sudo systemctl restart docker
+          docker info --format 'Docker {{.ServerVersion}}, storage driver {{.Driver}}'
+          if docker info --format '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
+            echo "::error::Docker $version still uses the containerd image store"
+            exit 1
+          fi
+          if [ "${version%%.*}" -ge 29 ]; then
+            echo "::warning::Docker $version defaults to the containerd image store, which the docker adapter does not support yet; testing with the classic image store"
+          fi
+
+      - name: Log in to Docker Hub
+        # to get a "personalized" rate limit (rather than IP-based); skipped
+        # where the secrets are not available (e.g. PRs from forks)
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+            echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+          else
+            echo "No Docker Hub credentials available, pulling anonymously"
+          fi
+
+      - name: Pull busybox:latest
+        # AppVeyor's Ubuntu image comes with busybox:latest already pulled;
+        # GitHub's does not.  Ubu-nobusybox removes it again (before-cmd).
+        run: docker pull busybox:latest
+
+      # install
+      - name: Install system packages
+        # libffi7 from .appveyor.yml was only needed by a git-annex .deb no
+        # longer used (git-annex now comes from datalad/packages)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -qq --no-install-recommends -y python3-venv xz-utils jq
+
+      - name: Set up Python ${{ matrix.python-version }}
+        if: matrix.python-version
+        uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Create a venv using the default python3
+        if: ${{ !matrix.python-version }}
+        run: |
+          python3 -m venv ~/dlvenv
+          echo "VIRTUAL_ENV=$HOME/dlvenv" >> "$GITHUB_ENV"
+          echo "$HOME/dlvenv/bin" >> "$GITHUB_PATH"
+
+      - name: Install datalad-installer
+        run: |
+          python --version
+          python -m pip install "datalad-installer${DATALAD_INSTALLER_VERSION:-}"
+          python -m pip install wheel
+
+      - name: Install Singularity
+        run: tools/ci/install-singularity.sh
+
+      - name: Install git-annex
+        run: datalad-installer --sudo ok git-annex -m datalad/packages
+
+      # build_script
+      - name: Install datalad-container and its dependencies
+        run: |
+          python -m pip install -q -r requirements-devel.txt
+          python -m pip install .
+
+      # before_test
+      - name: Report WTF information
+        # simple call to see if datalad and git-annex are installed properly
+        run: datalad wtf
+
+      - name: Run job-specific command before testing
+        # e.g. remove busybox:latest so tests could fetch/drop it as needed
+        env:
+          BEFORE_CMD: ${{ matrix.before-cmd }}
+        run: '[ -n "${BEFORE_CMD}" ] && ${BEFORE_CMD} || :'
+
+      # test_script
+      - name: Run tests
+        run: |
+          # run tests on installed module, not source tree files
+          mkdir __testhome__
+          cd __testhome__
+          python -m pytest -s -v -m "not (turtle)" --doctest-modules --cov=datalad_container --pyargs datalad_container
+
+      # after_test
+      - name: Generate coverage report
+        working-directory: __testhome__
+        run: python -m coverage xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          directory: __testhome__
+          fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}
