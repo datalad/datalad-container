@@ -29,6 +29,12 @@ jobs:
           # busybox:latest first - triggers different code paths in the tests.
           - id: Ubu-nobusybox
             before-cmd: docker rmi busybox:latest
+          # The same as "Ubu-nobusybox", which runs all docker adapter tests,
+          # but with Docker's classic image store, the default before Docker
+          # 29.  All other jobs use the containerd image store.
+          - id: Ubu-classic-store
+            before-cmd: docker rmi busybox:latest
+            docker-image-store: classic
 
     env:
       # No test in this package needs SSH ATM; kept as in .appveyor.yml.
@@ -52,29 +58,34 @@ jobs:
           mkdir ~/DLTMP
           echo "TMPDIR=$HOME/DLTMP" >> "$GITHUB_ENV"
 
-      - name: Use Docker's classic image store
-        # Docker >= 29 defaults to the containerd image store, under which
-        # the docker adapter does not find the images it loads yet (their
-        # IDs differ).  Until it does, test with the classic image store,
-        # which Docker 29 still provides, and warn that this is the case.
+      - name: Set up Docker's image store
+        # Docker >= 29 defaults to the containerd image store.  Jobs with
+        # docker-image-store "classic" switch to the classic one, which
+        # Docker 29 still provides, so that both stores are tested.  Any job
+        # not on the image store it is meant to test fails here.
+        env:
+          IMAGE_STORE: ${{ matrix.docker-image-store || 'containerd' }}
         run: |
-          version=$(docker version --format '{{.Server.Version}}')
-          if [ -f /etc/docker/daemon.json ]; then
-            sudo cat /etc/docker/daemon.json
-          else
-            echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
+          if [ "$IMAGE_STORE" = classic ]; then
+            if [ -s /etc/docker/daemon.json ]; then
+              sudo cat /etc/docker/daemon.json
+            else
+              echo '{}' | sudo tee /etc/docker/daemon.json >/dev/null
+            fi
+            sudo jq '.features["containerd-snapshotter"] = false' \
+              /etc/docker/daemon.json > "$RUNNER_TEMP/daemon.json"
+            sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
+            sudo systemctl restart docker
           fi
-          sudo jq '.features["containerd-snapshotter"] = false' \
-            /etc/docker/daemon.json > "$RUNNER_TEMP/daemon.json"
-          sudo cp "$RUNNER_TEMP/daemon.json" /etc/docker/daemon.json
-          sudo systemctl restart docker
-          docker info --format 'Docker {{.ServerVersion}}, storage driver {{.Driver}}'
           if docker info --format '{{json .DriverStatus}}' | grep -q io.containerd.snapshotter; then
-            echo "::error::Docker $version still uses the containerd image store"
-            exit 1
+            store=containerd
+          else
+            store=classic
           fi
-          if [ "${version%%.*}" -ge 29 ]; then
-            echo "::warning::Docker $version defaults to the containerd image store, which the docker adapter does not support yet; testing with the classic image store"
+          docker info --format "Docker {{.ServerVersion}}, storage driver {{.Driver}}, $store image store"
+          if [ "$store" != "$IMAGE_STORE" ]; then
+            echo "::error::Docker uses the $store image store, not the $IMAGE_STORE one"
+            exit 1
           fi
 
       - name: Log in to Docker Hub
