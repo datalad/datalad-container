@@ -62,7 +62,7 @@ environment:
   APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2204
   INSTALL_SYSPKGS: python3-venv xz-utils jq libffi7
   # system git-annex is way too old, use better one
-  INSTALL_GITANNEX: git-annex -m datalad/packages
+  INSTALL_GITANNEX: git-annex -m deb-url --url https://datasets.datalad.org/datalad/packages/neurodebian/git-annex-standalone_10.20230126-1~ndall+1_amd64.deb
   CODECOV_BINARY: https://uploader.codecov.io/latest/linux/codecov
 
   matrix:
