@@ -31,8 +31,9 @@ from datalad.support.constraints import (
 )
 from datalad.support.exceptions import InsufficientArgumentsError
 from datalad.support.param import Parameter
+from datalad.utils import Path
 
-from .utils import get_container_configuration
+from .utils import get_container_configuration, ensure_datalad_remote
 
 lgr = logging.getLogger("datalad.containers.containers_add")
 
@@ -77,6 +78,8 @@ def _guess_call_fmt(ds, name, url):
     elif url.startswith('dhub://'):
         # {python} is replaced with sys.executable on *execute*
         return '{python} -m datalad_container.adapters.docker run {img} {cmd}'
+    elif url.startswith('oci:'):
+        return '{python} -m datalad_container.adapters.oci run {img} {cmd}'
 
 
 def _ensure_datalad_remote(repo):
@@ -134,12 +137,19 @@ class ContainersAdd(Interface):
             'docker://debian:stable-slim'), a command format string for
             Singularity-based execution will be auto-configured when
             [CMD: --call-fmt CMD][PY: call_fmt PY] is not specified.
-            For Docker-based container execution with the URL scheme 'dhub://',
+            For the scheme 'oci:', the rest of the URL will be interpreted as the
+            source argument to a `skopeo copy` call and the image will be saved
+            as an OCI-compliant directory at location specified by `name`.
+            Similarly, there is a 'dhub://' scheme, where
             the rest of the URL will be interpreted as the argument to
             'docker pull', the image will be saved to a location
             specified by `name`, and the call format will be auto-configured
             to run docker, unless overwritten. The auto-configured call to docker
-            run mounts the CWD to '/tmp' and sets the working directory to '/tmp'.""",
+            run mounts the CWD to '/tmp' and sets the working directory to '/tmp'.
+            However, using
+            the 'oci:' scheme is recommended if you have skopeo installed. The
+            call format for the 'oci:' and 'dhub://' schemes will be
+            auto-guessed if not given.""",
             metavar="URL",
             constraints=EnsureStr() | EnsureNone(),
         ),
@@ -291,6 +301,9 @@ class ContainersAdd(Interface):
                     docker_image, image)
                 runner.run(["docker", "pull", docker_image])
                 docker.save(docker_image, image)
+            elif url.startswith("oci:"):
+                from .adapters import oci
+                oci.save(url[len("oci:"):], Path(image))
             elif url.startswith("docker://"):
                 image_dir, image_basename = op.split(image)
                 if not image_basename:
@@ -311,7 +324,7 @@ class ContainersAdd(Interface):
                 copyfile(url, image)
             else:
                 if _HAS_SHUB_DOWNLOADER and url.startswith('shub://'):
-                    _ensure_datalad_remote(ds.repo)
+                    ensure_datalad_remote(ds.repo)
 
                 try:
                     ds.repo.add_url_to_file(image, imgurl)
@@ -381,3 +394,7 @@ class ContainersAdd(Interface):
             yield r
         result["status"] = "ok"
         yield result
+
+        # We need to do this after the image is saved.
+        if url and url.startswith("oci:docker://"):
+            oci.link(ds, Path(image), url[len("oci:docker://"):])

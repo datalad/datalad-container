@@ -13,10 +13,7 @@ from datalad.tests.utils_pytest import (
 )
 from datalad.utils import Path
 
-from datalad_container.containers_add import _ensure_datalad_remote
-
-# NOTE: At the moment, testing of the containers-add itself happens implicitly
-# via use in other tests.
+from datalad_container.utils import ensure_datalad_remote
 
 
 @with_tempfile
@@ -24,7 +21,7 @@ def test_ensure_datalad_remote_init_and_enable_needed(path=None):
     ds = Dataset(path).create(force=True)
     repo = ds.repo
     assert_false(repo.get_remotes())
-    _ensure_datalad_remote(repo)
+    ensure_datalad_remote(repo)
     assert_in("datalad", repo.get_remotes())
 
 
@@ -40,5 +37,5 @@ def test_ensure_datalad_remote_maybe_enable(path=None, *, autoenable):
     repo = ds_b.repo
     if not autoenable:
         assert_not_in("datalad", repo.get_remotes())
-    _ensure_datalad_remote(repo)
+    ensure_datalad_remote(repo)
     assert_in("datalad", repo.get_remotes())
