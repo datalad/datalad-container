@@ -80,7 +80,7 @@ class ContainersRun(Interface):
     def __call__(cmd, container_name=None, dataset=None, message=None,
                  inputs=None, outputs=None, assume_ready=None, expand=None,
                  explicit=False, sidecar=None,
-                 dry_run=None, jobs=None):
+                 dry_run=None, on_cmd_failure=None, jobs=None):
         from unittest.mock import \
             patch  # delayed, since takes long (~600ms for yoh)
         pwd, _ = get_command_pwds(dataset)
@@ -192,5 +192,6 @@ class ContainersRun(Interface):
                     explicit=explicit,
                     sidecar=sidecar,
                     dry_run=dry_run,
+                    on_cmd_failure=on_cmd_failure,
                     jobs=jobs):
                 yield r
