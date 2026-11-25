@@ -1,4 +1,23 @@
 
+<a id='changelog-1.2.7'></a>
+# 1.2.7 (2026-11-25)
+
+## 🚀 Enhancements and New Features
+
+- `containers-run` now supports `--on-cmd-failure`, passed on to `datalad run`, to control how a non-zero exit code of the containerized command is handled.
+
+## 🐛 Bug Fixes
+
+- add missing run params `assume_ready`, `dry_run` and `jobs`.  [PR #286](https://github.com/datalad/datalad-container/pull/286) (by [@bpinsard](https://github.com/bpinsard))
+
+## 🧪 Tests
+
+- Upgrade appveyor to freshier base Ubuntu 22.04 to pass testing.  [PR #278](https://github.com/datalad/datalad-container/pull/278) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- Run the test suite on GitHub Actions too, mirroring the AppVeyor jobs on Ubuntu 26.04 with Docker's containerd image store.  [PR #293](https://github.com/datalad/datalad-container/pull/293) (by [@yarikoptic](https://github.com/yarikoptic))
+
+- Build the documentation in CI with Python 3.12, as Python 3.9 is no longer available on GitHub's Ubuntu runners.  [PR #294](https://github.com/datalad/datalad-container/pull/294) (by [@yarikoptic](https://github.com/yarikoptic))
+
 <a id='changelog-1.2.6'></a>
 # 1.2.6 (2025-05-18)
 
